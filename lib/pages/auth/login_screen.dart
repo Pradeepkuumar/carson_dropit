@@ -1,7 +1,11 @@
 import 'dart:ui';
 
+import 'package:carson_zyppy/global/global.dart';
+import 'package:carson_zyppy/pages/auth/auth_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
+import '../../consts.dart';
 import '../../utils/animations.dart';
 import '../../utils/text_utils.dart';
 
@@ -15,6 +19,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   int selectedIndex = 0;
   bool showOption = false;
+  final AuthController controller = Get.put(AuthController());
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +29,8 @@ class _LoginScreenState extends State<LoginScreen> {
         width: double.infinity,
         decoration: BoxDecoration(
           image: DecorationImage(
-              image: AssetImage("assets/images/bg_login.jpg"), fit: BoxFit.fill),
+              image: AssetImage("assets/images/bg_login.jpg"),
+              fit: BoxFit.fill),
         ),
         alignment: Alignment.center,
         child: Container(
@@ -48,10 +54,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       const Spacer(),
                       Center(
                           child: TextUtil(
-                        text: "Login",
-                        weight: true,
-                        size: 30,
-                      )),
+                            text: "Login",
+                            weight: true,
+                            size: 30,
+                          )),
                       const Spacer(),
                       TextUtil(
                         text: "Email / User ID",
@@ -95,45 +101,25 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const Spacer(),
-                      Row(
-                        children: [
-                          Container(
-                            height: 15,
-                            width: 15,
-                            color: Colors.white,
-                          ),
-                          const SizedBox(
-                            width: 40,
-                          ),
-                          // Expanded(
-                          //     child: TextUtil(
-                          //   text: "Remember Me , FORGET PASSWORD",
-                          //   size: 12,
-                          //   weight: true,
-                          // ))
-                        ],
-                      ),
+                      InkWell(
+                          onTap: () {
+                             //controller.login();
+                            box.write(USER_ID_KEY, 1);
+                          },
+                          child: Container(
+                            height: 40,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(30)),
+                            alignment: Alignment.center,
+                            child: TextUtil(
+                              text: "Log In",
+                              color: Colors.black,
+                            ),
+                          )),
                       const Spacer(),
-                      Container(
-                        height: 40,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(30)),
-                        alignment: Alignment.center,
-                        child: TextUtil(
-                          text: "Log In",
-                          color: Colors.black,
-                        ),
-                      ),
-                      const Spacer(),
-                      Center(
-                          child: TextUtil(
-                        text: "Don't have a account REGISTER",
-                        size: 12,
-                        weight: true,
-                      )),
-                      const Spacer(),
+
                     ],
                   ),
                 )),

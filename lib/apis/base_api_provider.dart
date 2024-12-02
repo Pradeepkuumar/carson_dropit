@@ -17,8 +17,8 @@ class ApiProvider extends GetConnect {
   ApiProvider() {
     ///DEV
      baseUrl = "https://devcargo.coderootz.com/api/v2/";
-    /// LIVE 
-      //       baseUrl = "https://cargo.carsonlogistics.net/api/v2/";
+    /// LIVE
+    //  baseUrl = "https://cargo.carsonlogistics.net/api/v2/";
     timeout = const Duration(minutes: 5);
     maxAuthRetries = 3;
     httpClient.addAuthenticator((Request<dynamic> request) async {
