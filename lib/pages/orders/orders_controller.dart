@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../apis/base_api_response.dart';
@@ -8,20 +10,38 @@ import '../../utils/utils.dart';
 import 'orders_model.dart';
 
 
-class OrdersController extends GetxController {
+class OrdersController extends GetxController  with
+    GetTickerProviderStateMixin{
 
   var isLoading = true.obs;
+
   var currentHintIndex = 0.obs;
+  late TabController tabController;
+  CargoOrderDataModel  selectedOrder = CargoOrderDataModel();
+  var viewFullMap = false.obs;
 
   final List<String> hintTexts = [
-    "Enter Order ID",
+    "Enter Order Number",
     "Scan QR Code for Order",
   ];
   var ordersList = <CargoOrderDataModel>[].obs;
+  TextEditingController searchEditTextController = TextEditingController();
+
+
   @override
   void onInit() {
     // getUser();
-    getFeOrders("COLLECTED");
+   tabController = TabController(initialIndex: 0, length: 3,vsync:this );
+   tabController.addListener(() {
+     viewFullMap.value = false;
+     if (tabController.index == 0) {
+       getFeOrders("ASSIGNED");
+     } else if (tabController.index == 1) {
+       getFeOrders("COLLECTED");
+     } else if (tabController.index == 2) {
+       getFeOrders("WAREHOUSE_IN");
+     }
+   });
     super.onInit();
     startHintTextTimer();
   }
@@ -47,11 +67,11 @@ class OrdersController extends GetxController {
 
 
   Future<bool?> getFeOrders(String status) async {
-    Utils.showLoadingDialog("Loading...");
+    utils.showLoadingDialog("Loading...");
     try {
       Map<String, dynamic> model = {
         'fecode': "CL_FAYIS01",
-        'status': "COLLECTED",
+        'status': status,
       };
       dynamic response = await apiProvider.postRequest(
           apiEndPoints.fetchCargoOrderDetails, model);
@@ -62,16 +82,16 @@ class OrdersController extends GetxController {
           ordersList.add(CargoOrderDataModel.fromJson(json));
         }
         update();
-        Utils.closeLoadingDialog();
+        utils.closeLoadingDialog();
         return true;
       } else {
         utils.errorSnackBar("Exception", result.message.toString());
-        Utils.closeLoadingDialog();
+        utils.closeLoadingDialog();
         update();
         return false;
       }
     } catch (e) {
-      Utils.closeLoadingDialog();
+      utils.closeLoadingDialog();
       update();
       utils.errorSnackBar("Exception", e.toString());
     }

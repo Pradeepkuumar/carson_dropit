@@ -1,5 +1,6 @@
 import 'package:carson_zyppy/pages/auth/login_screen.dart';
 import 'package:carson_zyppy/pages/orders/orders_tab_container.dart';
+import 'package:carson_zyppy/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -49,7 +50,7 @@ class _SplashScreesState extends State<SplashScreen> {
               fit: BoxFit.fill,
             ),
             Center(
-              child: utils.iosProgressIndicator(),
+              child: utils.iosProgressIndicator(AppColors.white),
             ),
           ]),
         ),

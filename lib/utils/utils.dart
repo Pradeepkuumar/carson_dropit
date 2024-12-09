@@ -9,7 +9,7 @@ import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../consts.dart';
+import '../global/consts.dart';
 import '../global/global.dart';
 import 'colors.dart';
 
@@ -30,16 +30,27 @@ class Utils extends GetxController {
         colorText: Colors.white);
   }
 
-  // error snackBar this requires title and message in return
-  errorSnackBar(String title, String message) {
-    return Get.snackbar(
-      title,
-      message,
-      snackPosition: SnackPosition.TOP,
-      backgroundColor: Colors.red,
-      duration: const Duration(seconds: 2),
-      colorText: Colors.white,
-    );
+
+
+   bool _isSnackbarActive = false;
+
+   void errorSnackBar(String title, String message) {
+    if (!_isSnackbarActive) {
+      _isSnackbarActive = true;
+      Get.snackbar(
+        title,
+        message,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 2),
+        colorText: Colors.white,
+        snackbarStatus: (value){
+          if(value == SnackbarStatus.CLOSED){
+            _isSnackbarActive = false;
+          }
+      }
+      );
+    }
   }
 
   // // Animated  rounded Button
@@ -339,7 +350,7 @@ class Utils extends GetxController {
     );
   }
 
-  static void showLoadingDialog(String? message) {
+   void showLoadingDialog(String? message) {
     closeLoadingDialog();
     Get.dialog(
       Center(
@@ -367,7 +378,7 @@ class Utils extends GetxController {
                           ? CircularProgressIndicator(
                         color: AppColors.primaryThemeColor,
                       )
-                          : utils.iosProgressIndicator(),
+                          : utils.iosProgressIndicator(AppColors.white),
                     ),
                   ),
                   utils.tvCustom(
@@ -382,7 +393,7 @@ class Utils extends GetxController {
       name: 'loadingDialog',
     );
   }
-  static void closeLoadingDialog() {
+   void closeLoadingDialog() {
     if (Get.isDialogOpen == true) {
       Get.back();
     }
@@ -918,9 +929,9 @@ class Utils extends GetxController {
   }
 
   //ios circularProgressIndicator
-  iosProgressIndicator() {
+  iosProgressIndicator(Color? color) {
     return CupertinoActivityIndicator(
-        radius: 20.0, color: AppColors.white);
+        radius: 20.0, color: color ?? AppColors.white );
   }
 
   tvMandatoryField(String? text, double fontSize, Color fontColor) {

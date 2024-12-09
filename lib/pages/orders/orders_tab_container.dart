@@ -5,16 +5,17 @@ import 'package:tab_container/tab_container.dart';
 
 import '../../utils/colors.dart';
 import 'orders_controller.dart';
-import 'orders_list_view.dart';
+import 'orders_screens/orders_list_view.dart';
 
 class OrdersTabContainer extends StatelessWidget {
+  final OrdersController controller = Get.put(OrdersController());
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         child: SizedBox.expand(
           child: TabContainer(
-            controller: null,
+            controller: controller.tabController,
             tabEdge: TabEdge.bottom,
             tabExtent: 40,
             borderRadius: BorderRadius.circular(1),
@@ -33,18 +34,15 @@ class OrdersTabContainer extends StatelessWidget {
               AppColors.lightBlue,
               AppColors.lightGreen
             ],
-            tabs: [
-              Text('My Orders(5)'),
+            tabs: const [
+              Text('Assigned(4)'),
               Text('Picked(3)'),
               Text('Delivered(7)'),
             ],
             children: [
-              Container(),
-              //Container(),
+              OrdersListView( orderStatus: 'ASSIGNED',),
               OrdersListView( orderStatus: 'COLLECTED',),
-              Container(
-                child: Text('Child 3'),
-              ),
+              OrdersListView( orderStatus: 'WAREHOUSE_IN',),
             ],
           ),
         ),

@@ -5,7 +5,8 @@ import 'package:carson_zyppy/pages/auth/auth_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../consts.dart';
+import '../../app_pages/app_pages.dart';
+import '../../global/consts.dart';
 import '../../utils/animations.dart';
 import '../../utils/text_utils.dart';
 
@@ -27,7 +28,7 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Container(
         height: double.infinity,
         width: double.infinity,
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           image: DecorationImage(
               image: AssetImage("assets/images/bg_login.jpg"),
               fit: BoxFit.fill),
@@ -102,9 +103,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const Spacer(),
                       InkWell(
-                          onTap: () {
-                             //controller.login();
-                            box.write(USER_ID_KEY, 1);
+                          onTap: () async{
+                            bool isLoggedIn = await controller.login();
+                            if (isLoggedIn) {
+                              Get.toNamed(Routes.riderDashBord);
+                            } else {
+                              Get.snackbar('Login Failed', 'Invalid credentials');
+                            }
+
                           },
                           child: Container(
                             height: 40,
