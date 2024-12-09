@@ -15,12 +15,12 @@ class ApiProvider extends GetConnect {
   File? file;
 
   ApiProvider() {
-    ///DEV
-     baseUrl = "https://devcargo.coderootz.com/api/v2/";
-    /// LIVE
-    //  baseUrl = "https://cargo.carsonlogistics.net/api/v2/";
     timeout = const Duration(minutes: 5);
     maxAuthRetries = 3;
+    //DEV
+    baseUrl = "https://devcargo.coderootz.com/api/v2/";
+    // LIVE
+    //baseUrl = "https://cargo.carsonlogistics.net/api/v2/";
     httpClient.addAuthenticator((Request<dynamic> request) async {
      // final dynamic token = "Bearer " + box.read("api_token");
       request.headers['Authorization'] = "$token";
@@ -45,8 +45,7 @@ class ApiProvider extends GetConnect {
   Future<dynamic> getRequest(String endpoint) async {
     dynamic responseJson;
     try {
-      final response = await get(
-        baseUrl! + endpoint,
+      final response = await get(endpoint,
         headers: {
           'content-type': 'application/json; charset=UTF-8',
         },
@@ -62,8 +61,7 @@ class ApiProvider extends GetConnect {
       String endpoint, Map<String, dynamic> queryParameters) async {
     dynamic responseJson;
     try {
-      final response = await get(
-        baseUrl! + endpoint,
+      final response = await get(endpoint,
         query: queryParameters,
         headers: {
           'content-type': 'application/json; charset=UTF-8',
@@ -79,7 +77,7 @@ class ApiProvider extends GetConnect {
   Future<dynamic> postRequest(String endpoint, Map<String, dynamic> map) async {
     dynamic responseJson;
     try {
-      final response = await post(baseUrl! + endpoint, map,headers: {
+      final response = await post(endpoint, map,headers: {
         'content-type': 'application/json; charset=UTF-8',
       },);
 
@@ -95,7 +93,7 @@ class ApiProvider extends GetConnect {
   Future<dynamic> putRequest(String endpoint, Map<String, dynamic> map) async {
     dynamic responseJson;
     try {
-      final response = await put(baseUrl! + endpoint, map,
+      final response = await put(endpoint, map,
         headers: {
           'content-type': 'application/json; charset=UTF-8',
         },
@@ -125,8 +123,7 @@ class ApiProvider extends GetConnect {
             key, MultipartFile(image, filename: image.path.split('/').last)));
       }
 
-      final response = await post(
-        baseUrl! + endpoint,
+      final response = await post(endpoint,
         form
       );
 
@@ -173,8 +170,7 @@ class ApiProvider extends GetConnect {
       'image': MultipartFile(file, filename: file!.path.split('/').last),
     });
 
-    final response = await post(
-      baseUrl! + endpoint,
+    final response = await post(endpoint,
       form,
     );
     return returnResponse(response);

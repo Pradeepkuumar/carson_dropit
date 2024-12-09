@@ -1,7 +1,9 @@
-import 'package:carson_zyppy/consts.dart';
+import 'package:carson_zyppy/global/consts.dart';
+import 'package:carson_zyppy/utils/utils.dart';
 import 'package:get/get.dart';
 
 import '../../apis/base_api_response.dart';
+import '../../app_pages/app_pages.dart';
 import '../../global/global.dart';
 
 
@@ -30,21 +32,27 @@ class AuthController extends GetxController {
   }
 
 
-  Future<void> login() async {
+  Future<bool> login() async {
+    utils.showLoadingDialog("Logging in...");
     try {
       Map<String, dynamic> model = {
-        'fe_code': "",
-        'password': "",
+        'fecode': "CL_FAYIS01",
+        'password': "1234",
+        'device_token': "1234qwrsf234512232fwdfwqt",
       };
       var response = await apiProvider
           .postRequest(apiEndPoints.login, model );
       var result = BaseApiResponse.fromJson(response);
-     // dashBoardData =  CustomerDashBoardData.fromJson(result.data);
-      isLoading.value = false;
+      utils.closeLoadingDialog();
+      box.write(USER_ID_KEY, 1);
+
       update();
-      return response;
+      return true;
     } catch (e) {
+
+      utils.closeLoadingDialog();
       utils.errorSnackBar("Exception", e.toString());
+      return false;
     }
   }
 

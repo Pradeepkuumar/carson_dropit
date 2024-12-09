@@ -7,3 +7,7 @@ const String USER_ID_KEY = "user_id";
  const String ANIM_ERROR = 'assets/animations/anim_error.json';
 
 
+ //App CONSTANTS
+ const int orderScanCLick = 1;
+ const int fullMapViewCLick = 2;
+
