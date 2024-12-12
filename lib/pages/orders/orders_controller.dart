@@ -14,7 +14,6 @@ class OrdersController extends GetxController  with
     GetTickerProviderStateMixin{
 
   var isLoading = true.obs;
-
   var currentHintIndex = 0.obs;
   late TabController tabController;
   CargoOrderDataModel  selectedOrder = CargoOrderDataModel();
@@ -26,6 +25,25 @@ class OrdersController extends GetxController  with
   ];
   var ordersList = <CargoOrderDataModel>[].obs;
   TextEditingController searchEditTextController = TextEditingController();
+  var notificationList = <String>[].obs;
+
+  final notifications = [
+    "Enter Order Number",
+    "Scan QR Code for Order",
+    "Enter Order Number",
+    "Scan QR Code for Order",
+    "Scan QR Code for Order",
+    "Scan QR Code for Order",
+    "Scan QR Code for Order",
+    "Scan QR Code for Order",
+    "Scan QR Code for Order",
+    "Scan QR Code for Order",
+    "Scan QR Code for Order",
+    "Scan QR Code for Order",
+    "Scan QR Code for Order",
+    "Scan QR Code for Order",
+    "Scan QR Code for Order",
+  ];
 
 
   @override

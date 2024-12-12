@@ -164,24 +164,25 @@ orderItem(
                               )),
                         ],
                       )),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                    InkWell(
-                      onTap: (){
-                       onClick(orderData,fullMapViewCLick);
-                      } ,
-                      child: utils.tvCustom("+ view full map",AppColors.primaryThemeColor,10),
-                    )
-                  ],),
+
 
                   Visibility(
                     visible: orderData.status == "ASSIGNED"|| orderData.status == "RE-ASSIGNED" ? true : false,
                     child: Column(
                       children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            InkWell(
+                              onTap: (){
+                                onClick(orderData,fullMapViewCLick);
+                              } ,
+                              child: utils.tvCustom("+ view full map",AppColors.primaryThemeColor,10),
+                            )
+                          ],),
                         SizedBox(
                           height: 300,
-                          child: MapPage(orderDetails: orderData)),
+                          child: MapPage(orderDetails: orderData,mapType: 0,)),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [

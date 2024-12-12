@@ -27,4 +27,5 @@ abstract class AppColors {
   static const Color primaryLight = Color.fromARGB(190, 223, 112, 2);
   static const Color lightBlue = Color.fromARGB(186, 3, 56, 166);
   static const Color lightGreen = Color.fromARGB(189, 81, 149, 6);
+  static const Color selectedBlue = Color.fromARGB(255, 5, 219, 239);
 }

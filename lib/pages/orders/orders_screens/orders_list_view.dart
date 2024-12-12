@@ -160,28 +160,18 @@ class OrdersListViewState extends State<OrdersListView> {
                               AppColors.white,
                               15),
                           InkWell(
-                              onTap: () {
-                                controller.viewFullMap.value = false;
-                              },
-                              child:
-                                  utils.tvCustom("close", AppColors.white, 15)),
+                            onTap: (){
+                              controller.viewFullMap.value = false;
+                            },
+                            child:Icon(Icons.close,color: AppColors.red),
+                          )
+
                         ],
                       ),
                       SizedBox(
-                          height: 650,
+                          height: Get.height - 130,
                           width: Get.width,
-                          child: Stack(children: [
-                            MapPage(orderDetails: controller.selectedOrder),
-                            Align(
-                              alignment: Alignment.bottomCenter,
-                              child: Padding(padding: EdgeInsets.only(right: 40,left: 40,bottom: 20),
-
-                              child:  utils.mainButton("Pick", (){
-
-                              },AppColors.primaryThemeColor),
-                            ))
-
-                          ])),
+                          child: MapPage(orderDetails: controller.selectedOrder,mapType: 1)),
                     ],
                   ))
             ],
@@ -190,7 +180,6 @@ class OrdersListViewState extends State<OrdersListView> {
   }
 
   void searchResult(String value, int type) {
-    //List<EcomOrdersList> originalList = ordersList;
     if (value.isNotEmpty) {
       var filteredList = controller.ordersList
           .where((element) => element.hawbNo!.contains(value))
