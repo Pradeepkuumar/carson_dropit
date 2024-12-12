@@ -1,4 +1,5 @@
 import 'package:carson_zyppy/utils/utils.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:image_picker/image_picker.dart';
@@ -13,6 +14,9 @@ final utils = Utils();
 final ApiProvider apiProvider = ApiProvider();
 final ApiEndPoints apiEndPoints = ApiEndPoints();
 final ImagePicker imagePicker = ImagePicker();
+final FlutterTts flutterTts = FlutterTts();
+
+
 //final LoadingController loadingDialog = Get.find<LoadingController>();
 
 
