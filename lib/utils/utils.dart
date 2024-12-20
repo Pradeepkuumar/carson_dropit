@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 import 'package:carson_zyppy/utils/text_style_util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -186,16 +187,16 @@ class Utils extends GetxController {
   }
 
   // Icon Button with Border
-  iconButtonWithRoundedBorder(String? title, void Function() onClick,
-      IconData? icon, Color borderColor, IconData? startIcon) {
+  iconButtonWithRoundedBorder(String? title,double height, void Function() onClick,
+      IconData? icon, Color borderColor, IconData? startIcon,double borderSize, Color iconsColor) {
     return InkWell(
       child: Container(
-        height: 45,
+        height: height,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(50),
           border: Border.all(
             color: borderColor, // Border color
-            width: 1.0, // Border width (1px)
+            width: borderSize, // Border width (1px)
           ),
         ),
         child: Padding(
@@ -207,7 +208,7 @@ class Utils extends GetxController {
               Icon(
                 startIcon,
                 size: 20.0,
-                color: AppColors.primaryThemeColor,
+                color: iconsColor,
               ),
               SizedBox(width: 1),
               SizedBox(
@@ -220,7 +221,7 @@ class Utils extends GetxController {
                     overflow: TextOverflow.ellipsis,
                     softWrap: true,
                     style: TextStyle(
-                        color: AppColors.primaryThemeColor,
+                        color: iconsColor,
                         fontWeight: FontWeight.bold,
                         fontSize: 15.0),
                   ),
@@ -230,7 +231,7 @@ class Utils extends GetxController {
               Icon(
                 icon,
                 size: 20.0,
-                color: AppColors.primaryThemeColor,
+                color: iconsColor,
               ),
             ],
           ),
@@ -268,12 +269,12 @@ class Utils extends GetxController {
     );
   }
 
-  errorDialog(String? title, void Function() clickListener) {
+  errorDialog(String? title) {
     return Get.defaultDialog(
-      title: "Error",
+      title: "Error !",
+      titleStyle: TextStyle(color: AppColors.red),
       backgroundColor: AppColors.white,
       content: Container(
-        decoration: utils.roundedBorder(AppColors.red, 10),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -292,7 +293,6 @@ class Utils extends GetxController {
           ],
         ),
       ),
-      onConfirm: clickListener,
       buttonColor: AppColors.primaryThemeColor,
     );
     // return AlertDialog(content: Text(title!), actions: [
@@ -313,6 +313,36 @@ class Utils extends GetxController {
     //     ),
     //   ),
     // ]);
+  }
+
+  elevatedContainer(double height, double width,Color bgColor,
+  String name,String count,void Function() onClick) {
+   return InkWell(
+      onTap: (){
+        onClick();
+      },
+     child: Container(
+        height: height,
+        width: width,
+        decoration: utils.boxDecorationCustomColor(bgColor),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaY: 1, sigmaX: 1),
+              child: Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    utils.tvCustom(name, AppColors.white, 15),
+                    utils.tvCustom(count, AppColors.white, 25),
+                  ],
+                ),
+              )),
+        ),
+      ),
+   );
   }
 
   noDataFoundWidget() {
@@ -350,8 +380,8 @@ class Utils extends GetxController {
     );
   }
 
-   void showLoadingDialog(String? message) {
-    closeLoadingDialog();
+
+  void showLoadingDialog(String? message) {
     Get.dialog(
       Center(
         child: Container(
@@ -374,16 +404,16 @@ class Utils extends GetxController {
                       height: 50,
                       width: 50,
                       // child: Lottie.asset(ImageConstants.ANIM_LOADING_DOTS),
-                      child: GetPlatform.isAndroid
-                          ? CircularProgressIndicator(
-                        color: AppColors.primaryThemeColor,
-                      )
-                          : utils.iosProgressIndicator(AppColors.white),
+                      child: utils.iosProgressIndicator(AppColors.primaryThemeColor),
+                      // GetPlatform.isAndroid
+                      //     ? CircularProgressIndicator(
+                      //   color: AppColors.primaryThemeColor,
+                      // )
+                      //     : utils.iosProgressIndicator(AppColors.white),
                     ),
                   ),
-                  utils.tvCustom(
-                      message ?? "Loading...", AppColors.black,
-                      10)
+                  utils.tvRegular(
+                      message ?? "Loading...", AppColors.black,)
                 ],
               ),
             ),
@@ -393,9 +423,9 @@ class Utils extends GetxController {
       name: 'loadingDialog',
     );
   }
-   void closeLoadingDialog() {
+    void closeLoadingDialog() {
     if (Get.isDialogOpen == true) {
-      Get.back();
+      Get.back(closeOverlays :true);
     }
   }
 
@@ -489,7 +519,7 @@ class Utils extends GetxController {
         BoxShadow(
           color: Color.fromARGB(103, 0, 0, 0),
           blurRadius: 3,
-          offset: Offset(1, 1),
+          offset: Offset(1, 2),
         )
       ],
     );
@@ -793,11 +823,12 @@ class Utils extends GetxController {
   simpleDialog(String title, String middleText, void Function() clickListener,
       void Function() clickListenerCancelButton) {
     return Get.defaultDialog(
-      title: "Need Your Action",
-      middleText: "Do You Want To Logout ?",
+      title: title,
+      middleText: middleText,
       buttonColor: AppColors.primaryThemeColor,
       onConfirm: clickListener,
       onCancel: clickListenerCancelButton,
+      barrierDismissible: false,
     );
   }
 
@@ -995,6 +1026,7 @@ class Utils extends GetxController {
       text ?? "",
       softWrap: true,
       style: AppTextStyle.tsCustom(textColor, fontSize),
+      textAlign: TextAlign.center,
     );
   }
 

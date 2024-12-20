@@ -1,6 +1,7 @@
 import 'package:carson_zyppy/global/consts.dart';
 import 'package:carson_zyppy/pages/map/map_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:simple_barcode_scanner/enum.dart';
 import 'package:simple_barcode_scanner/simple_barcode_scanner.dart';
@@ -22,6 +23,7 @@ class OrdersListView extends StatefulWidget {
 class OrdersListViewState extends State<OrdersListView> {
   final controller = Get.put(OrdersController());
   final Utils utils = Utils();
+  var statusBarColor;
 
   @override
   void initState() {
@@ -171,7 +173,7 @@ class OrdersListViewState extends State<OrdersListView> {
                       SizedBox(
                           height: Get.height - 130,
                           width: Get.width,
-                          child: MapPage(orderDetails: controller.selectedOrder,mapType: 1)),
+                          child: MapPage(orderDetails: controller.selectedOrder,mapView: 1)),
                     ],
                   ))
             ],

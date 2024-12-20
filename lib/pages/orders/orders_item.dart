@@ -11,8 +11,7 @@ import '../../utils/utils.dart';
 import 'orders_model.dart';
 
 
-orderItem(
-    CargoOrderDataModel orderData, void Function(CargoOrderDataModel,int) onClick) {
+orderItem(CargoOrderDataModel orderData, void Function(CargoOrderDataModel,int) onClick) {
   Utils utils = Utils();
   String? result;
   BuildContext context;
@@ -137,14 +136,14 @@ orderItem(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.start,
                         children: [
-                          customRow("QATAR ID", orderData.qatarId ?? ""),
-                          customRow("BILL NO.", orderData.billNo ?? ""),
+                          customRow("ORDER NO.",   "ZPY-123455"),
+                          customRow("BILL NO.",  "3546543"),
                           customRow(
-                              "PICK-UP TIME", orderData.pickupDate ?? ""),
+                              "PICK-UP TIME",  "2:30 PM"),
                           customRow(
-                              "DESTINATION", orderData.destination ?? ""),
+                              "DELIVERY ADDRESS",  "SHIMLA (khalini)"),
                           customRow(
-                              "MOVEMENT TYPE", orderData.movementType ?? ""),
+                              "VEHICLE TYPE",  "BIKE"),
                           Visibility(
                               visible: (orderData.status ==
                                       "COLLECTED" ||
@@ -165,9 +164,8 @@ orderItem(
                         ],
                       )),
 
-
                   Visibility(
-                    visible: orderData.status == "ASSIGNED"|| orderData.status == "RE-ASSIGNED" ? true : false,
+                    visible: orderData.status == "ASSIGNED" || orderData.status == "RE-ASSIGNED" ? true : false,
                     child: Column(
                       children: [
                         Row(
@@ -180,9 +178,9 @@ orderItem(
                               child: utils.tvCustom("+ view full map",AppColors.primaryThemeColor,10),
                             )
                           ],),
-                        SizedBox(
+                        SizedBox (
                           height: 300,
-                          child: MapPage(orderDetails: orderData,mapType: 0,)),
+                          child: MapPage(orderDetails: orderData,mapView: 0)),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [

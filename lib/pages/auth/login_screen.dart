@@ -11,7 +11,7 @@ import '../../utils/animations.dart';
 import '../../utils/text_utils.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+   LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -26,8 +26,8 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        height: double.infinity,
-        width: double.infinity,
+        height: Get.height,
+        width: Get.width,
         decoration: const BoxDecoration(
           image: DecorationImage(
               image: AssetImage("assets/images/bg_login.jpg"),
@@ -69,7 +69,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             border: Border(
                                 bottom: BorderSide(color: Colors.white))),
                         child: TextFormField(
+                          controller: controller.feCode,
                           style: const TextStyle(color: Colors.white),
+                          textCapitalization: TextCapitalization.characters,
                           decoration: const InputDecoration(
                             suffixIcon: Icon(
                               Icons.mail,
@@ -90,6 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             border: Border(
                                 bottom: BorderSide(color: Colors.white))),
                         child: TextFormField(
+                          controller: controller.password,
                           style: const TextStyle(color: Colors.white),
                           decoration: const InputDecoration(
                             suffixIcon: Icon(
@@ -104,11 +107,15 @@ class _LoginScreenState extends State<LoginScreen> {
                       const Spacer(),
                       InkWell(
                           onTap: () async{
-                            bool isLoggedIn = await controller.login();
-                            if (isLoggedIn) {
-                              Get.toNamed(Routes.riderDashBord);
-                            } else {
-                              Get.snackbar('Login Failed', 'Invalid credentials');
+                            if(controller.feCode.value.text.isNotEmpty && controller.password.value.text.isNotEmpty) {
+                              bool isLoggedIn = await controller.login();
+                              if (isLoggedIn) {
+                                Get.toNamed(Routes.riderDashBord);
+                              } else {
+                                Get.snackbar('Login Failed', 'Invalid credentials');
+                              }
+                            }else{
+                              utils.errorDialog("Pls Enter Credentials");
                             }
 
                           },

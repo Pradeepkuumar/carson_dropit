@@ -5,6 +5,7 @@ abstract class Routes {
   //Common Screens
   static const auth = _Paths.auth;
   static const riderDashBord = _Paths.riderDashbord;
+  static const ordersScreen = _Paths.ordersScreen;
 
 
 }

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "758204418570",
+    "project_id": "carson-delivery-app",
+    "storage_bucket": "carson-delivery-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:758204418570:android:70662c616526e2f1aaadf3",
+        "android_client_info": {
+          "package_name": "com.carson.zyppy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBn_M3fn4Tjk86vBSGzZlwHVPyUmdFgC1Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

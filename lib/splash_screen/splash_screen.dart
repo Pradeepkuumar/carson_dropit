@@ -1,4 +1,6 @@
+import 'package:carson_zyppy/local_db/entity/UserData.dart';
 import 'package:carson_zyppy/pages/auth/login_screen.dart';
+import 'package:carson_zyppy/pages/dashboard/rider_dashboard.dart';
 import 'package:carson_zyppy/pages/orders/orders_tab_container.dart';
 import 'package:carson_zyppy/utils/colors.dart';
 import 'package:flutter/material.dart';
@@ -15,7 +17,7 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreesState extends State<SplashScreen> {
   bool showLoadingScreen = true;
-  final AuthController controller = Get.put(AuthController());
+  var user = UserData();
 
   @override
   void initState() {
@@ -29,10 +31,12 @@ class _SplashScreesState extends State<SplashScreen> {
   }
 
   void getUser() async {
-    // var value = await _userRepository.getUser();
-    //  if (value != null) {
-    //   // user = value;
-    //  } else {}
+    var value = await userRepository.getUser();
+     if (value != null) {
+      user = value;
+     } else {
+
+     }
   }
 
   @override
@@ -41,25 +45,23 @@ class _SplashScreesState extends State<SplashScreen> {
       return Container(
         height: Get.height,
         decoration: utils.boxDacorationGradient(),
-        child: Center(
-          child: Stack(children: [
-            Image.asset(
-              "assets/images/bg_login.jpg",
-              height: Get.height,
-              width: Get.width,
-              fit: BoxFit.fill,
-            ),
-            Center(
-              child: utils.iosProgressIndicator(AppColors.white),
-            ),
-          ]),
-        ),
+        child: Stack(children: [
+          Image.asset(
+            "assets/images/bg_login.jpg",
+            height: Get.height,
+            width: Get.width,
+            fit: BoxFit.fill,
+          ),
+          Center(
+            child: utils.iosProgressIndicator(AppColors.white),
+          ),
+        ]),
       );
     } else {
-      if (controller.userId == 0) {
+      if (user.code == null) {
         return LoginScreen();
-      } else if (controller.userId == 1) {
-        return OrdersTabContainer();
+      } else if (user.code != null) {
+        return RiderDashboard();
       }else{
         return SplashScreen();
       }

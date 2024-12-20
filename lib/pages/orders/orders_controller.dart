@@ -1,9 +1,7 @@
 import 'dart:async';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
 import '../../apis/base_api_response.dart';
 import '../../global/global.dart';
 import '../../utils/utils.dart';
@@ -31,17 +29,6 @@ class OrdersController extends GetxController  with
     "Enter Order Number",
     "Scan QR Code for Order",
     "Enter Order Number",
-    "Scan QR Code for Order",
-    "Scan QR Code for Order",
-    "Scan QR Code for Order",
-    "Scan QR Code for Order",
-    "Scan QR Code for Order",
-    "Scan QR Code for Order",
-    "Scan QR Code for Order",
-    "Scan QR Code for Order",
-    "Scan QR Code for Order",
-    "Scan QR Code for Order",
-    "Scan QR Code for Order",
     "Scan QR Code for Order",
   ];
 
@@ -99,8 +86,9 @@ class OrdersController extends GetxController  with
         for (var json in result.data) {
           ordersList.add(CargoOrderDataModel.fromJson(json));
         }
-        update();
+        utils.errorSnackBar("Error", result.message.toString());
         utils.closeLoadingDialog();
+        update();
         return true;
       } else {
         utils.errorSnackBar("Exception", result.message.toString());
@@ -115,7 +103,6 @@ class OrdersController extends GetxController  with
     }
     return null;
   }
-
 
   @override
   void onClose() {

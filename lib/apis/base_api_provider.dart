@@ -2,33 +2,34 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:get/get_connect/http/src/request/request.dart';
+
+import '../global/global.dart';
 
 class ApiProvider extends GetConnect {
   final String acceptEncoding = 'gzip, deflate';
   final String accept = '*/*';
   final String noCache = 'no-cache';
-  String token = "";
-
-
   File? file;
 
   ApiProvider() {
     timeout = const Duration(minutes: 5);
     maxAuthRetries = 3;
-    //DEV
-    baseUrl = "https://devcargo.coderootz.com/api/v2/";
-    // LIVE
-    //baseUrl = "https://cargo.carsonlogistics.net/api/v2/";
+    if (kDebugMode) {
+      baseUrl = "https://dev.zyppy.qa/api/v1/";
+    } else if (kReleaseMode) {
+      baseUrl = "https://cargo.carsonlogistics.net/api/v2/";
+    }
     httpClient.addAuthenticator((Request<dynamic> request) async {
-     // final dynamic token = "Bearer " + box.read("api_token");
+    final dynamic token = "Bearer "+box.read(apiKeys.apiToken);
       request.headers['Authorization'] = "$token";
       return request;
     });
     httpClient.addRequestModifier((Request<dynamic> request) {
   //    final token = box.read("api_token") ?? "no_token";
-      request.headers['Authorization'] = "Bearer $token";
+   //   request.headers['Authorization'] = "Bearer $token";
       request.headers['accept-encoding'] = acceptEncoding;
       request.headers['accept'] = accept;
       // request.headers['cache-control'] = noCache;
