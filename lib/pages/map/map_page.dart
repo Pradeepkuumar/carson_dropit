@@ -9,7 +9,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:carson_zyppy/global/consts.dart';
@@ -19,9 +18,9 @@ import 'item_map_notifications.dart';
 
 class MapPage extends StatefulWidget {
   final CargoOrderDataModel orderDetails;
-  int mapType;
+  int mapView;
 
-  MapPage({required this.orderDetails, required this.mapType});
+  MapPage({required this.orderDetails, required this.mapView});
 
   @override
   State<MapPage> createState() => _MapPageState();
@@ -63,11 +62,13 @@ class _MapPageState extends State<MapPage> {
     });
   }
 
-  final Completer<GoogleMapController> _mapController =
-      Completer<GoogleMapController>();
+  final Completer<GoogleMapController> _mapController = Completer<GoogleMapController>();
 
   static LatLng locationOne = LatLng(31.092950, 77.173118);
   static LatLng locationTwo = LatLng(31.10377073511391, 77.19289128579997);
+  static LatLng locationThree = LatLng(31.103530, 77.158849);
+  static LatLng locationFour = LatLng(31.101245, 77.166641);
+  static LatLng locationFive = LatLng(31.101109, 77.175512);
   LatLng? curentLocation = null;
 
   Map<PolylineId, Polyline> polylines = {};
@@ -135,12 +136,32 @@ class _MapPageState extends State<MapPage> {
                       title: "Delivery Address",
                       snippet: widget.orderDetails.destination,
                     ),
+                  ),
+                  Marker(
+                    markerId: MarkerId("_destionationLocationThree"),
+                    // icon: icDropLocation,
+                    icon: BitmapDescriptor.defaultMarkerWithHue(120.5),
+                    position: locationThree,
+                    infoWindow: InfoWindow(
+                      title: "Delivery Address",
+                      snippet: widget.orderDetails.destination,
+                    ),
+                  ),
+                  Marker(
+                    markerId: MarkerId("_destionationLocationThree"),
+                    // icon: icDropLocation,
+                    icon: BitmapDescriptor.defaultMarkerWithHue(120.5),
+                    position: locationFive,
+                    infoWindow: InfoWindow(
+                      title: "Delivery Address",
+                      snippet: widget.orderDetails.destination,
+                    ),
                   )
                 },
-                polylines: Set<Polyline>.of(polylines.values),
+               // polylines: Set<Polyline>.of(polylines.values),
               ),
               Visibility(
-                visible: widget.mapType == 1,
+                visible: widget.mapView == 1,
                 child: Stack(
                   children: [
                     Padding(
@@ -150,10 +171,8 @@ class _MapPageState extends State<MapPage> {
                           children: [
                             Obx(() {
                               return AnimatedContainer(
-                                  width:
-                                      showNotificationView.value ? 250.0 : 50.0,
-                                  height:
-                                      showNotificationView.value ? 350.0 : 50.0,
+                                  width: showNotificationView.value ? 250.0 : 50.0,
+                                  height: showNotificationView.value ? 350.0 : 50.0,
                                   decoration: utils.boxDecorationWhite(),
                                   alignment: showNotificationView.value
                                       ? Alignment.center
@@ -182,7 +201,7 @@ class _MapPageState extends State<MapPage> {
                                                               .toggle();
                                                         });
                                                       },
-                                                      child: Icon(
+                                                      child: const Icon(
                                                         Icons.close,
                                                         color: AppColors.red,
                                                       ),
@@ -197,9 +216,7 @@ class _MapPageState extends State<MapPage> {
                                                       itemBuilder:
                                                           (context, pos) {
                                                         return ItemMapNotifications(
-                                                            controller
-                                                                    .notifications[
-                                                                pos]);
+                                                            controller.notifications[pos]);
                                                       }),
                                                 )
                                               ],
@@ -251,14 +268,14 @@ class _MapPageState extends State<MapPage> {
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       utils.tvMedium("Order Number"),
-                                      utils.tvMedium(controller.selectedOrder.hawbNo),
+                                      utils.tvMedium(controller.selectedOrder.hawbNo?? ""),
                                     ],
                                   ),
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       utils.tvMedium("status"),
-                                      utils.tvCustom(controller.selectedOrder.status,AppColors.green,10),
+                                      utils.tvCustom(controller.selectedOrder.status ?? "",AppColors.green,10),
                                     ],
                                   ),
                                   Row(children: [
@@ -327,8 +344,7 @@ class _MapPageState extends State<MapPage> {
       if (currentLocation.latitude != null &&
           currentLocation.longitude != null) {
         setState(() {
-          curentLocation =
-              LatLng(currentLocation.latitude!, currentLocation.longitude!);
+          curentLocation = LatLng(currentLocation.latitude!, currentLocation.longitude!);
           if (enableMapLiveCamera.value) {
             _cameraToPosition(curentLocation!);
             double distanceInMeters = calculateDistance(
@@ -337,7 +353,7 @@ class _MapPageState extends State<MapPage> {
               locationOne.latitude,
               locationOne.longitude,
             );
-            if (widget.mapType == 1) {
+            if (widget.mapView == 1) {
               if (distanceInMeters <= 50) {
                 // utils.dialogSuccess("Location", (){
                 //   Get.back();

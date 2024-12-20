@@ -1,6 +1,6 @@
 import 'dart:ui';
 
-abstract class AppColors {
+class AppColors {
   static const Color primaryThemeColor = Color.fromARGB(255, 223, 112, 2);
   static const Color secondryThemeColor = Color.fromARGB(255, 216, 199, 0);
   static const Color lightBlueIcons = Color(0xFFF1F2FC);

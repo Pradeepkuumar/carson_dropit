@@ -40,9 +40,9 @@ class OrdersTabContainer extends StatelessWidget {
               Text('Delivered(7)'),
             ],
             children: [
-              OrdersListView( orderStatus: 'ASSIGNED',),
-              OrdersListView( orderStatus: 'COLLECTED',),
-              OrdersListView( orderStatus: 'WAREHOUSE_IN',),
+              OrdersListView( orderStatus: 'ASSIGNED'),
+              OrdersListView( orderStatus: 'COLLECTED'),
+              OrdersListView( orderStatus: 'WAREHOUSE_IN'),
             ],
           ),
         ),
