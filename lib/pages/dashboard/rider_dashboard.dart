@@ -6,10 +6,12 @@ import 'package:carson_zyppy/pages/dashboard/rider_dashboard_controller.dart';
 import 'package:carson_zyppy/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:location/location.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../app_pages/app_pages.dart';
 import '../../global/consts.dart';
+import '../../global/location_service.dart';
 import '../../utils/animations.dart';
 import '../../utils/text_utils.dart';
 
@@ -21,10 +23,9 @@ class RiderDashboard extends StatefulWidget {
 }
 
 class _RiderDashboardState extends State<RiderDashboard> {
-  final RiderDashboardController controller = Get.put(
-      RiderDashboardController());
+  final RiderDashboardController controller =
+      Get.put(RiderDashboardController());
   var showMenu = false.obs;
-
 
   @override
   void initState() {
@@ -70,8 +71,8 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment
-                                          .center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         utils.elevatedContainer(
                                             120,
@@ -90,15 +91,15 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                             AppColors.blue,
                                             "Picked Orders",
                                             "20",
-                                                () {}),
+                                            () {}),
                                       ],
                                     ),
                                     SizedBox(
                                       height: 20,
                                     ),
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment
-                                          .center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         utils.elevatedContainer(
                                             120,
@@ -106,7 +107,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                             AppColors.secondryThemeColor,
                                             "Assigned Orders",
                                             "10",
-                                                () {}),
+                                            () {}),
                                         SizedBox(
                                           width: 20,
                                         ),
@@ -116,7 +117,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                             AppColors.red,
                                             "Assigned Orders",
                                             "10",
-                                                () {}),
+                                            () {}),
                                       ],
                                     )
                                   ],
@@ -132,7 +133,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                           showMenu.value = true;
                         },
                         child: AnimatedContainer(
-                          width: showMenu.value ? 250.0 : 45.0,
+                          width: showMenu.value ? 220.0 : 45.0,
                           height: showMenu.value ? 450.0 : 45.0,
                           decoration: showMenu.value
                               ? utils.roundedBorder(AppColors.white, 5)
@@ -156,7 +157,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                       children: [
                                         Row(
                                           mainAxisAlignment:
-                                          MainAxisAlignment.end,
+                                              MainAxisAlignment.end,
                                           children: [
                                             InkWell(
                                                 onTap: () {
@@ -173,7 +174,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                             CircleAvatar(
                                               radius: 25,
                                               backgroundColor:
-                                              AppColors.primaryThemeColor,
+                                                  AppColors.primaryThemeColor,
                                               child: Image.asset(
                                                 "assets/icons/ic_rider.png",
                                                 fit: BoxFit.cover,
@@ -186,14 +187,16 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                             ),
                                             Column(
                                               mainAxisAlignment:
-                                              MainAxisAlignment.start,
+                                                  MainAxisAlignment.start,
                                               crossAxisAlignment:
-                                              CrossAxisAlignment.start,
+                                                  CrossAxisAlignment.start,
                                               children: [
-                                                utils.tvCustom("Pankaj Kumar",
-                                                    AppColors.black, 15),
                                                 utils.tvCustom(
-                                                    "pankaj.kumar@coderootz.com",
+                                                    controller.userData.name,
+                                                    AppColors.black,
+                                                    15),
+                                                utils.tvCustom(
+                                                    controller.userData.email,
                                                     AppColors.black,
                                                     10)
                                               ],
@@ -203,38 +206,130 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                         SizedBox(
                                           height: 10,
                                         ),
-                                        utils.iconButtonWithoutBorder(
-                                            "MY ORDERS", () {
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Obx(() {
+                                              return Column(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.start,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Row(
+                                                    children: [
+                                                      Icon(
+                                                        Icons.wallet,
+                                                        color: AppColors
+                                                            .primaryThemeColor,
+                                                      ),
+                                                      SizedBox(
+                                                        width: 5,
+                                                      ),
+                                                      utils.tvCustom(
+                                                          "3345.65 QR",
+                                                          AppColors
+                                                              .primaryThemeColor,
+                                                          10)
+                                                    ],
+                                                  ),
+                                                  SizedBox(
+                                                    height: 5,
+                                                  ),
+                                                  Row(
+                                                    children: [
+                                                      Icon(
+                                                        Icons.av_timer,
+                                                        color: AppColors
+                                                            .primaryThemeColor,
+                                                      ),
+                                                      SizedBox(
+                                                        width: 5,
+                                                      ),
+                                                      utils.tvCustom(
+                                                          "${controller.workingHours.value} (Hrs)",
+                                                          AppColors
+                                                              .primaryThemeColor,
+                                                          10)
+                                                    ],
+                                                  ),
+                                                ],
+                                              );
+                                            }),
+                                            Column(
+                                              children: [
+                                                Transform.scale(
+                                                    scale: 0.8,
+                                                    child: Switch(
+                                                        value: true,
+                                                        activeTrackColor:
+                                                            AppColors
+                                                                .greenLight,
+                                                        onChanged:
+                                                            (value) async {
+                                                          bool isSignIn =
+                                                              await controller
+                                                                  .markAttendance(
+                                                                      false);
+                                                          if (isSignIn) {
+                                                            controller
+                                                                .isAttendanceMarked
+                                                                .value = false;
+                                                          }
+                                                        })),
+                                                utils.tvCustom(
+                                                    "Sign-Off",
+                                                    AppColors.primaryThemeColor,
+                                                    8)
+                                              ],
+                                            )
+                                          ],
+                                        ),
+                                        SizedBox(
+                                          height: 10,
+                                        ),
+                                        utils.iconButton("MY ORDERS", () {
                                           Get.toNamed(Routes.ordersScreen);
                                         },
-                                            Icons.arrow_forward,
-                                            AppColors.primaryThemeColor),
+                                            Icons.outbound_rounded,
+                                            AppColors.primaryThemeColor,
+                                            AppColors.white),
                                         SizedBox(
                                           height: 10,
                                         ),
-                                        utils.iconButtonWithoutBorder(
-                                            "NEARBY ORDERS", () {
+                                        utils.iconButton("NEARBY ORDERS", () {
                                           //Get.toNamed(Routes.ordersScreen);
                                         },
-                                            Icons.arrow_forward,
-                                            AppColors.primaryThemeColor),
+                                            Icons.near_me,
+                                            AppColors.primaryThemeColor,
+                                            AppColors.white),
                                         SizedBox(
                                           height: 10,
                                         ),
-                                        utils.iconButtonWithoutBorder(
+                                        utils.iconButton(
                                             "SUPPORT",
-                                                () {},
-                                            Icons.arrow_forward,
-                                            AppColors.primaryThemeColor),
+                                            () {},
+                                            Icons.support_agent_rounded,
+                                            AppColors.primaryThemeColor,
+                                            AppColors.white),
                                         SizedBox(
-                                          height: 10,
+                                          height: 130,
                                         ),
                                         utils.iconButton("LOGOUT", () async {
                                           bool isLoggedOut =
-                                          await controller.logout();
+                                              await controller.logout();
                                           if (isLoggedOut) {
-                                            await userRepository.deleteUser();
-                                            Get.offNamed(Routes.auth);
+                                            utils.simpleDialog(
+                                                "Do you want to Logout from app?",
+                                                "", () async {
+                                              var isLoggedOut =
+                                                  await controller.logout();
+                                              if (isLoggedOut) {
+                                                userRepository.deleteUser();
+                                                Get.offAllNamed(Routes.auth);
+                                              }
+                                            }, () {});
                                           }
                                         }, Icons.arrow_forward, AppColors.red,
                                             AppColors.white),
@@ -263,47 +358,52 @@ class _RiderDashboardState extends State<RiderDashboard> {
                     Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Row(mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              utils.iconButtonWithoutBorderVertical(
-                                  "Logout", () {
-                                utils.simpleDialog(
-                                    "Do you want to Logout from app?",
-                                    "", () async {
-                                  var isLoggedOut = await controller.logout();
-                                  if (isLoggedOut) {
-                                    userRepository.deleteUser();
-                                    Get.offAllNamed(Routes.auth);
-                                  }
-                                }, () {
-
-                                });
-                              }, Icons.logout, AppColors.white),
-                            ],),
-                          Spacer(),
-                          Obx(() =>
-                              utils.tvCustom(
-                                  "Welcome ${controller.riderName.toString()
-                                      .toUpperCase()} mark your attendance to start working",
-                                  AppColors.white, 20),),
-                          Lottie.asset(ANIM_RIDER),
-                          SizedBox(height: 20,),
                           Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 50,),
-                            child: utils.iconButtonWithRoundedBorder(
-                                "Log-In",
-                                45, () {
-                              controller.isAttendanceMarked.value = true;
-                            },
-                                Icons.start,
-                                AppColors.white,
-                                Icons.electric_bike,
-                                2.0,
-                                AppColors.white),
-
+                            padding: const EdgeInsets.all(8.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                utils.iconButtonWithoutBorderVertical("Logout",
+                                    () {
+                                  utils.simpleDialog(
+                                      "Do you want to Logout from app?", "",
+                                      () async {
+                                    var isLoggedOut = await controller.logout();
+                                    if (isLoggedOut) {
+                                      userRepository.deleteUser();
+                                      Get.offAllNamed(Routes.auth);
+                                    }
+                                  }, () {});
+                                }, Icons.logout, AppColors.white),
+                              ],
+                            ),
                           ),
                           Spacer(),
-
+                          Obx(
+                            () => utils.tvCustom(
+                                "Welcome ${controller.riderName.toString().toUpperCase()} mark your attendance to start working",
+                                AppColors.white,
+                                20),
+                          ),
+                          Lottie.asset(ANIM_RIDER),
+                          const SizedBox(
+                            height: 20,
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 50,
+                            ),
+                            child: utils.iconButtonWithRoundedBorder(
+                                "Sign-In", 45, () async {
+                              bool isSignIn =
+                                  await controller.markAttendance(true);
+                              if (isSignIn) {
+                                controller.isAttendanceMarked.value = true;
+                              }
+                            }, Icons.start, AppColors.white,
+                                Icons.electric_bike, 2.0, AppColors.white),
+                          ),
+                          Spacer(),
                         ]),
                   ],
                 ),

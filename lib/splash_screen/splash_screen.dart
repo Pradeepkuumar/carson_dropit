@@ -45,17 +45,19 @@ class _SplashScreesState extends State<SplashScreen> {
       return Container(
         height: Get.height,
         decoration: utils.boxDacorationGradient(),
-        child: Stack(children: [
-          Image.asset(
-            "assets/images/bg_login.jpg",
-            height: Get.height,
-            width: Get.width,
-            fit: BoxFit.fill,
-          ),
-          Center(
-            child: utils.iosProgressIndicator(AppColors.white),
-          ),
-        ]),
+        child: Center(
+          child: Stack(children: [
+            Image.asset(
+              "assets/images/bg_login.jpg",
+              height: Get.height,
+              width: Get.width,
+              fit: BoxFit.fill,
+            ),
+            Center(
+              child: utils.iosProgressIndicator(AppColors.white),
+            ),
+          ]),
+        ),
       );
     } else {
       if (user.code == null) {
