@@ -7,6 +7,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:location/location.dart';
 import 'package:lottie/lottie.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -98,7 +99,6 @@ class Utils extends GetxController {
     return InkWell(
       child: Container(
         width: null,
-        margin: EdgeInsets.all(10),
         child: DecoratedBox(
           decoration: BoxDecoration(
               color: btnColor,
@@ -162,17 +162,17 @@ class Utils extends GetxController {
       IconData? icon, Color? color) {
     return InkWell(
         child: Padding(
-          padding: EdgeInsets.all(5),
+          padding: EdgeInsets.all(0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: <Widget>[
               Icon(
                 icon,
-                size: 18.0,
+                size: 30.0,
                 color: Get.isDarkMode ? AppColors.white : color,
               ),
-              SizedBox(width: 5),
+              SizedBox(height: 5),
               Text(
                 title.toString(),
                 style: TextStyle(
@@ -382,51 +382,57 @@ class Utils extends GetxController {
 
 
   void showLoadingDialog(String? message) {
-    Get.dialog(
-      Center(
-        child: Container(
-          height: Get.height,
-          width: Get.width,
-          color: AppColors.transparent,
-          child: Center(
-            child: Container(
-              height: 100,
-              width: 100,
-              alignment: Alignment.center,
-              decoration: utils.boxDecorationWhite(),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(10.0),
-                    child: Container(
-                      height: 50,
-                      width: 50,
-                      // child: Lottie.asset(ImageConstants.ANIM_LOADING_DOTS),
-                      child: utils.iosProgressIndicator(AppColors.primaryThemeColor),
-                      // GetPlatform.isAndroid
-                      //     ? CircularProgressIndicator(
-                      //   color: AppColors.primaryThemeColor,
-                      // )
-                      //     : utils.iosProgressIndicator(AppColors.white),
-                    ),
-                  ),
-                  utils.tvRegular(
-                      message ?? "Loading...", AppColors.black,)
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-      name: 'loadingDialog',
-    );
+     if(Get.isDialogOpen == false) {
+       Get.dialog(
+         Center(
+           child: Container(
+             height: Get.height,
+             width: Get.width,
+             color: AppColors.transparent,
+             child: Center(
+               child: Container(
+                 height: 100,
+                 width: 100,
+                 alignment: Alignment.center,
+                 decoration: utils.boxDecorationWhite(),
+                 child: Column(
+                   mainAxisAlignment: MainAxisAlignment.center,
+                   crossAxisAlignment: CrossAxisAlignment.center,
+                   children: [
+                     Padding(
+                       padding: const EdgeInsets.all(10.0),
+                       child: Container(
+                         height: 50,
+                         width: 50,
+                         // child: Lottie.asset(ImageConstants.ANIM_LOADING_DOTS),
+                         child: utils.iosProgressIndicator(
+                             AppColors.primaryThemeColor),
+                         // GetPlatform.isAndroid
+                         //     ? CircularProgressIndicator(
+                         //   color: AppColors.primaryThemeColor,
+                         // )
+                         //     : utils.iosProgressIndicator(AppColors.white),
+                       ),
+                     ),
+                     utils.tvRegular(
+                       message ?? "Loading...", AppColors.black,)
+                   ],
+                 ),
+               ),
+             ),
+           ),
+         ),
+         name: 'loadingDialog',
+       );
+     }
   }
     void closeLoadingDialog() {
     if (Get.isDialogOpen == true) {
-      Get.back(closeOverlays :true);
+      if (Navigator.of(Get.context!).canPop()) {
+        Navigator.of(Get.context!).pop();
+      }
     }
+
   }
 
   searchBox({required Null Function(dynamic value) onChanged}) {
@@ -1092,6 +1098,8 @@ class Utils extends GetxController {
 
     return null;
   }
+
+
 
   // Future<XFile?> captureImageByCamera() async {
   //   // Capture Image From Camera.
