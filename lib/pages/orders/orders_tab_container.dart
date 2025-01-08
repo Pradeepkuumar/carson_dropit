@@ -1,3 +1,4 @@
+import 'package:carson_zyppy/pages/dashboard/controller/rider_dashboard_controller.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -9,6 +10,7 @@ import 'orders_screens/orders_list_view.dart';
 
 class OrdersTabContainer extends StatelessWidget {
   final OrdersController controller = Get.put(OrdersController());
+  final RiderDashboardController riderDashboardController = Get.put(RiderDashboardController());
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -32,17 +34,21 @@ class OrdersTabContainer extends StatelessWidget {
             colors: const [
               AppColors.primaryLight,
               AppColors.lightBlue,
+              AppColors.primaryThemeColor,
               AppColors.lightGreen
             ],
-            tabs: const [
-              Text('Assigned(4)'),
-              Text('Picked(3)'),
-              Text('Delivered(7)'),
+            tabs:  [
+              Text("Assigned(${riderDashboardController.dashBoardData.value.assigned})"),
+              Text("Picked(${riderDashboardController.dashBoardData.value.picked})"),
+              Text("Ofd(${riderDashboardController.dashBoardData.value.ofd})"),
+              Text("Delivered(${riderDashboardController.dashBoardData.value.delivered})"),
+
             ],
             children: [
               OrdersListView( orderStatus: 'ASSIGNED'),
-              OrdersListView( orderStatus: 'COLLECTED'),
-              OrdersListView( orderStatus: 'WAREHOUSE_IN'),
+              OrdersListView( orderStatus: 'PICKED'),
+              OrdersListView( orderStatus: 'OFD'),
+              OrdersListView( orderStatus: 'DELIVERED'),
             ],
           ),
         ),

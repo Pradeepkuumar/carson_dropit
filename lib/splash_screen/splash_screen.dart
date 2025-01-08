@@ -1,6 +1,6 @@
 import 'package:carson_zyppy/local_db/entity/UserData.dart';
 import 'package:carson_zyppy/pages/auth/login_screen.dart';
-import 'package:carson_zyppy/pages/dashboard/rider_dashboard.dart';
+import 'package:carson_zyppy/pages/dashboard/view/rider_dashboard.dart';
 import 'package:carson_zyppy/pages/orders/orders_tab_container.dart';
 import 'package:carson_zyppy/utils/colors.dart';
 import 'package:flutter/material.dart';

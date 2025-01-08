@@ -30,7 +30,7 @@ class OrdersListViewState extends State<OrdersListView> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (controller.tabController.index == 0) {
-        controller.getFeOrders("ASSIGNED");
+       // controller.getFeOrders(["ASSIGNED"]);
       }
     });
   }
@@ -47,7 +47,7 @@ class OrdersListViewState extends State<OrdersListView> {
                 child: RefreshIndicator(
                   onRefresh: () async {
                     setState(() {
-                      controller.getFeOrders(widget.orderStatus);
+                      controller.getFeOrders([widget.orderStatus]);
                     });
                   },
                   child: SizedBox(
@@ -124,21 +124,23 @@ class OrdersListViewState extends State<OrdersListView> {
                                         if (clickType == orderScanCLick) {
                                           var res = await Get.to(
                                             SimpleBarcodeScannerPage(
-                                              appBarTitle: clickedOrder.hawbNo,
+                                              appBarTitle: clickedOrder.awbNo,
                                             ),
                                           );
                                           if (res is String && res != "-1") {
                                             var result = res;
-                                            if (clickedOrder.hawbNo == result) {
+                                            if (clickedOrder.awbNo == result) {
                                               //controller.markOrderWareHouseIn(clickedOrder);
                                             } else {
                                               utils.errorSnackBar("Error !",
                                                   "Wrong Order Scanned");
                                             }
                                           }
-                                        } else {
-                                          controller.selectedOrder =
-                                              clickedOrder;
+                                        } else if(clickType == orderUpdateToOFD) {
+                                          controller.selectedOrder.value  = clickedOrder;
+                                         controller.updateOrder("OFD");
+                                        }else if(clickType == orderUpdateToDeliver || clickType == fullMapViewCLick){
+                                          controller.selectedOrder.value = clickedOrder;
                                           controller.viewFullMap.value = true;
                                         }
                                       }),
@@ -158,14 +160,14 @@ class OrdersListViewState extends State<OrdersListView> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           utils.tvCustom(
-                              "Order :${controller.selectedOrder.hawbNo}",
+                              "Order :${controller.selectedOrder.value.awbNo}",
                               AppColors.white,
                               15),
                           InkWell(
                             onTap: (){
                               controller.viewFullMap.value = false;
                             },
-                            child:Icon(Icons.close,color: AppColors.red),
+                            child:Icon(Icons.close,color: AppColors.white),
                           )
 
                         ],
@@ -173,7 +175,7 @@ class OrdersListViewState extends State<OrdersListView> {
                       SizedBox(
                           height: Get.height - 130,
                           width: Get.width,
-                          child: MapPage(orderDetails: controller.selectedOrder,mapView: 1)),
+                          child: MapPage(orderDetails: controller.selectedOrder.value,mapView: 1)),
                     ],
                   ))
             ],
@@ -184,7 +186,7 @@ class OrdersListViewState extends State<OrdersListView> {
   void searchResult(String value, int type) {
     if (value.isNotEmpty) {
       var filteredList = controller.ordersList
-          .where((element) => element.hawbNo!.contains(value))
+          .where((element) => element.awbNo!.contains(value))
           .toList();
       setState(() {
         if (filteredList.isNotEmpty) {

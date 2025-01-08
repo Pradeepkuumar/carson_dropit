@@ -248,6 +248,8 @@ class Utils extends GetxController {
       content: Container(
         decoration: utils.roundedBorder(AppColors.green, 10),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Container(
               height: 100,
@@ -266,6 +268,34 @@ class Utils extends GetxController {
       ),
       onConfirm: clickListener,
       buttonColor: AppColors.primaryThemeColor,
+    );
+  }
+  nonCancellableDialog(String? title) {
+    return Get.defaultDialog(
+      title: "Error !",
+      titleStyle: TextStyle(color: AppColors.red),
+      backgroundColor: AppColors.white,
+      content: Container(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              height: 80,
+              width: 80,
+              child: Lottie.asset(ANIM_ERROR),
+            ),
+            Center(
+              child: Padding(
+                padding: EdgeInsets.all(5),
+                child: utils.tvCustom(title, AppColors.red, 15),
+              ),
+            )
+          ],
+        ),
+      ),
+      buttonColor: AppColors.primaryThemeColor,
+      barrierDismissible: false
     );
   }
 
@@ -555,7 +585,6 @@ class Utils extends GetxController {
   roundedBorder(Color borderColor, double borderRadius) {
     return BoxDecoration(
       borderRadius: BorderRadius.circular(borderRadius),
-      color: AppColors.white,
       border: Border.all(
         color: borderColor,
         width: 1.0,

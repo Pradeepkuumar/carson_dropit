@@ -11,7 +11,7 @@ import '../../utils/utils.dart';
 import 'orders_model.dart';
 
 
-orderItem(CargoOrderDataModel orderData, void Function(CargoOrderDataModel,int) onClick) {
+orderItem(OrdersData orderData, void Function(OrdersData,int) onClick) {
   Utils utils = Utils();
   String? result;
   BuildContext context;
@@ -33,7 +33,7 @@ orderItem(CargoOrderDataModel orderData, void Function(CargoOrderDataModel,int) 
                   Column(
                     children: [
                        const Text(
-                        "HAWB No.",
+                        "Order No.",
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.black,
@@ -41,7 +41,7 @@ orderItem(CargoOrderDataModel orderData, void Function(CargoOrderDataModel,int) 
                       ),
                       Container(
                         child: Text(
-                          orderData.hawbNo.toString(),
+                          orderData.awbNo.toString(),
                           style:  const TextStyle(
                             fontSize: 10,
                             color: AppColors.black,
@@ -62,7 +62,7 @@ orderItem(CargoOrderDataModel orderData, void Function(CargoOrderDataModel,int) 
                       ),
                       Container(
                         decoration: BoxDecoration(
-                            color: orderData.status == "ASSIGNED" ? AppColors.linkColor : AppColors.greenLight,
+                            color: orderData.status == "ASSIGNED" ? AppColors.linkColor : orderData.status == "PICKED"? AppColors.blue:orderData.status == "PICKED"? AppColors.blue:AppColors.primaryThemeColor,
                             borderRadius: BorderRadius.circular(8)),
                         child: Padding(
                           padding:  const EdgeInsets.all(4.0),
@@ -81,14 +81,14 @@ orderItem(CargoOrderDataModel orderData, void Function(CargoOrderDataModel,int) 
                   Column(
                     children: [
                        const Text(
-                        "Order Type",
+                        "Payment Type",
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.black,
                         ),
                       ),
                       Text(
-                        orderData.cargoType.toString(),
+                        orderData.paymentType.toString(),
                         style:  const TextStyle(
                           fontSize: 10,
                           color: Colors.black,
@@ -113,54 +113,24 @@ orderItem(CargoOrderDataModel orderData, void Function(CargoOrderDataModel,int) 
                 mainAxisSize: MainAxisSize.max,
                 children: [
                   Container(
-                      child: InkWell(
-                    onTap: () {
-                      utils.openMaps(orderData.shipperAddress.toString());
-                      //utils.successSnackBar("click", "redirecting to google maps");
-                    },
-                    child: ListTile(
-                      leading:  const Icon(
-                        Icons.location_history,
-                        color: AppColors.primaryThemeColor,
-                      ),
-                      title: Text(
-                        "${orderData.shipperName}\n${orderData.shipperAddress}",
-                        style:  const TextStyle(
-                          fontSize: 12,
+                      child: ListTile(
+                        leading:  const Icon(
+                          Icons.shopping_cart,
+                          color: AppColors.primaryThemeColor,
                         ),
-                      ),
-                    ),
-                  )),
+                        title: Text(
+                          "${orderData.merchantName}\n${orderData.itemName}\n${orderData.itemDescription}(${orderData.quantity})",
+                          style:  const TextStyle(
+                            fontSize: 12,
+                          ),
+                        ),
+                      )),
                   Container(
-                      margin:  const EdgeInsets.all(10),
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
                         children: [
-                          customRow("ORDER NO.",   "ZPY-123455"),
-                          customRow("BILL NO.",  "3546543"),
-                          customRow(
-                              "PICK-UP TIME",  "2:30 PM"),
-                          customRow(
-                              "DELIVERY ADDRESS",  "SHIMLA (khalini)"),
-                          customRow(
-                              "VEHICLE TYPE",  "BIKE"),
-                          Visibility(
-                              visible: (orderData.status ==
-                                      "COLLECTED" ||
-                                  orderData.status ==
-                                      "WAREHOUSE_IN"),
-                              child: Column(
-                                children: [
-                                  customRow("GROSS WEIGHT",
-                                      "${orderData.grW} (kg)" ?? ""),
-                                  customRow("VOLUMETRIC WEIGHT",
-                                      "${orderData.volumeWeight} (kg)" ?? ""),
-                                  customRow(
-                                      "CHARGEABLE AMOUNT",
-                                      "${orderData.chargeableAmount} (qar)" ??
-                                          "")
-                                ],
-                              )),
+                          customRow("Item amount.",orderData.orderAmount ?? ""),
+                          customRow("Weight.",  orderData.weight ?? ""),
+                          customRow("Consignee Name", orderData.consigneeName ?? ""),
                         ],
                       )),
 
@@ -168,46 +138,43 @@ orderItem(CargoOrderDataModel orderData, void Function(CargoOrderDataModel,int) 
                     visible: orderData.status == "ASSIGNED" || orderData.status == "RE-ASSIGNED" ? true : false,
                     child: Column(
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            InkWell(
-                              onTap: (){
-                                onClick(orderData,fullMapViewCLick);
-                              } ,
-                              child: utils.tvCustom("+ view full map",AppColors.primaryThemeColor,10),
-                            )
-                          ],),
                         SizedBox (
                           height: 300,
                           child: MapPage(orderDetails: orderData,mapView: 0)),
+                        SizedBox(height: 10,),
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            utils.iconButton("Call Shipper ", () {
+                            utils.iconButton("Call PickUp", () {
                               utils.openDialPad(
-                                  orderData.shipperContactNo.toString());
+                                  orderData.pickupPhoneNo.toString());
                             }, Icons.call, AppColors.blue, AppColors.white),
-                            // utils.iconButton("Navigate", () {
-                            //   utils.openMaps(
-                            //       orderData.shipperAddress.toString());
-                            // }, Icons.navigation_sharp, AppColors.greenLight,
-                            //     AppColors.white),
-                            utils.iconButton("Update Order ", () {
-                              Get.toNamed(Routes.auth,
-                                  arguments: orderData);
+                            utils.iconButton("Call Consignee", () {
+                              utils.openDialPad(
+                                  orderData.consigneeMobileNo.toString());
+                            }, Icons.call, AppColors.green, AppColors.white),
+                            utils.iconButton("Update", () {
+                              onClick(orderData,fullMapViewCLick);
                             }, Icons.arrow_circle_right_rounded,
-                                AppColors.primaryThemeColor, AppColors.white)
+                                AppColors.primaryThemeColor, AppColors.white),
                           ],
                         ),
                       ],
                     ),
                   ),
+
                   Visibility(
-                      visible: orderData.status == "COLLECTED" ? true : false,
-                      child: utils.iconButton("Update Picked Orders", () {
-                        onClick(orderData,orderScanCLick);
-                      }, Icons.warehouse, AppColors.blue, AppColors.white))
+                      visible: orderData.status == "PICKED" ? true : false,
+                      child: utils.iconButton("Out For Delivery", () {
+                        onClick(orderData,orderUpdateToOFD);
+                      }, Icons.add_road, AppColors.blue, AppColors.white)),
+                  Visibility(
+                      visible: orderData.status == "OFD" ? true : false,
+                      child: utils.iconButton("Update", () {
+                        onClick(orderData,orderUpdateToDeliver);
+                      }, Icons.update, AppColors.primaryThemeColor, AppColors.white))
+
                 ],
               )
             ],
@@ -224,7 +191,7 @@ Widget customRow(String name, String data) {
       visible: data.isNotEmpty,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Expanded(
             flex: 4,

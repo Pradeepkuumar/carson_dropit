@@ -57,10 +57,13 @@ class FirebaseMessagingController extends GetxController {
   Future<void> _showNotification(
     { String? title,  String? body}) async {
     final androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      'coderootz', 'erp',
+      'coderootz', 'zyppy',
       importance: Importance.high, priority: Priority.high,
       styleInformation: BigTextStyleInformation(''),
       playSound: true,
+      actions: [
+
+      ]
       //sound: RawResourceAndroidNotificationSound('your_sound'),
     );
 //  final iOSPlatformChannelSpecifics = IOSNotificationDetails(
@@ -72,7 +75,7 @@ class FirebaseMessagingController extends GetxController {
       //  iOS: iOSPlatformChannelSpecifics,
     );
     await _notificationsPlugin.show(
-      0,
+      DateTime.now().microsecond,
       title,
       body,
       platformChannelSpecifics,

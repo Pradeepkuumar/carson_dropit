@@ -11,6 +11,8 @@ const String USER_ID_KEY = "user_id";
  //App CONSTANTS
  const int orderScanCLick = 1;
  const int fullMapViewCLick = 2;
+ const int orderUpdateToOFD = 3;
+ const int orderUpdateToDeliver = 4;
 
 
 
