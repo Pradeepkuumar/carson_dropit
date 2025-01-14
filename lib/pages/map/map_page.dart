@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:carson_zyppy/global/global.dart';
-import 'package:carson_zyppy/pages/orders/orders_controller.dart';
-import 'package:carson_zyppy/pages/orders/orders_model.dart';
+import 'package:carson_zyppy/pages/dashboard/controller/rider_dashboard_controller.dart';
+import 'package:carson_zyppy/pages/my_orders/orders/controller/orders_controller.dart';
 import 'package:carson_zyppy/utils/colors.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -19,6 +19,7 @@ import 'package:location/location.dart';
 import 'package:signature/signature.dart';
 
 import '../../app_pages/app_pages.dart';
+import '../my_orders/orders/models/orders_model.dart';
 import 'item_map_notifications.dart';
 
 class MapPage extends StatefulWidget {
@@ -32,6 +33,7 @@ class MapPage extends StatefulWidget {
 }
 
 class _MapPageState extends State<MapPage> {
+  late StreamSubscription<LocationData> _locationSubscription;
   Location _locationController = new Location();
   BitmapDescriptor riderIcon = BitmapDescriptor.defaultMarker;
   BitmapDescriptor icPickLocation = BitmapDescriptor.defaultMarker;
@@ -278,14 +280,325 @@ class _MapPageState extends State<MapPage> {
                             ),
                           ]),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(50, 5, 50, 70),
-                      child: Align(
-                          alignment: Alignment.bottomCenter,
-                          child: utils.mainButton("update", () {
-                            showBottomSheet();
-                          }, AppColors.primaryThemeColor)),
-                    ),
+                    Align(
+                      alignment: Alignment.bottomCenter,
+                      child: Padding(
+                        padding:  EdgeInsets.only(left: 20,right: 20,bottom: controller.markDelivered.value ? 10 : 100),
+                        child: Container(
+                          decoration: utils.boxDecorationWhite(),
+                          child:
+                        SingleChildScrollView(
+                          scrollDirection: Axis.vertical,
+                          child: Container(
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Obx(() {
+                                return Column(
+                                  children: [
+                                    Column(
+                                      children: [
+                                        Visibility(
+                                          visible: controller.markDelivered.value ||
+                                              controller.markUnDelivered.value,
+                                          child: Align(
+                                              alignment: Alignment.topRight,
+                                              child: InkWell(
+                                                  onTap: () {
+                                                    controller.markDelivered.value = false;
+                                                    controller.markUnDelivered.value = false;
+                                                  },
+                                                  child: const Icon(Icons.cancel,
+                                                      color: AppColors.red))),
+                                        ),
+                                        const SizedBox(
+                                          height: 5,
+                                        ),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            utils.tvMedium("Order Number"),
+                                            utils.tvMedium(
+                                                controller.selectedOrder.value.awbNo ?? ""),
+                                          ],
+                                        ),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            utils.tvMedium("status"),
+                                            utils.tvCustom(
+                                                controller.selectedOrder.value.status ?? "",
+                                                AppColors.green,
+                                                10),
+                                          ],
+                                        ),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            utils.tvMedium("Item"),
+                                            utils.tvCustom(
+                                                "${controller.selectedOrder.value.itemName}(${controller.selectedOrder.value.quantity})" ??
+                                                    "",
+                                                AppColors.black,
+                                                10),
+                                          ],
+                                        ),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            utils.tvMedium("Item Amount"),
+                                            utils.tvCustom(
+                                                "${controller.selectedOrder.value.orderAmount}(Qar)" ??
+                                                    "",
+                                                AppColors.black,
+                                                10),
+                                          ],
+                                        ),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            utils.tvMedium("Merchant Name"),
+                                            utils.tvCustom(
+                                                controller.selectedOrder.value.merchantName ??
+                                                    "",
+                                                AppColors.black,
+                                                10),
+                                          ],
+                                        ),
+                                        SizedBox(
+                                          height: 10,
+                                        ),
+                                        Obx(() {
+                                          return Visibility(
+                                              visible: controller.markDelivered.value ||
+                                                  controller.markUnDelivered.value,
+                                              child: Column(
+                                                children: [
+                                                  Padding(
+                                                    padding: const EdgeInsets.symmetric(
+                                                        horizontal: 5),
+                                                    child: Row(
+                                                      mainAxisAlignment:
+                                                      MainAxisAlignment.spaceBetween,
+                                                      children: [
+                                                        utils.tvCustom("Image Proof",
+                                                            AppColors.primaryThemeColor, 10),
+                                                        InkWell(
+                                                            onTap: () {
+                                                              controller.captureImage(
+                                                                  ImageSource.camera);
+                                                            },
+                                                            child: Icon(
+                                                              Icons.refresh,
+                                                              color: AppColors.blue,
+                                                              size: 20,
+                                                            ))
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  Padding(
+                                                    padding: EdgeInsets.all(5),
+                                                    child: Container(
+                                                      height: 200,
+                                                      width: double.infinity,
+                                                      decoration: utils.roundedBorder(
+                                                          AppColors.primaryThemeColor, 5),
+                                                      child: controller.image.value != null
+                                                          ? Image.file(
+                                                        controller.image.value!,
+                                                        fit: BoxFit.fill,
+                                                      )
+                                                          : InkWell(
+                                                        onTap: () {
+                                                          controller.captureImage(
+                                                              ImageSource.camera);
+                                                        },
+                                                        child: Column(
+                                                          mainAxisAlignment:
+                                                          MainAxisAlignment.center,
+                                                          children: [
+                                                            Icon(
+                                                              Icons.camera,
+                                                              size: 80,
+                                                              color: AppColors
+                                                                  .primaryThemeColor,
+                                                            ),
+                                                            utils.tvCustom(
+                                                                "capture Image",
+                                                                AppColors
+                                                                    .primaryThemeColor,
+                                                                10)
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+
+                                                  Visibility(
+                                                    visible: controller.markDelivered.value,
+                                                    child: Column(
+                                                      children: [
+                                                        Padding(
+                                                          padding: const EdgeInsets.symmetric(
+                                                              horizontal: 5),
+                                                          child: Row(
+                                                            mainAxisAlignment:
+                                                            MainAxisAlignment.spaceBetween,
+                                                            children: [
+                                                              utils.tvCustom(
+                                                                  "Signature",
+                                                                  AppColors.primaryThemeColor,
+                                                                  10),
+                                                              InkWell(
+                                                                  onTap: () {
+                                                                    controller
+                                                                        .signatureController
+                                                                        .disabled = false;
+                                                                    controller
+                                                                        .signatureController
+                                                                        .clear();
+                                                                    controller.signImage
+                                                                        ?.clear();
+                                                                    controller.signatureFile =
+                                                                    null;
+                                                                  },
+                                                                  child: const Icon(
+                                                                    Icons.mode_edit,
+                                                                    color: AppColors.blue,
+                                                                    size: 20,
+                                                                  ))
+                                                            ],
+                                                          ),
+                                                        ),
+                                                        Padding(
+                                                          padding: const EdgeInsets.all(5.0),
+                                                          child: Container(
+                                                            decoration: utils.roundedBorder(
+                                                                AppColors.blue, 3),
+                                                            child: Padding(
+                                                              padding:
+                                                              const EdgeInsets.all(8.0),
+                                                              child: Signature(
+                                                                controller: controller
+                                                                    .signatureController,
+                                                                width: Get.width,
+                                                                height: 180,
+                                                                backgroundColor: Colors.white,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  Visibility(
+                                                      visible: controller.markUnDelivered.value,
+                                                      child: utils.iconButtonWithRoundedBorder(controller.selectedReason.value == "" ? "Select Reason":controller.selectedReason.value ,
+                                                          45,
+                                                              (){
+                                                            controller.popUpWindowReasons();
+                                                          }, Icons.arrow_drop_down_circle_outlined,
+                                                          AppColors.primaryThemeColor, Icons.keyboard_return,
+                                                          1, AppColors.primaryThemeColor)),
+                                                  const SizedBox(height: 10,)
+                                                ],
+                                              ));
+                                        })
+                                      ],
+                                    ),
+                                    Obx(() {
+                                      return Align(
+                                        alignment: Alignment.bottomCenter,
+                                        child: Visibility(
+                                          visible: isPickUpVisible.value,
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Visibility(
+                                                visible:
+                                                (controller.selectedOrder.value.status == "ASSIGNED" || controller.selectedOrder.value.status == "RE-ASSIGNED"),
+                                                child: utils.iconButton("Mark Reached",
+                                                        () async {
+                                                     await controller.updateOrder("REACHED");
+
+                                                    }, Icons.follow_the_signs_rounded,
+                                                    AppColors.orange, AppColors.white),
+                                              ),
+                                              Visibility(
+                                                visible: controller.selectedOrder.value.status == "REACHED",
+                                                child: utils.iconButton("Mark Pick", () async {
+                                                   await controller.updateOrder("PICKED");
+
+                                                }, Icons.signpost_rounded, AppColors.blue,
+                                                    AppColors.white),
+                                              ),
+                                              Obx(() => Visibility(
+                                                  visible: !controller.markUnDelivered.value &&
+                                                      !controller.markDelivered.value &&
+                                                      controller.selectedOrder.value.status == "OFD",
+                                                  child: Row(children: [
+                                                    utils.iconButton("UnDeliver", () {
+                                                      controller.markUnDelivered.value = true;
+                                                    }, Icons.cancel, AppColors.red,
+                                                        AppColors.white),
+                                                    const SizedBox(
+                                                      width: 90,
+                                                    ),
+                                                    utils.iconButton("Deliver", () {
+                                                      controller.markDelivered.value = true;
+                                                    }, Icons.check_box, AppColors.greenLight,
+                                                        AppColors.white),
+                                                  ])))
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    }),
+                                    Obx(() {
+                                      return Align(
+                                        alignment: Alignment.bottomCenter,
+                                        child: Visibility(
+                                            visible: controller.selectedOrder.value.status == "OFD" && controller.markDelivered.value,
+                                            child: utils.iconButton("Mark Delivered", () async {
+                                              if (controller.deliveredImage != null &&
+                                                  controller.signatureFile != null) {
+                                                var isDElivered = await controller.updateOrder("DELIVERED");
+                                                if (isDElivered == true) {
+                                                  clearImageSign();
+                                                }
+                                              } else {
+                                                utils.errorSnackBar("Image/Sign Error !",
+                                                    "Delivery Image & Signature required");
+                                              }
+                                              // Get.toNamed(Routes.signatureImageScreen);
+                                            }, Icons.check_box, AppColors.greenLight,
+                                                AppColors.white)),
+                                      );
+                                    }),
+                                    Obx(() {
+                                      return Align(
+                                        alignment: Alignment.bottomCenter,
+                                        child: Visibility(
+                                            visible: controller.selectedOrder.value.status ==
+                                                "OFD" &&
+                                                controller.markUnDelivered.value,
+                                            child: utils.iconButton("Mark Un-Delivered", () async{
+                                              var isUpdated = await controller.updateOrder("UNDELIVERED");
+                                              if (isUpdated == true) {
+                                                clearImageSign();
+                                              }
+                                            }, Icons.cancel_presentation_outlined,
+                                                AppColors.red, AppColors.white)),
+                                      );
+                                    }),
+                                  ],
+                                );
+                              }),
+                            ),
+                          ),
+                        ),),
+                      ),
+                    )
                   ],
                 ),
               )
@@ -326,7 +639,9 @@ class _MapPageState extends State<MapPage> {
       }
     }
 
-    _locationController.onLocationChanged
+    if (!mounted) return;
+
+    _locationSubscription = _locationController.onLocationChanged
         .listen((LocationData currentLocation) {
       if (currentLocation.latitude != null &&
           currentLocation.longitude != null) {
@@ -402,334 +717,18 @@ class _MapPageState extends State<MapPage> {
     });
   }
 
-  void showBottomSheet() {
-    showModalBottomSheet(
-      context: context,
-      builder: (BuildContext context) {
-        return SingleChildScrollView(
-          scrollDirection: Axis.vertical,
-          child: Container(
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Obx(() {
-                return Column(
-                  children: [
-                    Column(
-                      children: [
-                        Visibility(
-                          visible: controller.markDelivered.value ||
-                              controller.markUnDelivered.value,
-                          child: Align(
-                              alignment: Alignment.topRight,
-                              child: InkWell(
-                                  onTap: () {
-                                    controller.markDelivered.value = false;
-                                    controller.markUnDelivered.value = false;
-                                  },
-                                  child: Icon(Icons.cancel,
-                                      color: AppColors.red))),
-                        ),
-                        SizedBox(
-                          height: 5,
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            utils.tvMedium("Order Number"),
-                            utils.tvMedium(
-                                controller.selectedOrder.value.awbNo ?? ""),
-                          ],
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            utils.tvMedium("status"),
-                            utils.tvCustom(
-                                controller.selectedOrder.value.status ?? "",
-                                AppColors.green,
-                                10),
-                          ],
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            utils.tvMedium("Item"),
-                            utils.tvCustom(
-                                "${controller.selectedOrder.value.itemName}(${controller.selectedOrder.value.quantity})" ??
-                                    "",
-                                AppColors.black,
-                                10),
-                          ],
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            utils.tvMedium("Item Amount"),
-                            utils.tvCustom(
-                                "${controller.selectedOrder.value.orderAmount}(Qar)" ??
-                                    "",
-                                AppColors.black,
-                                10),
-                          ],
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            utils.tvMedium("Merchant Name"),
-                            utils.tvCustom(
-                                controller.selectedOrder.value.merchantName ??
-                                    "",
-                                AppColors.black,
-                                10),
-                          ],
-                        ),
-                        SizedBox(
-                          height: 10,
-                        ),
-                        Obx(() {
-                          return Visibility(
-                              visible: controller.markDelivered.value ||
-                                  controller.markUnDelivered.value,
-                              child: Column(
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 5),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        utils.tvCustom("Image Proof",
-                                            AppColors.primaryThemeColor, 10),
-                                        InkWell(
-                                            onTap: () {
-                                              controller.captureImage(
-                                                  ImageSource.camera);
-                                            },
-                                            child: Icon(
-                                              Icons.refresh,
-                                              color: AppColors.blue,
-                                              size: 20,
-                                            ))
-                                      ],
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: EdgeInsets.all(5),
-                                    child: Container(
-                                      height: 200,
-                                      width: double.infinity,
-                                      decoration: utils.roundedBorder(
-                                          AppColors.primaryThemeColor, 5),
-                                      child: controller.image.value != null
-                                          ? Image.file(
-                                              controller.image.value!,
-                                              fit: BoxFit.fill,
-                                            )
-                                          : InkWell(
-                                              onTap: () {
-                                                controller.captureImage(
-                                                    ImageSource.camera);
-                                              },
-                                              child: Column(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                children: [
-                                                  Icon(
-                                                    Icons.camera,
-                                                    size: 80,
-                                                    color: AppColors
-                                                        .primaryThemeColor,
-                                                  ),
-                                                  utils.tvCustom(
-                                                      "capture Image",
-                                                      AppColors
-                                                          .primaryThemeColor,
-                                                      10)
-                                                ],
-                                              ),
-                                            ),
-                                    ),
-                                  ),
 
-                                  Visibility(
-                                    visible: controller.markDelivered.value,
-                                    child: Column(
-                                      children: [
-                                        Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 5),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              utils.tvCustom(
-                                                  "Signature",
-                                                  AppColors.primaryThemeColor,
-                                                  10),
-                                              InkWell(
-                                                  onTap: () {
-                                                    controller
-                                                        .signatureController
-                                                        .disabled = false;
-                                                    controller
-                                                        .signatureController
-                                                        .clear();
-                                                    controller.signImage
-                                                        ?.clear();
-                                                    controller.signatureFile =
-                                                        null;
-                                                  },
-                                                  child: Icon(
-                                                    Icons.mode_edit,
-                                                    color: AppColors.blue,
-                                                    size: 20,
-                                                  ))
-                                            ],
-                                          ),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.all(5.0),
-                                          child: Container(
-                                            decoration: utils.roundedBorder(
-                                                AppColors.blue, 3),
-                                            child: Padding(
-                                              padding:
-                                                  const EdgeInsets.all(8.0),
-                                              child: Signature(
-                                                controller: controller
-                                                    .signatureController,
-                                                width: Get.width,
-                                                height: 200,
-                                                backgroundColor: Colors.white,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Visibility(
-                                      visible: controller.markUnDelivered.value,
-                                      child: utils.tvCustom(
-                                          "Cancel Reason", AppColors.red, 10))
-                                ],
-                              ));
-                        })
-                      ],
-                    ),
-                    Obx(() {
-                      return Align(
-                        alignment: Alignment.bottomCenter,
-                        child: Visibility(
-                          visible: isPickUpVisible.value,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Visibility(
-                                visible:
-                                    (controller.selectedOrder.value.status ==
-                                            "ASSIGNED" ||
-                                        controller.selectedOrder.value.status ==
-                                            "RE-ASSIGNED"),
-                                child: utils.iconButton("Mark Reached",
-                                    () async {
-                                  var isUpdated =
-                                      await controller.updateOrder("REACHED");
-                                  if (isUpdated) {
-                                    Get.back();
-                                  }
-                                }, Icons.follow_the_signs_rounded,
-                                    AppColors.orange, AppColors.white),
-                              ),
-                              Visibility(
-                                visible:
-                                    controller.selectedOrder.value.status ==
-                                        "REACHED",
-                                child: utils.iconButton("Mark Pick", () async {
-                                  var isUpdated =
-                                      await controller.updateOrder("PICKED");
-                                  if (isUpdated) {
-                                    Get.back();
-                                  }
-                                }, Icons.signpost_rounded, AppColors.blue,
-                                    AppColors.white),
-                              ),
-                              Obx(() => Visibility(
-                                  visible: !controller.markUnDelivered.value &&
-                                      !controller.markDelivered.value &&
-                                      controller.selectedOrder.value.status ==
-                                          "OFD",
-                                  child: Row(children: [
-                                    utils.iconButton("UnDeliver", () {
-                                      controller.markUnDelivered.value = true;
-                                    }, Icons.cancel, AppColors.red,
-                                        AppColors.white),
-                                    const SizedBox(
-                                      width: 90,
-                                    ),
-                                    utils.iconButton("Deliver", () {
-                                      controller.markDelivered.value = true;
-                                    }, Icons.check_box, AppColors.greenLight,
-                                        AppColors.white),
-                                  ])))
-                            ],
-                          ),
-                        ),
-                      );
-                    }),
-                    Obx(() {
-                      return Align(
-                        alignment: Alignment.bottomCenter,
-                        child: Visibility(
-                            visible: controller.selectedOrder.value.status ==
-                                    "OFD" &&
-                                controller.markDelivered.value,
-                            child: utils.iconButton("Mark Delivered", () async {
-                              if (controller.deliveredImage != null &&
-                                  controller.signatureFile != null) {
-                                var isDElivered =
-                                    await controller.updateOrder("DELIVERED");
-                                if (isDElivered == true) {
-                                  controller.deliveredImage = null;
-                                  controller.signImage?.clear();
-                                  controller.image.value = null;
-                                  controller.signatureFile = null;
-                                  controller.signatureController.value.clear();
-                                  controller.viewFullMap.value = false;
-                                  Get.offNamed(Routes.ordersScreen);
-                                }
-                              } else {
-                                utils.errorSnackBar("Image/Sign Error !",
-                                    "Delivery Image & Signature required");
-                              }
-                              // Get.toNamed(Routes.signatureImageScreen);
-                            }, Icons.check_box, AppColors.greenLight,
-                                AppColors.white)),
-                      );
-                    }),
-                    Obx(() {
-                      return Align(
-                        alignment: Alignment.bottomCenter,
-                        child: Visibility(
-                            visible: controller.selectedOrder.value.status ==
-                                    "OFD" &&
-                                controller.markUnDelivered.value,
-                            child: utils.iconButton("Mark Un-Delivered", () {
-                              controller.updateOrder("UNDELIVERED");
-                            }, Icons.cancel_presentation_outlined,
-                                AppColors.red, AppColors.white)),
-                      );
-                    }),
-                  ],
-                );
-              }),
-            ),
-          ),
-        );
-      },
-    );
+
+  void clearImageSign(){
+    controller.deliveredImage = null;
+    controller.image.value = null;
+    controller.signatureFile = null;
+    controller.signatureController.value.clear();
+    controller.viewFullMap.value = false;
+    controller.markDelivered.value = false;
+    controller.markUnDelivered.value = false;
+    Get.back();
+    Get.offNamed(Routes.ordersScreen);
   }
 
   void showCustomMarker(OrdersData data,int type) {
@@ -758,7 +757,6 @@ class _MapPageState extends State<MapPage> {
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.location_on_rounded,color: AppColors.blue,size: 20,),
                     utils.tvCustom( type == 0 ?
                     "${data.merchantName!}\n${data.pickupAddress!},${data.pickupZoneNo!}"
                         : "${data.consigneeName!}\n${data.consigneeAddress!},${data.consigneeStreetNumber
@@ -787,5 +785,11 @@ class _MapPageState extends State<MapPage> {
             )],
           );
         });
+  }
+
+  @override
+  void dispose() {
+    _locationSubscription.cancel();
+    super.dispose();
   }
 }

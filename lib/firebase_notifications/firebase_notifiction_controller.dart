@@ -6,8 +6,7 @@ import 'notification_model/notification.dart';
 
 class FirebaseMessagingController extends GetxController {
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
-  final FlutterLocalNotificationsPlugin _notificationsPlugin =
-      FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
   String? fcm_token;
   @override
   void onInit() {
@@ -15,6 +14,7 @@ class FirebaseMessagingController extends GetxController {
     _initializeFirebaseMessaging();
     initializeLocalNotifications();
   }
+
 
   Future<void> _initializeFirebaseMessaging() async {
     await _firebaseMessaging.requestPermission(
@@ -24,22 +24,20 @@ class FirebaseMessagingController extends GetxController {
       provisional: false,
     );
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      // Handle incoming messages when the app is in the foreground
       _showNotification(body: message.notification?.body,title: message.notification?.title );
       addNotification(LocalNotification(body: message.notification?.body,title: message.notification?.title ));
       print('Received message: ${message.notification?.title}');
     });
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
        _showNotification(body: message.notification?.body,title: message.notification?.title );
-      // Handle notification taps when the app is in the background or terminated
       print('Opened app from notification: ${message.notification?.title}');
     });
-    fcm_token = (await _firebaseMessaging.getToken())!;
+    fcm_token = await _firebaseMessaging.getToken();
     box.write("fcm_token", fcm_token);
+
   }
 
-  // GetStorage()
-  // Send the token to your server or handle it as needed }
+
   void initializeLocalNotifications() {
     final initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');

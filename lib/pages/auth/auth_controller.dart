@@ -1,10 +1,7 @@
 import 'package:carson_zyppy/global/consts.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
-
 import '../../apis/base_api_response.dart';
-import '../../app_pages/app_pages.dart';
-import '../../firebase_notifications/firebase_notifiction_controller.dart';
 import '../../global/global.dart';
 import '../../local_db/entity/UserData.dart';
 
@@ -44,7 +41,7 @@ class AuthController extends GetxController {
       Map<String, dynamic> model = {
         apiKeys.feCode: feCode.value.text,
         apiKeys.password: password.value.text,
-        apiKeys.deviceToken: box.read("fcm_token") ?? "no-token",
+        apiKeys.deviceToken: box.read("fcm_token") ?? "",
       };
       var response = await apiProvider
           .postRequest(apiEndPoints.login, model );

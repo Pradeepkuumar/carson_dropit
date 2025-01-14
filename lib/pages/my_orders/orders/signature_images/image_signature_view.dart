@@ -1,4 +1,4 @@
-import 'package:carson_zyppy/pages/orders/orders_controller.dart';
+import 'package:carson_zyppy/pages/my_orders/orders/controller/orders_controller.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -8,9 +8,9 @@ import 'package:get/get_state_manager/src/simple/get_view.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:signature/signature.dart';
 
-import '../../../app_pages/app_pages.dart';
-import '../../../global/global.dart';
-import '../../../utils/colors.dart';
+import '../../../../app_pages/app_pages.dart';
+import '../../../../global/global.dart';
+import '../../../../utils/colors.dart';
 
 class ImageSignatureView extends GetView<OrdersController> {
   ImageSignatureView({super.key});

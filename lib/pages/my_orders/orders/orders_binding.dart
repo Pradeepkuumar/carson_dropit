@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
 
-import 'orders_controller.dart';
+import 'controller/orders_controller.dart';
 
 
 class OrdersBinding extends Bindings {

@@ -1,4 +1,3 @@
-
 import 'dart:math';
 
 import 'package:carson_zyppy/local_db/entity/UserData.dart';
@@ -12,23 +11,21 @@ import '../../../global/global.dart';
 import '../../../global/location_service.dart';
 import '../models/driver_data.dart';
 
-
 class RiderDashboardController extends GetxController {
   var isLoading = true.obs;
   var showSplashScreen = true.obs;
   var userData = UserData();
   var firebaseToken = "";
-  var riderName  = "".obs;
+  var riderName = "".obs;
   var isAttendanceMarked = false.obs;
   final locationUtils = LocationUtils();
   late LocationData startLocation;
-  var workingHours  = "".obs;
-  var walletAmount  = "".obs;
+  var workingHours = "".obs;
+  var walletAmount = "".obs;
   var isInternetOn = false.obs;
   var updateRiderLocation = false.obs;
   var driverData = DriverData().obs;
-  var dashBoardData  = DashboardData().obs;
-
+  var dashBoardData = DashboardData().obs;
 
   @override
   void onInit() {
@@ -38,11 +35,19 @@ class RiderDashboardController extends GetxController {
     super.onInit();
   }
 
-  updateLocation() async{
+  updateLocation() async {
     await getCurrentLocation();
+    checkAttendance();
     await getCountinuesLocation();
   }
 
+  void checkAttendance() {
+    if (driverData.value.attendances?.last.status == "Present") {
+      isAttendanceMarked.value = true;
+    } else {
+      isAttendanceMarked.value = false;
+    }
+  }
 
   // final listener = InternetConnection().onStatusChange.listen((InternetStatus status) {
   //   switch (status) {
@@ -55,13 +60,13 @@ class RiderDashboardController extends GetxController {
   // });
 
   Future<void> requestBackgroundPermission() async {
-    if (await Permission.locationAlways.isGranted) {
+    if (await Permission.locationWhenInUse.isGranted) {
       final status = await Permission.locationAlways.request();
       if (!status.isGranted) {
         if (kDebugMode) {
           print("Background location permission not granted.");
         }
-      }else{
+      } else {
         if (kDebugMode) {
           print("Enable service from settings");
         }
@@ -73,21 +78,18 @@ class RiderDashboardController extends GetxController {
     }
   }
 
-
   getUser() async {
     try {
       var value = await userRepository.getUser();
       if (value != null) {
         userData = value;
         riderName.value = userData.name ?? "";
-       await getDashBoardData();
+        await getDashBoardData();
       }
-    } catch (e){
+    } catch (e) {
       utils.errorSnackBar("Exception", e.toString());
     }
-
   }
-
 
   Future<bool> logout() async {
     utils.showLoadingDialog("Logging out...");
@@ -95,13 +97,13 @@ class RiderDashboardController extends GetxController {
       Map<String, dynamic> model = {
         apiKeys.userID: userData.id,
       };
-      var response = await apiProvider.postRequest(apiEndPoints.logout, model );
+      var response = await apiProvider.postRequest(apiEndPoints.logout, model);
       var result = BaseApiResponse.fromJson(response);
-      if(result.status_code == 200){
+      if (result.status_code == 200) {
         utils.closeLoadingDialog();
         update();
         return true;
-      }else{
+      } else {
         utils.closeLoadingDialog();
         update();
         return false;
@@ -118,14 +120,15 @@ class RiderDashboardController extends GetxController {
       Map<String, dynamic> model = {
         apiKeys.feCode: userData.code,
       };
-      var response = await apiProvider.getRequestWithQueryParams(apiEndPoints.dashBoardDetails, model );
+      var response = await apiProvider.getRequestWithQueryParams(
+          apiEndPoints.dashBoardDetails, model);
       var result = BaseApiResponse.fromJson(response);
-      if(result.status_code == 200){
-        dashBoardData.value  = DashboardData.fromJson(result.data);
+      if (result.status_code == 200) {
+        dashBoardData.value = DashboardData.fromJson(result.data);
         utils.closeLoadingDialog();
         update();
         return true;
-      }else{
+      } else {
         utils.closeLoadingDialog();
         update();
         return false;
@@ -137,30 +140,30 @@ class RiderDashboardController extends GetxController {
     }
   }
 
-
   Future<bool> markAttendance(bool status) async {
     utils.showLoadingDialog("loading ...");
     try {
       Map<String, dynamic> model = {
         apiKeys.userID: userData.id,
-        apiKeys.markAttendance : status,
-        apiKeys.latitude : startLocation.latitude,
-        apiKeys.longitude : startLocation.longitude
+        apiKeys.markAttendance: status,
+        apiKeys.latitude: startLocation.latitude,
+        apiKeys.longitude: startLocation.longitude
       };
-      var response = await apiProvider.postRequest(apiEndPoints.driverCheckIn, model );
+      var response =
+          await apiProvider.postRequest(apiEndPoints.driverCheckIn, model);
       var result = BaseApiResponse.fromJson(response);
-      if(result.status_code == 200){
+      if (result.status_code == 200) {
         utils.closeLoadingDialog();
-        workingHours.value =  result.data["working_hours"].toString();
+        workingHours.value = result.data["working_hours"].toString();
         update();
         return true;
-      }else{
+      } else {
         utils.closeLoadingDialog();
         update();
         return false;
       }
     } catch (e) {
-      utils.errorSnackBar("Exception", e.toString());
+      //utils.errorSnackBar("Exception", e.toString());
       return false;
     }
   }
@@ -182,24 +185,24 @@ class RiderDashboardController extends GetxController {
     return degree * pi / 180;
   }
 
-
   Future<bool> sendDriverLocation(LocationData locationData) async {
     try {
       Map<String, dynamic> model = {
         apiKeys.userID: userData.id,
-        apiKeys.latitude : locationData.latitude,
-        apiKeys.longitude : locationData.longitude
+        apiKeys.latitude: locationData.latitude,
+        apiKeys.longitude: locationData.longitude
       };
-      var response = await apiProvider.postRequest(apiEndPoints.driverCurrentLocation, model );
+      var response = await apiProvider.postRequest(
+          apiEndPoints.driverCurrentLocation, model);
       var result = BaseApiResponse.fromJson(response);
-      if(result.status_code == 200){
-        driverData.value  = DriverData.fromJson(result.data);
-         // print(driverData.value.toJson().toString());
+      if (result.status_code == 200) {
+        driverData.value = DriverData.fromJson(result.data);
+        // print(driverData.value.toJson().toString());
         await getDashBoardData();
         utils.closeLoadingDialog();
         update();
         return true;
-      }else{
+      } else {
         utils.closeLoadingDialog();
         update();
         return false;
@@ -210,43 +213,42 @@ class RiderDashboardController extends GetxController {
     }
   }
 
-
-
   // @override
   // void onClose() {
   //   listener.cancel();
   // }
 
-   getCurrentLocation() async {
+  getCurrentLocation() async {
     startLocation = (await locationUtils.getCurrentLocation())!;
-      if (startLocation != null) {
+    if (startLocation != null) {
       await sendDriverLocation(startLocation);
-    print('Current Location: ${startLocation.latitude}, ${startLocation.longitude}');
-  } else {
-    print('Unable to fetch location.');
+      print(
+          'Current Location: ${startLocation.latitude}, ${startLocation.longitude}');
+    } else {
+      print('Unable to fetch location.');
+    }
   }
 
-  }
-
-   getCountinuesLocation(){
+  getCountinuesLocation() {
     locationUtils.startListeningToLocationUpdates(
       onLocationChanged: (LocationData locationData) async {
-        double distance = calculateDistance(startLocation.latitude!, startLocation.longitude!,
-            locationData.latitude!, locationData.longitude!);
-        if(kDebugMode){
-          print("start latlng :- ${startLocation.latitude},${startLocation.longitude}\ncurrent latlng :-${locationData.latitude},${locationData.longitude}");
+        double distance = calculateDistance(
+            startLocation.latitude!,
+            startLocation.longitude!,
+            locationData.latitude!,
+            locationData.longitude!);
+        if (kDebugMode) {
+          print(
+              "start latlng :- ${startLocation.latitude},${startLocation.longitude}\ncurrent latlng :-${locationData.latitude},${locationData.longitude}");
         }
         print(distance.toString());
-        if(distance >= 10)  {
-         bool isUpdated = await  sendDriverLocation(locationData);
-         if(isUpdated){
-           await getCurrentLocation();
-         }
+        if (distance >= 10) {
+          bool isUpdated = await sendDriverLocation(locationData);
+          if (isUpdated) {
+            await getCurrentLocation();
+          }
         }
       },
     );
   }
 }
-
-
-

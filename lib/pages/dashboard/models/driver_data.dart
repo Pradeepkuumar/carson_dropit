@@ -9,7 +9,6 @@ class DriverData {
     DriverData({
          this.code,
          this.apiToken,
-         this.latitude,
          this.active,
          this.createdAt,
          this.attendances,
@@ -21,12 +20,10 @@ class DriverData {
          this.name,
          this.id,
          this.email,
-         this.longitude,
     });
 
     String? code;
     String? apiToken;
-    double? latitude;
     int? active;
     DateTime? createdAt;
     List<Attendance>? attendances;
@@ -38,12 +35,10 @@ class DriverData {
     String? name;
     int? id;
     String? email;
-    double? longitude;
 
     factory DriverData.fromJson(Map<dynamic, dynamic> json) => DriverData(
         code: json["code"],
         apiToken: json["api_token"],
-        latitude: json["latitude"]?.toDouble(),
         active: json["active"],
         createdAt: DateTime.parse(json["created_at"]),
         attendances: List<Attendance>.from(json["attendances"].map((x) => Attendance.fromJson(x))),
@@ -55,13 +50,11 @@ class DriverData {
         name: json["name"],
         id: json["id"],
         email: json["email"],
-        longitude: json["longitude"]?.toDouble(),
     );
 
     Map<dynamic, dynamic> toJson() => {
         "code": code,
         "api_token": apiToken,
-        "latitude": latitude,
         "active": active,
         "created_at": createdAt?.toIso8601String(),
         "attendances": List<dynamic>.from(attendances!.map((x) => x.toJson())),
@@ -73,7 +66,6 @@ class DriverData {
         "name": name,
         "id": id,
         "email": email,
-        "longitude": longitude,
     };
 }
 

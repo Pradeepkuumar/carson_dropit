@@ -15,7 +15,6 @@ class CancelReason {
     required this.updatedAt,
   });
 
-  // Factory constructor to create a CancelReason instance from a JSON map
   factory CancelReason.fromJson(Map<String, dynamic> json) {
     return CancelReason(
       id: json['id'],
@@ -27,7 +26,6 @@ class CancelReason {
     );
   }
 
-  // Method to convert a CancelReason instance to a JSON map
   Map<String, dynamic> toJson() {
     return {
       'id': id,

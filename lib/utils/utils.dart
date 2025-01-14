@@ -7,10 +7,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:location/location.dart';
 import 'package:lottie/lottie.dart';
 import 'package:url_launcher/url_launcher.dart';
-
 import '../global/consts.dart';
 import '../global/global.dart';
 import 'colors.dart';
@@ -365,8 +363,8 @@ class Utils extends GetxController {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    utils.tvCustom(name, AppColors.white, 15),
-                    utils.tvCustom(count, AppColors.white, 25),
+                    utils.tvCustom(name, AppColors.white, 20),
+                    utils.tvCustom(count, AppColors.white, 15),
                   ],
                 ),
               )),

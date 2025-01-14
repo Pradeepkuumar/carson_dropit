@@ -10,5 +10,6 @@ class ApiKeys {
   final String latitude = "latitude";
   final String longitude = "longitude";
   final String driverCurrentLocation = "driver/current-location";
+  final String awbNo = "awb_no";
 
 }

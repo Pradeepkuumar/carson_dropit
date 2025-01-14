@@ -6,10 +6,10 @@ import 'package:get/get.dart';
 import 'package:simple_barcode_scanner/enum.dart';
 import 'package:simple_barcode_scanner/simple_barcode_scanner.dart';
 
-import '../../../utils/colors.dart';
-import '../../../utils/utils.dart';
-import '../orders_controller.dart';
-import '../orders_item.dart';
+import '../../../../utils/colors.dart';
+import '../../../../utils/utils.dart';
+import '../controller/orders_controller.dart';
+import '../view/orders_item.dart';
 
 class OrdersListView extends StatefulWidget {
   var orderStatus = "";
@@ -30,7 +30,7 @@ class OrdersListViewState extends State<OrdersListView> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (controller.tabController.index == 0) {
-       // controller.getFeOrders(["ASSIGNED"]);
+       //controller.getFeOrders(["ASSIGNED","RE-ASSIGNED"]);
       }
     });
   }

@@ -1,13 +1,12 @@
 import 'package:carson_zyppy/global/global.dart';
 import 'package:carson_zyppy/utils/colors.dart';
-import 'package:flutter/material.dart';
-
+import 'package:flutter/cupertino.dart';
 import '../models/driver_data.dart';
 
-class ProgressBar extends StatelessWidget {
+class AttendanceProgressBar extends StatelessWidget {
   final Attendance? attendance;
 
-  const ProgressBar({Key? key, required this.attendance}) : super(key: key);
+  const AttendanceProgressBar({Key? key, required this.attendance}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -15,7 +14,7 @@ class ProgressBar extends StatelessWidget {
       padding: const EdgeInsets.all(8.0),
       child: Container(
         width: 30,
-        height: 100,
+        height: 50,
         decoration: BoxDecoration(
           color: AppColors.headerColor,
           borderRadius: BorderRadius.circular(10),
@@ -29,7 +28,7 @@ class ProgressBar extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   color:
-                      double.parse(attendance?.workingHours.toString() ?? "0.0").clamp(0.0, 8.0) / 8.0 <= 5 ? AppColors.green
+                      double.parse(attendance?.workingHours.toString() ?? "0.0").clamp(0.0, 8.0) / 8.0 > 5 ? AppColors.red
                           : AppColors.green,
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -46,14 +45,17 @@ class ProgressBar extends StatelessWidget {
                 )),
             Align(
                 alignment: Alignment.bottomCenter,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    utils.tvCustom("${attendance!.date!.day}",
-                            AppColors.black, 15),
-                    utils.tvCustom(changeMonthToStr(attendance!.date!.month),
-                            AppColors.black, 10)
-                  ],
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 5),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      utils.tvCustom("${attendance!.date!.day}",
+                              AppColors.black, 15),
+                      utils.tvCustom(changeMonthToStr(attendance!.date!.month),
+                              AppColors.black, 10)
+                    ],
+                  ),
                 )),
           ],
         ),

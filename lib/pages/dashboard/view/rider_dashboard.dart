@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:carson_zyppy/global/global.dart';
 import 'package:carson_zyppy/pages/dashboard/controller/rider_dashboard_controller.dart';
+import 'package:carson_zyppy/pages/my_orders/nearby_orders/view/nearby_orders_view.dart';
 import 'package:carson_zyppy/utils/colors.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -49,103 +50,157 @@ class _RiderDashboardState extends State<RiderDashboard> {
               child: Stack(
                 children: [
                   Center(
-                    child: Container(
-                      height: 520,
-                      width: 330,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.white),
-                        borderRadius: BorderRadius.circular(10),
-                        color: Colors.black.withOpacity(0.1),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: BackdropFilter(
-                            filter: ImageFilter.blur(sigmaY: 1, sigmaX: 1),
-                            child: Padding(
-                                padding: const EdgeInsets.all(10.0),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Obx(() {
-                                      return Container(
-                                        height: 200,
-                                        margin: EdgeInsets.symmetric(horizontal: 20),
-                                        decoration: utils.roundedBorder(AppColors.white, 10),
-                                        child:  Padding(
-                                          padding: EdgeInsets.all(15.0),
-                                          child: controller.driverData.value.attendances?.length == 0 ?
-                                          utils.iosProgressIndicator(AppColors.white)
-                                              : Column(
-                                                children: [
-                                                  utils.tvCustom("(Working Hours/Day)", AppColors.white, 10),
-                                                  SizedBox(
-                                                  height: 140,
-                                                    child: ListView.builder(
-                                                        scrollDirection: Axis.horizontal,
-                                                     itemCount:controller.driverData.value.attendances?.length ,
-                                                    itemBuilder: (context, position){
-                                                    return ProgressBar(attendance:controller.driverData.value.attendances?[position]);
-                                                    }),
-                                                  ),
-                                                  utils.tvCustom("Work Days", AppColors.white, 10),
-                                                ],
-                                              )
-                                        ),
-                                      );
-                                    }),
-                                    SizedBox(height: 5,),
-                                    Row(
-                                      mainAxisAlignment:
-                                      MainAxisAlignment.center,
-                                      children: [
-                                        utils.elevatedContainer(
-                                            120,
-                                            120,
-                                            AppColors.greenLight,
-                                            "Assigned Orders",
-                                            controller.dashBoardData.value.assigned.toString(), () {
+                    child: SingleChildScrollView(
+                      scrollDirection :Axis.vertical,
+                      child: Container(
+                        height: 550,
+                        width: 330,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.white),
+                          borderRadius: BorderRadius.circular(10),
+                          color: Colors.black.withOpacity(0.1),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: BackdropFilter(
+                              filter: ImageFilter.blur(sigmaY: 1, sigmaX: 1),
+                              child: Padding(
+                                  padding: const EdgeInsets.all(10.0),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Obx(() {
+                                        return Container(
+                                          height: 160,
+                                          margin: const EdgeInsets.symmetric(horizontal: 15),
+                                          decoration: utils.roundedBorder(AppColors.white, 10),
+                                          child:  Padding(
+                                            padding: const EdgeInsets.all(15.0),
+                                            child: controller.driverData.value.attendances?.length == 0 ?
+                                            utils.iosProgressIndicator(AppColors.white)
+                                                : Column(
+                                                  children: [
+                                                    utils.tvCustom("(Working Hours/Day)", AppColors.white, 10),
+                                                    SizedBox(
+                                                    height: 100,
+                                                      child: ListView.builder(
+                                                          scrollDirection: Axis.horizontal,
+                                                       itemCount:controller.driverData.value.attendances?.length ,
+                                                      itemBuilder: (context, position){
+                                                      return AttendanceProgressBar(attendance:controller.driverData.value.attendances?[position]);
+                                                      }),
+                                                    ),
+                                                    utils.tvCustom("Work Days", AppColors.white, 10),
+                                                  ],
+                                                )
+                                          ),
+                                        );
+                                      }),
+                                      const SizedBox(height: 5,),
+                                      InkWell(
+                                        onTap: (){
                                           Get.toNamed(Routes.ordersScreen);
-                                        }),
-                                        SizedBox(
-                                          width: 20,
+                                        },
+                                        child: Container(
+                                          margin: const EdgeInsets.symmetric(horizontal: 15),
+                                          decoration: utils.boxDecorationWhite(),
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(8.0),
+                                            child: Column(
+                                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                                children: [
+                                                  Padding(
+                                                    padding: const EdgeInsets.all(8.0),
+                                                    child: Row(
+                                                      children: [
+                                                        utils.imageView(myOrdersImage, 50, 50),
+                                                        const SizedBox(width: 10,),
+                                                        utils.tvCustom("My Orders",AppColors.primaryThemeColor, 20)
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  Padding(
+                                                    padding: const EdgeInsets.symmetric(horizontal :10),
+                                                    child: Row(
+                                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                      children: [
+                                                      utils.tvCustom( "Assigned : "+controller.dashBoardData.value.assigned.toString(),AppColors.black,15),
+                                                      utils.tvCustom( "Picked : "+controller.dashBoardData.value.picked.toString(),AppColors.black,15)
+                                                    ],),
+                                                  ),
+                                                  Padding(
+                                                    padding: const EdgeInsets.symmetric(horizontal :10),
+                                                    child: Row(
+                                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                      children: [
+                                                        utils.tvCustom( "OFD : "+controller.dashBoardData.value.ofd.toString(),AppColors.black,15),
+                                                        utils.tvCustom( "Delivered : "+controller.dashBoardData.value.delivered.toString(),AppColors.black,15)
+                                                      ],),
+                                                  )
+                                                ],
+                                            ),
+                                          ),
                                         ),
-                                        utils.elevatedContainer(
-                                            120,
-                                            120,
-                                            AppColors.blue,
-                                            "Picked Orders",
-                                            controller.dashBoardData.value.picked.toString(),
-                                                () {}),
-                                      ],
-                                    ),
-                                    SizedBox(
-                                      height: 20,
-                                    ),
-                                    Row(
-                                      mainAxisAlignment:
-                                      MainAxisAlignment.center,
-                                      children: [
-                                        utils.elevatedContainer(
-                                            120,
-                                            120,
-                                            AppColors.secondryThemeColor,
-                                            "Cancelled Orders",
-                                            controller.dashBoardData.value.cancelled.toString(),
-                                                () {}),
-                                        SizedBox(
-                                          width: 20,
+                                      ),
+                                      const SizedBox(height: 5,),
+                                      InkWell(
+                                        onTap: (){
+                                            Get.toNamed(Routes.placedOrders);
+                                        },
+                                        child: Container(
+                                          margin: const EdgeInsets.symmetric(horizontal: 15),
+                                          decoration: utils.boxDecorationWhite(),
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(8.0),
+                                            child: Column(
+                                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                              children: [
+                                                Padding(
+                                                  padding: const EdgeInsets.all(8.0),
+                                                  child: Row(
+                                                    children: [
+                                                      utils.imageView(placedOrdersImage, 50, 50),
+                                                      const SizedBox(width: 10,),
+                                                      utils.tvCustom("Placed Orders",AppColors.primaryThemeColor, 20)
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
                                         ),
-                                        utils.elevatedContainer(
-                                            120,
-                                            120,
-                                            AppColors.red,
-                                            "Delivered Orders",
-                                            controller.dashBoardData.value.delivered.toString(),
-                                                () {}),
-                                      ],
-                                    )
-                                  ],
-                                ))),
+                                      ),
+                                      const SizedBox(height: 5,),
+                                      InkWell(
+                                        onTap: (){
+                                          Get.to(NearbyOrdersView());
+                                        },
+                                        child: Container(
+                                          margin: const EdgeInsets.symmetric(horizontal: 15),
+                                          decoration: utils.boxDecorationWhite(),
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(8.0),
+                                            child: Column(
+                                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                              children: [
+                                                Padding(
+                                                  padding: const EdgeInsets.all(8.0),
+                                                  child: Row(
+                                                    children: [
+                                                      utils.imageView(nearByImage, 50, 50),
+                                                      const SizedBox(width: 10,),
+                                                      utils.tvCustom("Nearby Orders",AppColors.primaryThemeColor, 20)
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                    ],
+                                  ))),
+                        ),
                       ),
                     ),
                   ),
@@ -187,7 +242,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                 onTap: () {
                                                   showMenu.value = false;
                                                 },
-                                                child: Icon(
+                                                child: const Icon(
                                                   Icons.close,
                                                   color: AppColors.red,
                                                 ))
@@ -206,7 +261,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                 alignment: Alignment.center,
                                               ),
                                             ),
-                                            SizedBox(
+                                            const SizedBox(
                                               width: 5,
                                             ),
                                             Column(
@@ -227,7 +282,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                             )
                                           ],
                                         ),
-                                        SizedBox(
+                                        const SizedBox(
                                           height: 10,
                                         ),
                                         Row(
@@ -243,24 +298,22 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                 children: [
                                                   Row(
                                                     children: [
-                                                      Icon(
+                                                      const Icon(
                                                         Icons.wallet,
                                                         color: AppColors
                                                             .primaryThemeColor,
                                                       ),
-                                                      SizedBox(
+                                                      const SizedBox(
                                                         width: 5,
                                                       ),
                                                       utils.tvCustom(
-                                                          controller.driverData
-                                                              .value.longitude
-                                                              .toString(),
+                                                          controller.driverData.value.name.toString(),
                                                           AppColors
                                                               .primaryThemeColor,
                                                           16)
                                                     ],
                                                   ),
-                                                  SizedBox(
+                                                  const SizedBox(
                                                     height: 5,
                                                   ),
                                                   // Row(
@@ -294,14 +347,9 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                             .greenLight,
                                                         onChanged:
                                                             (value) async {
-                                                          bool isSignIn =
-                                                          await controller
-                                                              .markAttendance(
-                                                              false);
+                                                          bool isSignIn = await controller.markAttendance(false);
                                                           if (isSignIn) {
-                                                            controller
-                                                                .isAttendanceMarked
-                                                                .value = false;
+                                                            controller.isAttendanceMarked.value = false;
                                                           }
                                                         })),
                                                 utils.tvCustom(
@@ -312,7 +360,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                             )
                                           ],
                                         ),
-                                        SizedBox(
+                                        const SizedBox(
                                           height: 10,
                                         ),
                                         utils.iconButton("MY ORDERS", () {
@@ -321,7 +369,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                             Icons.outbound_rounded,
                                             AppColors.primaryThemeColor,
                                             AppColors.white),
-                                        SizedBox(
+                                        const SizedBox(
                                           height: 10,
                                         ),
                                         utils.iconButton("NEARBY ORDERS", () {
@@ -330,7 +378,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                             Icons.near_me,
                                             AppColors.primaryThemeColor,
                                             AppColors.white),
-                                        SizedBox(
+                                        const SizedBox(
                                           height: 10,
                                         ),
                                         utils.iconButton(
@@ -339,7 +387,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                             Icons.support_agent_rounded,
                                             AppColors.primaryThemeColor,
                                             AppColors.white),
-                                        SizedBox(
+                                        const SizedBox(
                                           height: 130,
                                         ),
                                         utils.iconButton("LOGOUT", () async {
@@ -375,7 +423,9 @@ class _RiderDashboardState extends State<RiderDashboard> {
             );
           }),
           Obx(() {
-            return Visibility(
+            return  controller.driverData.value.attendances!.isEmpty ?
+                Center(child : utils.iosProgressIndicator(AppColors.white))
+             : Visibility(
               visible: !controller.isAttendanceMarked.value,
               child: Container(
                 height: Get.height,
@@ -409,7 +459,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                               ],
                             ),
                           ),
-                          Spacer(),
+                          const Spacer(),
                           Obx(
                                 () =>
                                 utils.tvCustom(
@@ -441,7 +491,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                 2.0,
                                 AppColors.white),
                           ),
-                          Spacer(),
+                          const Spacer(),
                         ]),
                   ],
                 ),
