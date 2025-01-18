@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 class ShowUpAnimation extends StatefulWidget {
-  /// GETTING THE CHILD WIDGET
+
   final Widget child;
   /// GETTING THE ANIMATION DURATION
   int? delay;

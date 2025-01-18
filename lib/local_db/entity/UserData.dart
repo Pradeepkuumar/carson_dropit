@@ -21,6 +21,7 @@ class UserData {
   String? emailVerifiedAt;
   String? createdAt;
   String? updatedAt;
+  String? isSignedIn;
 
   UserData(
       {this.id,
@@ -39,7 +40,9 @@ class UserData {
         this.longitude,
         this.emailVerifiedAt,
         this.createdAt,
-        this.updatedAt});
+        this.updatedAt,
+        this.isSignedIn,
+      });
 
   UserData.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -59,6 +62,7 @@ class UserData {
     emailVerifiedAt = json['email_verified_at'];
     createdAt = json['created_at'];
     updatedAt = json['updated_at'];
+    isSignedIn = json['is_signed'];
   }
 
   Map<String, dynamic> toJson() {

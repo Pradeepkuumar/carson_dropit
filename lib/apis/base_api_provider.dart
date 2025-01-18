@@ -20,7 +20,7 @@ class ApiProvider extends GetConnect {
     if (kDebugMode) {
       baseUrl = "https://dev.zyppy.qa/api/v1/";
     } else if (kReleaseMode) {
-      baseUrl = "https://cargo.carsonlogistics.net/api/v2/";
+      baseUrl = "https://dev.zyppy.qa/api/v1/";
     }
     httpClient.addAuthenticator((Request<dynamic> request) async {
     final dynamic token = "Bearer "+box.read(apiKeys.apiToken);
@@ -129,6 +129,7 @@ class ApiProvider extends GetConnect {
       );
 
       responseJson = returnResponse(response);
+      print(responseJson);
     } on TimeoutException {
       //throw FetchDataException('Request timed out');
     } on SocketException {

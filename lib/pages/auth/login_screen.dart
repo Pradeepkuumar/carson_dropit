@@ -110,7 +110,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             if(controller.feCode.value.text.isNotEmpty && controller.password.value.text.isNotEmpty) {
                               bool isLoggedIn = await controller.login();
                               if (isLoggedIn) {
-                                Get.toNamed(Routes.riderDashBord);
+                                Get.offAllNamed(Routes.riderDashBord);
                               } else {
                                 Get.snackbar('Login Failed', 'Invalid credentials');
                               }

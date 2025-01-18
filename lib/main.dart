@@ -1,5 +1,4 @@
 import 'dart:ui';
-
 import 'package:carson_zyppy/splash_screen/splash_screen.dart';
 import 'package:carson_zyppy/utils/colors.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -11,7 +10,6 @@ import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_navigation/src/root/get_material_app.dart';
 import 'package:get_storage/get_storage.dart';
-
 import 'app_pages/app_pages.dart';
 import 'firebase_notifications/firebase_notifiction_controller.dart';
 import 'firebase_options.dart';
@@ -24,6 +22,7 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  Get.put(FirebaseMessagingController());
   FlutterError.onError = (errorDetails) {
     FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
   };
@@ -35,7 +34,8 @@ void main() async {
     final db = await $FloorAppDatabase.databaseBuilder('app_database.db').build();
     return FloorUserRepository(db);
   });
-  Get.put(FirebaseMessagingController());
+
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   runApp(const MyApp());
 }
 
@@ -45,7 +45,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     SystemChrome.setSystemUIOverlayStyle(
-       SystemUiOverlayStyle(
+       const SystemUiOverlayStyle(
         statusBarColor: AppColors.primaryThemeColor,
         statusBarIconBrightness: Brightness.light,
       ),

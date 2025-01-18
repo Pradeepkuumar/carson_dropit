@@ -6,10 +6,10 @@ import 'package:get/get.dart';
 import 'package:simple_barcode_scanner/enum.dart';
 import 'package:simple_barcode_scanner/simple_barcode_scanner.dart';
 
-import '../../../utils/colors.dart';
-import '../../../utils/utils.dart';
-import '../orders_controller.dart';
-import '../orders_item.dart';
+import '../../../../utils/colors.dart';
+import '../../../../utils/utils.dart';
+import '../controller/orders_controller.dart';
+import '../view/orders_item.dart';
 
 class OrdersListView extends StatefulWidget {
   var orderStatus = "";
@@ -21,18 +21,21 @@ class OrdersListView extends StatefulWidget {
 }
 
 class OrdersListViewState extends State<OrdersListView> {
-  final controller = Get.put(OrdersController());
+  late final OrdersController controller;
   final Utils utils = Utils();
   var statusBarColor;
 
   @override
   void initState() {
-    super.initState();
+    controller = Get.put(OrdersController());
+    controller.getUser();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (controller.tabController.index == 0) {
-        controller.getFeOrders("ASSIGNED");
+      if(controller.tabController.index == 0) {
+        controller.getFeOrders(["ASSIGNED","RE-ASSIGNED"]);
       }
     });
+    super.initState();
+
   }
 
   @override
@@ -47,7 +50,7 @@ class OrdersListViewState extends State<OrdersListView> {
                 child: RefreshIndicator(
                   onRefresh: () async {
                     setState(() {
-                      controller.getFeOrders(widget.orderStatus);
+                      controller.getFeOrders([widget.orderStatus]);
                     });
                   },
                   child: SizedBox(
@@ -102,49 +105,87 @@ class OrdersListViewState extends State<OrdersListView> {
                               })),
                         ),
                         Expanded(
-                            child: Obx(
-                          () => controller.ordersList.isEmpty
-                              ? const Center(
-                                  child: Text(
-                                    "No Order Found !",
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      color: AppColors.white,
-                                    ),
-                                  ),
-                                )
-                              : ListView.builder(
-                                  itemCount: controller.ordersList.length,
-                                  itemBuilder: (context, position) {
-                                    return Padding(
-                                      padding: const EdgeInsets.all(8.0),
-                                      child: orderItem(
-                                          controller.ordersList[position],
+                          child: Obx(() => controller.ordersList.isEmpty
+                                  ? Center(child: utils.iosProgressIndicator(AppColors.white))
+                                  : ListView.builder(
+                                itemCount: controller.ordersList.length,
+                                itemBuilder: (context, position) {
+                                  return Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: orderItem(
+                                      controller.ordersList[position],
                                           (clickedOrder, clickType) async {
                                         if (clickType == orderScanCLick) {
                                           var res = await Get.to(
                                             SimpleBarcodeScannerPage(
-                                              appBarTitle: clickedOrder.hawbNo,
+                                              appBarTitle: clickedOrder.awbNo,
                                             ),
                                           );
                                           if (res is String && res != "-1") {
                                             var result = res;
-                                            if (clickedOrder.hawbNo == result) {
-                                              //controller.markOrderWareHouseIn(clickedOrder);
+                                            if (clickedOrder.awbNo == result) {
+
                                             } else {
-                                              utils.errorSnackBar("Error !",
-                                                  "Wrong Order Scanned");
+                                              utils.errorSnackBar(
+                                                "Error !",
+                                                "Wrong Order Scanned",
+                                              );
                                             }
                                           }
-                                        } else {
-                                          controller.selectedOrder =
-                                              clickedOrder;
+                                        } else if (clickType == orderUpdateToOFD) {
+                                          controller.selectedOrder.value = clickedOrder;
+                                          controller.updateOrder("OFD");
+                                        } else if (clickType == orderUpdateToDeliver ||
+                                            clickType == fullMapViewCLick) {
+                                          controller.selectedOrder.value = clickedOrder;
                                           controller.viewFullMap.value = true;
                                         }
-                                      }),
-                                    );
-                                  }),
-                        )),
+                                      },
+                                    ),
+                                  );
+                                },
+                              )
+                          ),
+                        )
+
+
+                        // Expanded(
+                        //     child: Obx(() => controller.ordersList.length == 0
+                        //       ? Center(child: utils.noDataFoundWidget())
+                        //       : ListView.builder(
+                        //           itemCount: controller.ordersList.length,
+                        //           itemBuilder: (context, position) {
+                        //             return Padding(
+                        //               padding: const EdgeInsets.all(8.0),
+                        //               child: orderItem(
+                        //                   controller.ordersList[position],
+                        //                   (clickedOrder, clickType) async {
+                        //                 if (clickType == orderScanCLick) {
+                        //                   var res = await Get.to(
+                        //                     SimpleBarcodeScannerPage(
+                        //                       appBarTitle: clickedOrder.awbNo,
+                        //                     ),
+                        //                   );
+                        //                   if (res is String && res != "-1") {
+                        //                     var result = res;
+                        //                     if (clickedOrder.awbNo == result) {
+                        //                       //controller.markOrderWareHouseIn(clickedOrder);
+                        //                     } else {
+                        //                       utils.errorSnackBar("Error !",
+                        //                           "Wrong Order Scanned");
+                        //                     }
+                        //                   }
+                        //                 } else if(clickType == orderUpdateToOFD) {
+                        //                   controller.selectedOrder.value  = clickedOrder;
+                        //                  controller.updateOrder("OFD");
+                        //                 }else if(clickType == orderUpdateToDeliver || clickType == fullMapViewCLick){
+                        //                   controller.selectedOrder.value = clickedOrder;
+                        //                   controller.viewFullMap.value = true;
+                        //                 }
+                        //               }),
+                        //             );
+                        //           }),
+                        // )),
                       ],
                     ),
                   ),
@@ -158,14 +199,14 @@ class OrdersListViewState extends State<OrdersListView> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           utils.tvCustom(
-                              "Order :${controller.selectedOrder.hawbNo}",
+                              "Order :${controller.selectedOrder.value.awbNo}",
                               AppColors.white,
                               15),
                           InkWell(
                             onTap: (){
                               controller.viewFullMap.value = false;
                             },
-                            child:Icon(Icons.close,color: AppColors.red),
+                            child:Icon(Icons.close,color: AppColors.white),
                           )
 
                         ],
@@ -173,7 +214,7 @@ class OrdersListViewState extends State<OrdersListView> {
                       SizedBox(
                           height: Get.height - 130,
                           width: Get.width,
-                          child: MapPage(orderDetails: controller.selectedOrder,mapView: 1)),
+                          child: MapPage(orderDetails: controller.selectedOrder.value,mapView: 1)),
                     ],
                   ))
             ],
@@ -184,7 +225,7 @@ class OrdersListViewState extends State<OrdersListView> {
   void searchResult(String value, int type) {
     if (value.isNotEmpty) {
       var filteredList = controller.ordersList
-          .where((element) => element.hawbNo!.contains(value))
+          .where((element) => element.awbNo!.contains(value))
           .toList();
       setState(() {
         if (filteredList.isNotEmpty) {

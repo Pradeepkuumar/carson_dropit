@@ -1,3 +1,4 @@
+import 'dart:ffi';
 import 'dart:io';
 import 'dart:ui';
 import 'package:carson_zyppy/utils/text_style_util.dart';
@@ -7,10 +8,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:location/location.dart';
 import 'package:lottie/lottie.dart';
 import 'package:url_launcher/url_launcher.dart';
-
 import '../global/consts.dart';
 import '../global/global.dart';
 import 'colors.dart';
@@ -248,6 +247,8 @@ class Utils extends GetxController {
       content: Container(
         decoration: utils.roundedBorder(AppColors.green, 10),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Container(
               height: 100,
@@ -266,6 +267,34 @@ class Utils extends GetxController {
       ),
       onConfirm: clickListener,
       buttonColor: AppColors.primaryThemeColor,
+    );
+  }
+  nonCancellableDialog(String? title) {
+    return Get.defaultDialog(
+      title: "Error !",
+      titleStyle: TextStyle(color: AppColors.red),
+      backgroundColor: AppColors.white,
+      content: Container(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              height: 80,
+              width: 80,
+              child: Lottie.asset(ANIM_ERROR),
+            ),
+            Center(
+              child: Padding(
+                padding: EdgeInsets.all(5),
+                child: utils.tvCustom(title, AppColors.red, 15),
+              ),
+            )
+          ],
+        ),
+      ),
+      buttonColor: AppColors.primaryThemeColor,
+      barrierDismissible: false
     );
   }
 
@@ -335,8 +364,8 @@ class Utils extends GetxController {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    utils.tvCustom(name, AppColors.white, 15),
-                    utils.tvCustom(count, AppColors.white, 25),
+                    utils.tvCustom(name, AppColors.white, 20),
+                    utils.tvCustom(count, AppColors.white, 15),
                   ],
                 ),
               )),
@@ -358,6 +387,7 @@ class Utils extends GetxController {
             padding: const EdgeInsets.all(8.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
                   height: 100,
@@ -365,10 +395,7 @@ class Utils extends GetxController {
                   child: Lottie.asset(ANIM_ERROR),
                 ),
                 utils.tvCustom("No Data Found !", AppColors.red, 15),
-                utils.tvCustom("Pls Try Refresh ", AppColors.black, 10),
-                SizedBox(height: 10,),
-                utils.tvCustom("--------- or ----------", AppColors.black, 7),
-                SizedBox(height: 15,),
+                SizedBox(height: 25,),
                 utils.iconButton("Go Back", (){
                   Get.back();
                 }, Icons.arrow_back_ios_new_outlined, AppColors.primaryThemeColor, AppColors.white)
@@ -405,8 +432,7 @@ class Utils extends GetxController {
                          height: 50,
                          width: 50,
                          // child: Lottie.asset(ImageConstants.ANIM_LOADING_DOTS),
-                         child: utils.iosProgressIndicator(
-                             AppColors.primaryThemeColor),
+                         child: utils.iosProgressIndicator(AppColors.primaryThemeColor),
                          // GetPlatform.isAndroid
                          //     ? CircularProgressIndicator(
                          //   color: AppColors.primaryThemeColor,
@@ -414,8 +440,8 @@ class Utils extends GetxController {
                          //     : utils.iosProgressIndicator(AppColors.white),
                        ),
                      ),
-                     utils.tvRegular(
-                       message ?? "Loading...", AppColors.black,)
+                     utils.tvCustom(
+                       message ?? "Loading...", AppColors.black,10)
                    ],
                  ),
                ),
@@ -475,9 +501,29 @@ class Utils extends GetxController {
         height: height.h,
         width: width.w,
         alignment: Alignment.topCenter,
-        fit: BoxFit.fill,
+        fit: BoxFit.fill
       ),
     );
+  }
+
+  clickableImageVertical(String name,Color textColor,Color iconColor,String imageString,double height, double width,void Function() onClick){
+    return InkWell(
+       onTap: (){
+         onClick();
+       },
+       child: Column(
+         children: [
+           Image.asset(
+               imageString,
+               height: height,
+               width: width,
+               alignment: Alignment.topCenter,
+               fit: BoxFit.fill
+           ),
+           tvRegular(name, textColor)
+         ],
+       ),
+     );
   }
 
   boxDacorationGradient() {
@@ -555,7 +601,6 @@ class Utils extends GetxController {
   roundedBorder(Color borderColor, double borderRadius) {
     return BoxDecoration(
       borderRadius: BorderRadius.circular(borderRadius),
-      color: AppColors.white,
       border: Border.all(
         color: borderColor,
         width: 1.0,
@@ -672,14 +717,12 @@ class Utils extends GetxController {
     );
   }
 
-  //Url  Launcher Functions Used to open dial pad , maps, whatsapp etc
+
   openDialPad(String phoneNumber) async {
     Uri url = Uri(scheme: "tel", path: phoneNumber);
-    if (await canLaunchUrl(url)) {
+
       await launchUrl(url);
-    } else {
-      print("Can't open dial pad.");
-    }
+
   }
 
   openWhtsApp(String Number) {

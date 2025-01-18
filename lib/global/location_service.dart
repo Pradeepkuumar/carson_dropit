@@ -26,6 +26,7 @@ class LocationUtils {
     return await _location.getLocation();
   }
 
+
   void startListeningToLocationUpdates({
     required Function(LocationData) onLocationChanged,
   }) {

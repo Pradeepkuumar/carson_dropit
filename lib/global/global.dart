@@ -1,12 +1,8 @@
-import 'dart:ui';
-
-import 'package:carson_zyppy/utils/colors.dart';
 import 'package:carson_zyppy/utils/utils.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:image_picker/image_picker.dart';
-
 import '../apis/api_end_points.dart';
 import '../apis/api_keys.dart';
 import '../apis/base_api_provider.dart';
