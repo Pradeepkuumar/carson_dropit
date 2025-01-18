@@ -3,20 +3,19 @@ import 'package:carson_zyppy/global/consts.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
-import '../../../../global/global.dart';
-import '../../../../utils/colors.dart';
-import '../../../../utils/utils.dart';
-import '../../orders/models/orders_model.dart';
+import '../../../../../global/global.dart';
+import '../../../../../utils/colors.dart';
+import '../../../../../utils/utils.dart';
+import '../../../orders/models/orders_model.dart';
 
 
-placedOrderItem(OrdersData orderData,void Function(OrdersData,String) onClick) {
+nearByOrderItem(OrdersData orderData,void Function(OrdersData,String) onClick) {
   Utils utils = Utils();
   return Card(
       elevation: 4,
       shadowColor: Colors.black,
       color: AppColors.white,
       child: SizedBox(
-        width: Get.width,
         child: Padding(
           padding:  const EdgeInsets.all(10.0),
           child: Column(
@@ -143,9 +142,6 @@ placedOrderItem(OrdersData orderData,void Function(OrdersData,String) onClick) {
                     visible: orderData.status == "PLACED" ? true : false,
                     child: Column(
                       children: [
-                        // SizedBox (
-                        //   height: 300,
-                        //   child: MapPage(orderDetails: orderData,mapView: 0)),
                         SizedBox(height: 10,),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -195,7 +191,6 @@ Widget customRow(String name, String data) {
     ),
   );
 }
-
 Widget customColumn(String name, String data) {
   return Padding(
     padding:  const EdgeInsets.all(10),

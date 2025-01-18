@@ -4,7 +4,6 @@ import 'package:carson_zyppy/global/global.dart';
 import 'package:carson_zyppy/pages/dashboard/controller/rider_dashboard_controller.dart';
 import 'package:carson_zyppy/pages/my_orders/nearby_orders/view/nearby_orders_view.dart';
 import 'package:carson_zyppy/utils/colors.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lottie/lottie.dart';
@@ -22,6 +21,7 @@ class RiderDashboard extends StatefulWidget {
 
 class _RiderDashboardState extends State<RiderDashboard> {
   final RiderDashboardController controller = Get.put(RiderDashboardController());
+
   var showMenu = false.obs;
 
   @override
@@ -76,18 +76,18 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                           decoration: utils.roundedBorder(AppColors.white, 10),
                                           child:  Padding(
                                             padding: const EdgeInsets.all(15.0),
-                                            child: controller.driverData.value.attendances?.length == 0 ?
+                                            child: controller.attendancesList.isEmpty ?
                                             utils.iosProgressIndicator(AppColors.white)
                                                 : Column(
                                                   children: [
-                                                    utils.tvCustom("(Working Hours/Day)", AppColors.white, 10),
+                                                    utils.tvCustom("Working Hours/Day", AppColors.white, 10),
                                                     SizedBox(
                                                     height: 100,
                                                       child: ListView.builder(
                                                           scrollDirection: Axis.horizontal,
-                                                       itemCount:controller.driverData.value.attendances?.length ,
+                                                       itemCount:controller.attendancesList.length ,
                                                       itemBuilder: (context, position){
-                                                      return AttendanceProgressBar(attendance:controller.driverData.value.attendances?[position]);
+                                                      return AttendanceProgressBar(attendance:controller.attendancesList[position]);
                                                       }),
                                                     ),
                                                     utils.tvCustom("Work Days", AppColors.white, 10),
@@ -114,7 +114,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                     child: Row(
                                                       children: [
                                                         utils.imageView(myOrdersImage, 50, 50),
-                                                        const SizedBox(width: 10,),
+                                                        const SizedBox(width: 10),
                                                         utils.tvCustom("My Orders",AppColors.primaryThemeColor, 20)
                                                       ],
                                                     ),
@@ -173,7 +173,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                       const SizedBox(height: 5,),
                                       InkWell(
                                         onTap: (){
-                                          Get.to(NearbyOrdersView());
+                                          Get.toNamed(Routes.nearByOrders);
                                         },
                                         child: Container(
                                           margin: const EdgeInsets.symmetric(horizontal: 15),
@@ -373,7 +373,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                           height: 10,
                                         ),
                                         utils.iconButton("NEARBY ORDERS", () {
-                                          //Get.toNamed(Routes.ordersScreen);
+                                          Get.toNamed(Routes.nearByOrders);
                                         },
                                             Icons.near_me,
                                             AppColors.primaryThemeColor,
@@ -383,7 +383,9 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                         ),
                                         utils.iconButton(
                                             "SUPPORT",
-                                                () {},
+                                                () {
+
+                                                },
                                             Icons.support_agent_rounded,
                                             AppColors.primaryThemeColor,
                                             AppColors.white),
@@ -423,7 +425,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
             );
           }),
           Obx(() {
-            return  controller.driverData.value.attendances!.isEmpty ?
+            return  !controller.isAttendanceLoaded.value ?
                 Center(child : utils.iosProgressIndicator(AppColors.white))
              : Visibility(
               visible: !controller.isAttendanceMarked.value,

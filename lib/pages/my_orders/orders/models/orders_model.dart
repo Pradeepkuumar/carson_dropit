@@ -37,6 +37,8 @@ class OrdersData {
   String? contact_person_name;
   String? contact_person_phoneno;
   String? sla_in_hours;
+  String? reason;
+  String? failed_delivery_proof;
 
   OrdersData(
       {this.id,
@@ -77,6 +79,8 @@ class OrdersData {
         this.contact_person_name,
         this.contact_person_phoneno,
         this.sla_in_hours,
+        this.reason,
+        this.failed_delivery_proof,
       });
 
   OrdersData.fromJson(Map<String, dynamic> json) {
@@ -118,6 +122,8 @@ class OrdersData {
     contact_person_name = json['contact_person_name'];
     contact_person_phoneno = json['contact_person_phoneno'];
     sla_in_hours = json['sla_in_hours'];
+    reason = json['reason'];
+    failed_delivery_proof = json['failed_delivery_proof'];
   }
 
   Map<String, dynamic> toJson() {
@@ -159,6 +165,8 @@ class OrdersData {
     data['contact_person_name'] = this.contact_person_name;
     data['contact_person_phoneno'] = this.contact_person_phoneno;
     data['sla_in_hours'] = this.sla_in_hours;
+    data['reason'] = this.reason;
+    data['failed_delivery_proof'] = this.failed_delivery_proof;
     return data;
   }
 }

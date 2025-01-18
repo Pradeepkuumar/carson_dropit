@@ -2,6 +2,7 @@
 import 'package:carson_zyppy/global/consts.dart';
 import 'package:carson_zyppy/pages/map/map_page.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../../../global/global.dart';
 import '../../../../utils/colors.dart';
 import '../../../../utils/utils.dart';
@@ -15,7 +16,7 @@ orderItem(OrdersData orderData, void Function(OrdersData,int) onClick) {
       shadowColor: Colors.black,
       color: AppColors.white,
       child: SizedBox(
-        width: double.infinity,
+        width: Get.width,
         child: Padding(
           padding:  const EdgeInsets.all(10.0),
           child: Column(
@@ -58,8 +59,8 @@ orderItem(OrdersData orderData, void Function(OrdersData,int) onClick) {
                       Container(
                         decoration: BoxDecoration(
                             color: orderData.status == "ASSIGNED" ? AppColors.linkColor :
-                            orderData.status == "REACHED"? AppColors.primaryThemeColor:orderData.status == "PICKED"?
-                            AppColors.blue : orderData.status == "DELIVERED" ? AppColors.greenLight : AppColors.primaryThemeColor,
+                            orderData.status == "REACHED"? AppColors.primaryThemeColor : orderData.status == "PICKED" ?
+                            AppColors.blue : orderData.status == "DELIVERED" ? AppColors.greenLight : orderData.status == "UNDELIVERED" ? AppColors.red : AppColors.primaryThemeColor,
                             borderRadius: BorderRadius.circular(8)),
                         child: Padding(
                           padding:  const EdgeInsets.all(4.0),
@@ -109,54 +110,70 @@ orderItem(OrdersData orderData, void Function(OrdersData,int) onClick) {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.max,
                 children: [
-                  Container(
-                      child: ListTile(
-                        leading:  const Icon(
-                          Icons.shopping_cart,
-                          color: AppColors.primaryThemeColor,
-                        ),
-                        title: Text(
-                          "${orderData.merchantName}\n${orderData.itemName}\n${orderData.itemDescription}(${orderData.quantity})",
-                          style:  const TextStyle(
-                            fontSize: 12,
-                          ),
-                        ),
-                      )),
-                  Container(
-                      child: Column(
-                        children: [
-                          customRow("Item amount.",orderData.orderAmount ?? ""),
-                          customRow("Weight.",  orderData.weight ?? ""),
-                          customRow("Consignee Name", orderData.consigneeName ?? ""),
-                        ],
-                      )),
+                  ListTile(
+                    leading:  const Icon(
+                      Icons.shopping_cart,
+                      color: AppColors.primaryThemeColor,
+                    ),
+                    title: Text(
+                      "${orderData.merchantName}\n${orderData.itemName}\n${orderData.itemDescription}(${orderData.quantity})",
+                      style:  const TextStyle(
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  Column(
+                    children: [
+                      customRow("Order Amount.",orderData.orderAmount ?? ""),
+                      customRow("Weight.",  orderData.weight ?? ""),
+                      customRow("Consignee Name", orderData.consigneeName ?? ""),
 
+                    ],
+                  ),
+                  Visibility(
+                    visible: orderData.status == "UNDELIVERED",
+                      child: Column( children: [
+                          customRow("Undelivered Reason", orderData.reason ?? ""),
+                          Image.network(orderData.failed_delivery_proof ?? "")
+                      ])),
                   Visibility(
                     visible: orderData.status == "ASSIGNED" || orderData.status == "RE-ASSIGNED" ? true : false,
                     child: Column(
                       children: [
-                        SizedBox (
-                          height: 300,
-                          child: MapPage(orderDetails: orderData,mapView: 0)),
-                        SizedBox(height: 10,),
+                        const SizedBox(height: 10,),
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            utils.iconButton("Call PickUp", () {
-                              utils.openDialPad(
+                              utils.clickableImageVertical("Call Pickup", AppColors.black, AppColors.lightBlue, icTelephone, 30, 30, (){
+                                utils.openDialPad(
+                                    orderData.pickupPhoneNo.toString());
+                              }),
+                             SizedBox(width:5,),
+                            utils.clickableImageVertical("Pickup", AppColors.black, AppColors.green, icWhatsApp,30, 30, (){
+                              utils.openWhtsApp(
                                   orderData.pickupPhoneNo.toString());
-                            }, Icons.call, AppColors.blue, AppColors.white),
-                            utils.iconButton("Call Consignee", () {
+                              }),
+                            SizedBox(width:5,),
+                            utils.clickableImageVertical("Call Consignee", AppColors.black, AppColors.blue, icTelephone, 30, 30, (){
                               utils.openDialPad(
                                   orderData.consigneeMobileNo.toString());
-                            }, Icons.call, AppColors.green, AppColors.white),
-                            utils.iconButton("Update", () {
-                              onClick(orderData,fullMapViewCLick);
-                            }, Icons.arrow_circle_right_rounded,
-                                AppColors.primaryThemeColor, AppColors.white),
+                              }),
+                            SizedBox(width:5,),
+                            utils.clickableImageVertical("Consignee", AppColors.black, AppColors.green, icWhatsApp,30, 30, (){
+                              utils.openWhtsApp(
+                                  orderData.pickupPhoneNo.toString());
+                              }),
+
                           ],
                         ),
+                        const SizedBox(height: 10,),
+                        utils.iconButton("Update", () {
+                          onClick(orderData,fullMapViewCLick);
+                        }, Icons.arrow_circle_right_rounded,
+                            AppColors.primaryThemeColor, AppColors.white),
+
+
                       ],
                     ),
                   ),

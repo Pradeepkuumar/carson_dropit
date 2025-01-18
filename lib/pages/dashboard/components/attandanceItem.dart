@@ -23,13 +23,11 @@ class AttendanceProgressBar extends StatelessWidget {
           alignment: Alignment.bottomCenter,
           children: [
             FractionallySizedBox(
-              heightFactor:
-                  double.parse(attendance?.workingHours.toString() ?? "0.0").clamp(0.0, 8.0) / 8.0,
+              heightFactor: double.parse(attendance?.workingHours.toString() ?? "0.0").clamp(0.0, 8.0) / 8.0,
               child: Container(
                 decoration: BoxDecoration(
                   color:
-                      double.parse(attendance?.workingHours.toString() ?? "0.0").clamp(0.0, 8.0) / 8.0 > 5 ? AppColors.red
-                          : AppColors.green,
+                      double.parse(attendance?.workingHours.toString() ?? "0.0") < 5 ? AppColors.red : AppColors.green,
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
@@ -37,11 +35,8 @@ class AttendanceProgressBar extends StatelessWidget {
             Align(
                 alignment: Alignment.topCenter,
                 child: Padding(
-                  padding: EdgeInsets.all(5),
-                  child: utils.tvCustom(
-                      "${attendance?.workingHours.toString()}\nHrs",
-                      AppColors.black,
-                      8),
+                  padding: const EdgeInsets.all(5),
+                  child: utils.tvCustom("${attendance?.workingHours.toString()}\nHrs", AppColors.black, 8),
                 )),
             Align(
                 alignment: Alignment.bottomCenter,
@@ -50,10 +45,8 @@ class AttendanceProgressBar extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      utils.tvCustom("${attendance!.date!.day}",
-                              AppColors.black, 15),
-                      utils.tvCustom(changeMonthToStr(attendance!.date!.month),
-                              AppColors.black, 10)
+                      utils.tvCustom("${attendance!.date!.day}", AppColors.black, 15),
+                      utils.tvCustom(changeMonthToStr(attendance!.date!.month), AppColors.black, 10)
                     ],
                   ),
                 )),

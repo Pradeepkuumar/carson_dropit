@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:carson_zyppy/local_db/entity/UserData.dart';
 import 'package:carson_zyppy/pages/dashboard/models/dashboard_data.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:location/location.dart';
@@ -26,6 +27,8 @@ class RiderDashboardController extends GetxController {
   var updateRiderLocation = false.obs;
   var driverData = DriverData().obs;
   var dashBoardData = DashboardData().obs;
+  var isAttendanceLoaded = false.obs;
+  var attendancesList = [].obs;
 
   @override
   void onInit() {
@@ -42,11 +45,13 @@ class RiderDashboardController extends GetxController {
   }
 
   void checkAttendance() {
-    if (driverData.value.attendances?.last.status == "Present") {
+    if (driverData.value.attendances?.last.markAttendance == 1) {
       isAttendanceMarked.value = true;
     } else {
       isAttendanceMarked.value = false;
     }
+    isAttendanceLoaded.value = true;
+
   }
 
   // final listener = InternetConnection().onStatusChange.listen((InternetStatus status) {
@@ -197,6 +202,7 @@ class RiderDashboardController extends GetxController {
       var result = BaseApiResponse.fromJson(response);
       if (result.status_code == 200) {
         driverData.value = DriverData.fromJson(result.data);
+        attendancesList.value =  driverData.value.attendances!.reversed.toList();
         // print(driverData.value.toJson().toString());
         await getDashBoardData();
         utils.closeLoadingDialog();

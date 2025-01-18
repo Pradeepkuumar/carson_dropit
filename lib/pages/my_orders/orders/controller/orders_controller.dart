@@ -73,43 +73,34 @@ class OrdersController extends GetxController  with
 
   @override
  void onInit() async {
-    tabController = TabController(initialIndex: 0, length: 4,vsync:this );
-    getUser();
-   tabController.addListener(() {
-     viewFullMap.value = false;
-     if (tabController.index == 0) {
-         getFeOrders(["ASSIGNED","RE-ASSIGNED"]);
-     } else if (tabController.index == 1) {
-       getFeOrders(["PICKED"]);
-     } else if (tabController.index == 2) {
-       getFeOrders(["OFD"]);
-     } else if (tabController.index == 3) {
-       getFeOrders(["DELIVERED"]);
-     }
-     signatureController.addListener(signatureListner);
-   });
-
     super.onInit();
+    tabController = TabController(initialIndex: 0, length: 5,vsync:this );
+    getUser();
+    tabController.addListener(() {
+      viewFullMap.value = false;
+      if (tabController.index == 0) {
+        getFeOrders(["ASSIGNED","RE-ASSIGNED"]);
+      } else if (tabController.index == 1) {
+        getFeOrders(["PICKED"]);
+      } else if (tabController.index == 2) {
+        getFeOrders(["OFD"]);
+      } else if (tabController.index == 3) {
+        getFeOrders(["DELIVERED"]);
+      }else if (tabController.index == 4) {
+        getFeOrders(["UNDELIVERED"]);
+      }
+      signatureController.addListener(signatureListner);
+    });
     startHintTextTimer();
   }
 
 
-
   getUser() async {
-    try {
-      var value = await userRepository.getUser();
-      if (value != null) {
-        user = value;
-        if(user.code != null) {
-          getFeOrders(["ASSIGNED", "RE-ASSIGNED"]);
-          getReasons();
-        }
-      }
-    } catch (e){
-      utils.errorSnackBar("Exception", e.toString());
-    }
-
+    await userRepository.getUser().then((value) => {user = value!});
+    await getReasons();
   }
+
+
 
   void startHintTextTimer() {
     Timer.periodic(Duration(seconds: 2), (_) => _changeHintText());
@@ -132,7 +123,7 @@ class OrdersController extends GetxController  with
     utils.showLoadingDialog("Loading...");
     try {
       Map<String, dynamic> model = {
-        apiKeys.feCode: user.code,
+        apiKeys.feCode: box.read(apiKeys.feCode) ?? "",
         apiKeys.status: status,
       };
       dynamic response = await apiProvider.postRequest(
@@ -142,20 +133,18 @@ class OrdersController extends GetxController  with
         ordersList.clear();
         for (var json in result.data) {
           ordersList.add(OrdersData.fromJson(json));
+          // await Future.delayed(const Duration(milliseconds: 100));
         }
         utils.closeLoadingDialog();
-        update();
         return true;
       } else {
-        utils.errorSnackBar("Exception", result.message.toString());
+       // utils.errorSnackBar("Exception", result.message.toString());
         utils.closeLoadingDialog();
-        update();
         return false;
       }
     } catch (e) {
       utils.closeLoadingDialog();
-      update();
-      utils.errorSnackBar("Exception", e.toString());
+     // utils.errorSnackBar("Exception", e.toString());
     }
     return null;
   }
@@ -175,7 +164,7 @@ class OrdersController extends GetxController  with
         update();
         return true;
       } else {
-        utils.errorSnackBar("Exception", result.message.toString());
+      //  utils.errorSnackBar("Exception", result.message.toString());
         utils.closeLoadingDialog();
         update();
         return false;
@@ -183,7 +172,7 @@ class OrdersController extends GetxController  with
     } catch (e) {
       utils.closeLoadingDialog();
       update();
-      utils.errorSnackBar("Exception", e.toString());
+     // utils.errorSnackBar("Exception", e.toString());
     }
     return null;
   }

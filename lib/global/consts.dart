@@ -9,6 +9,8 @@ const String USER_ID_KEY = "user_id";
  const String myOrdersImage = 'assets/images/ic_my_orders.png';
  const String placedOrdersImage = 'assets/images/ic_placed_orders.png';
  const String nearByImage = 'assets/images/ic_nearby_location.png';
+ const String icTelephone = 'assets/icons/ic_telephone.png';
+ const String icWhatsApp = 'assets/icons/ic_whtasapp.png';
 
 
  //App CONSTANTS

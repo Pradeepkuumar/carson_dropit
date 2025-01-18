@@ -49,6 +49,7 @@ class AuthController extends GetxController {
       if (result.status_code == 200) {
         userData = UserData.fromJson(result.data);
         box.write(apiKeys.apiToken, userData.apiToken);
+        box.write(apiKeys.feCode, userData.code);
         await userRepository.deleteUser();
         await userRepository.saveUser(userData);
         utils.closeLoadingDialog();

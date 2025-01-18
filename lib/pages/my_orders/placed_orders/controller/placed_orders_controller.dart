@@ -1,4 +1,5 @@
 import 'package:carson_zyppy/local_db/entity/UserData.dart';
+import 'package:carson_zyppy/pages/dashboard/controller/rider_dashboard_controller.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -9,8 +10,12 @@ import '../../orders/models/orders_model.dart';
 
 class PlacedOrdersController extends GetxController {
   TextEditingController searchEditTextController = TextEditingController();
+  final riderDashboardController  = Get.put(RiderDashboardController());
   var ordersList = <OrdersData>[].obs;
+  var selectedMerchantOrdersList = <OrdersData>[].obs;
   var user = UserData();
+  var viewAcceptView = false.obs;
+  var selectedLocationId = "".obs;
 
   final notifications = [
     "Enter Order Number",
@@ -18,6 +23,7 @@ class PlacedOrdersController extends GetxController {
     "Enter Order Number",
     "Scan QR Code for Order",
   ];
+
 
 
   @override
@@ -31,6 +37,19 @@ class PlacedOrdersController extends GetxController {
     if(user.code != null) {
       await fetchOrders();
     }
+  }
+
+  void selectedLocationOrders() async {
+    selectedMerchantOrdersList.clear();
+    for (var order in ordersList) {
+      if (order.locationId.toString() == selectedLocationId.value &&
+          !selectedMerchantOrdersList.any((existingOrder) =>
+          existingOrder.awbNo == order.awbNo)) {
+        selectedMerchantOrdersList.add(order);
+      }
+    }
+    update();
+    viewAcceptView.value = true;
   }
 
   Future<bool?> fetchOrders() async {
@@ -65,7 +84,7 @@ class PlacedOrdersController extends GetxController {
     return null;
   }
 
-  Future<bool?> acceptRejectOrder(String type, String orderNumber) async {
+  Future<bool> acceptRejectOrder(String type, String orderNumber) async {
     utils.showLoadingDialog("Loading...");
     try {
       Map<String, dynamic> model = {
@@ -77,7 +96,10 @@ class PlacedOrdersController extends GetxController {
           apiEndPoints.acceptRejectOrder, model);
       var result = BaseApiResponse.fromJson(response);
       if (result.data != null) {
-        fetchOrders();
+         await fetchOrders();
+        riderDashboardController.getDashBoardData();
+        selectedLocationOrders();
+        viewAcceptView.value = false;
         utils.closeLoadingDialog();
         return true;
       } else {
@@ -91,7 +113,7 @@ class PlacedOrdersController extends GetxController {
       update();
       utils.errorSnackBar("Exception", e.toString());
     }
-    return null;
+    return false;
   }
 
 

@@ -88,13 +88,20 @@ class PlacedOrdersListView extends GetView<PlacedOrdersController> {
                                   itemBuilder: (context, position) {
                                     return Padding(
                                       padding: const EdgeInsets.all(8.0),
-                                      child: placedOrderItem(
-                                          controller.ordersList[position],
+                                      child: placedOrderItem(controller.ordersList[position],
                                           (clickedOrder,type) async {
                                             if(type == acceptOrder){
-                                              controller.acceptRejectOrder(acceptOrder, clickedOrder.awbNo ?? "");
+                                              utils.simpleDialog("Accept Order", "Do you want to accept this order ?", (){
+                                                controller.acceptRejectOrder(acceptOrder, clickedOrder.awbNo ?? "");
+                                              }, (){
+                                              });
+
                                             }else{
-                                              controller.acceptRejectOrder(rejectOrder, clickedOrder.awbNo ?? "");
+                                              utils.simpleDialog("Reject Order", "Do you want to reject this order ?", (){
+                                                controller.acceptRejectOrder(rejectOrder, clickedOrder.awbNo ?? "");
+                                              }, (){
+                                              });
+
                                             }
                                       }),
                                     );

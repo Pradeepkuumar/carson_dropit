@@ -127,9 +127,9 @@ class _MapPageState extends State<MapPage> {
                     markerId: MarkerId("_currentLocation"),
                     icon: BitmapDescriptor.defaultMarker,
                     position: curentLocation!,
-                    infoWindow: InfoWindow(
+                    infoWindow: const InfoWindow(
                       title: "You",
-                      snippet: "Current Location",
+                      snippet: " Your Current Location",
                     ),
                   ),
                   Marker(
@@ -727,8 +727,6 @@ class _MapPageState extends State<MapPage> {
     controller.viewFullMap.value = false;
     controller.markDelivered.value = false;
     controller.markUnDelivered.value = false;
-    Get.back();
-    Get.offNamed(Routes.ordersScreen);
   }
 
   void showCustomMarker(OrdersData data,int type) {
@@ -775,7 +773,7 @@ class _MapPageState extends State<MapPage> {
                 ),
 
                 Padding(padding: const EdgeInsets.all(20),
-                child:  utils.iconButtonWithRoundedBorder("Navigate", 40, (){
+                child:  utils.iconButtonWithRoundedBorder("Navigate Address", 40, (){
                         utils.openMaps(type == 0 ? data.pickupAddress! : data.consigneeAddress!);
                 }, Icons.assistant_navigation,
                     AppColors.primaryThemeColor,
