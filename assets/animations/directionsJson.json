@@ -1,0 +1,89 @@
+{
+  "geocoded_waypoints": [
+    {
+      "geocoder_status": "OK",
+      "place_id": "ChIJL8P1Nb94BTkRy-Et9zvjwyg",
+      "types": [
+        "street_address"
+      ]
+    },
+    {
+      "geocoder_status": "OK",
+      "place_id": "ChIJi0c7R794BTkRNl-4Xc_xI5M",
+      "types": [
+        "premise"
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "bounds": {
+        "northeast": {
+          "lat": 31.0938441,
+          "lng": 77.1731473
+        },
+        "southwest": {
+          "lat": 31.09302769999999,
+          "lng": 77.1725318
+        }
+      },
+      "copyrights": "Map data ©2025",
+      "legs": [
+        {
+          "distance": {
+            "text": "0.1 km",
+            "value": 121
+          },
+          "duration": {
+            "text": "1 min",
+            "value": 17
+          },
+          "end_address": "35VF+C44, Talland, Milsington Estate, Chotta Shimla, Shimla, Himachal Pradesh 171001, India",
+          "end_location": {
+            "lat": 31.0938441,
+            "lng": 77.1726549
+          },
+          "start_address": "1, Shimla Bypass, near Kapur Empire, Milsington Estate, Chotta Shimla, Shimla, Himachal Pradesh 171001, India",
+          "start_location": {
+            "lat": 31.09302769999999,
+            "lng": 77.1731473
+          },
+          "steps": [
+            {
+              "distance": {
+                "text": "0.1 km",
+                "value": 121
+              },
+              "duration": {
+                "text": "1 min",
+                "value": 17
+              },
+              "end_location": {
+                "lat": 31.0938441,
+                "lng": 77.1726549
+              },
+              "html_instructions": "Head <b>northwest</b> on <b>NH 5</b><div style=\"font-size:0.9em\">Pass by Taveer Infrastructure (P) Ltd. (on the left)</div><div style=\"font-size:0.9em\">Destination will be on the right</div>",
+              "polyline": {
+                "points": "mzw|De{_vMMR]n@EHU^QJK@K?G?OGWO"
+              },
+              "start_location": {
+                "lat": 31.09302769999999,
+                "lng": 77.1731473
+              },
+              "travel_mode": "DRIVING"
+            }
+          ],
+          "traffic_speed_entry": [],
+          "via_waypoint": []
+        }
+      ],
+      "overview_polyline": {
+        "points": "mzw|De{_vMgAlBQJK@S?g@W"
+      },
+      "summary": "NH 5",
+      "warnings": [],
+      "waypoint_order": []
+    }
+  ],
+  "status": "OK"
+}

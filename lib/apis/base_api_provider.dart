@@ -28,20 +28,12 @@ class ApiProvider extends GetConnect {
       return request;
     });
     httpClient.addRequestModifier((Request<dynamic> request) {
-  //    final token = box.read("api_token") ?? "no_token";
-   //   request.headers['Authorization'] = "Bearer $token";
       request.headers['accept-encoding'] = acceptEncoding;
       request.headers['accept'] = accept;
-      // request.headers['cache-control'] = noCache;
       return request;
     });
   }
 
-  @override
-  void onInit() {
-    super.onInit();
-    //token = "Bearer " + box.read("api_token");
-  }
 
   Future<dynamic> getRequest(String endpoint) async {
     dynamic responseJson;
@@ -178,14 +170,12 @@ class ApiProvider extends GetConnect {
     return returnResponse(response);
   }
 
+
+
   dynamic returnResponse(Response response) {
     switch (response.statusCode) {
       case 200:
         var responseJson = json.decode(response.bodyString!);
-        // final Response Function(Map<String, dynamic>) parser;
-        // Map<String, dynamic> responseJson = jsonDecode(response.body);
-       //  final jsonBody = json.decode(response.body);
-        // var data = jsonBody["data"];
         return responseJson;
       case 400:
        // throw BadRequestException(response.hasError.toString());
@@ -198,4 +188,6 @@ class ApiProvider extends GetConnect {
        // throw FetchDataException("server error${response.statusCode}");
     }
   }
+
+
 }

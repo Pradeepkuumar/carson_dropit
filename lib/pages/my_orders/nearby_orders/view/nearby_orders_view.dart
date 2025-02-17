@@ -1,3 +1,4 @@
+import 'dart:ffi';
 import 'dart:math';
 import 'package:carson_zyppy/pages/my_orders/placed_orders/controller/placed_orders_controller.dart';
 import 'package:flutter/material.dart';
@@ -7,7 +8,8 @@ import 'package:carson_zyppy/global/global.dart';
 import 'package:carson_zyppy/utils/colors.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:google_navigation_flutter/google_navigation_flutter.dart';
+// import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import '../../../../global/consts.dart';
 import '../../../map/item_map_notifications.dart';
@@ -21,69 +23,33 @@ class NearbyOrdersView extends StatefulWidget {
 class _MapPageState extends State<NearbyOrdersView> {
   final Location _locationController = Location();
   final controller = Get.put(PlacedOrdersController());
-  final Completer<GoogleMapController> _mapController =
-  Completer<GoogleMapController>();
+  late final Completer<GoogleMapViewController> _mapController =
+  Completer<GoogleMapViewController>();
 
   var showNotificationView = false.obs;
   var enableMapLiveCamera = false.obs;
   var enableOrdersSearch = false.obs;
   var acceptView = false.obs;
-  LatLng? currentLocation;
 
-  Map<MarkerId, Marker> markers = {};
 
 
   @override
   void initState() {
     super.initState();
     fetchOrdersAndInitialize();
-    getLocationUpdates();
+    getLocationUpdates().then((_){
+     // updateMarkers();
+    });
   }
 
   Future<void> fetchOrdersAndInitialize() async {
-    controller.getUser();
+     controller.getUser();
+    // updateMarkers();
   }
 
 
-  void setMarkers() {
-    markers.clear();
-    if (currentLocation != null) {
-      final markerId = MarkerId("current_location");
-      final marker = Marker(
-        markerId: markerId,
-        position: currentLocation!,
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-        infoWindow: const InfoWindow(
-          title: "Your Location",
-          snippet: "This is your current location",
-        ),
-      );
-      markers[markerId] = marker;
-    }
 
-    setState(() {
-    for (var order in controller.ordersList) {
-      final markerId = MarkerId(order.locationId.toString());
-      final marker = Marker(
-          markerId: markerId,
-          position: LatLng(
-            double.parse(order.pickupLatitude ?? "0.0"),
-            double.parse(order.pickupLongitude ?? "0.0"),
-          ),
-          icon:
-          BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
-          infoWindow: InfoWindow(
-            title: order.pickupLocationName,
-            snippet:"",
-          ),
-          onTap: () {
-            controller.selectedLocationId.value = markerId.value;
-            controller.selectedLocationOrders();
-          });
-      markers[markerId] = marker;
-    }
-    });
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -93,34 +59,51 @@ class _MapPageState extends State<NearbyOrdersView> {
           children: [
             Obx(() {
               if (controller.ordersList.isEmpty) {
-                return Center(child: utils.noDataFoundWidget());
+                return Center(child:  utils.iosProgressIndicator(AppColors.primaryThemeColor));
               }
-              return GoogleMap(
+              return controller.markers.isNotEmpty ? GoogleMapsMapView(
                 gestureRecognizers: Set()
                   ..add(Factory<PanGestureRecognizer>(
                           () => PanGestureRecognizer()))..add(
                       Factory<ScaleGestureRecognizer>(
                               () => ScaleGestureRecognizer())),
-                mapType: MapType.hybrid,
-                onMapCreated: (GoogleMapController controller) =>
-                    _mapController.complete(controller),
+
+                onViewCreated: (GoogleMapViewController mapController){
+                  for (var marker in controller.markers) {
+                    mapController.addMarkers([marker]);
+                  }
+
+                  _mapController.complete(mapController);
+
+                },
+                initialMapType: MapType.hybrid,
                 initialCameraPosition: CameraPosition(
-                  target: currentLocation ??
-                      LatLng(
-                        double.parse(
+                  // target: currentLocation ??
+                      target: LatLng(
+                        latitude : double.parse(
                             controller.ordersList.first.pickupLatitude ??
                                 "0.0"),
-                        double.parse(
+                        longitude: double.parse(
                             controller.ordersList.first.pickupLongitude ??
                                 "0.0"),
                       ),
                   zoom: 14,
                 ),
-                markers: Set<Marker>.of(markers.values),
+
+                onMarkerClicked: (value) {
+                  if (value != "current_location") {
+                    controller.selectedLocationId.value = value;
+                    controller.selectedLocationOrders();
+                  } else {
+                    print("Marker not found in map.");
+                  }
+                },
+
+              ): Center(
+                child: utils.iosProgressIndicator(AppColors.primaryThemeColor),
               );
             }),
             buildControls(),
-
             Obx(() {
               return Visibility(
                 visible: controller.viewAcceptView.value,
@@ -167,7 +150,7 @@ class _MapPageState extends State<NearbyOrdersView> {
                               Expanded(
                                 flex: 20,
                                 child: SizedBox(
-                                  height: 450,
+                                  height: 480,
                                   child: PageView.builder(
                                       scrollDirection: Axis.horizontal,
                                       controller: PageController(
@@ -184,6 +167,7 @@ class _MapPageState extends State<NearbyOrdersView> {
                                                     "Accept Order",
                                                     "Do you want to accept this order ?",
                                                         () async {
+                                                      Get.back();
                                                       await controller
                                                           .acceptRejectOrder(
                                                           acceptOrder,
@@ -225,7 +209,8 @@ class _MapPageState extends State<NearbyOrdersView> {
                   ),
                 ),
               );
-            })
+            }),
+
           ],
         ),
       ),
@@ -233,62 +218,66 @@ class _MapPageState extends State<NearbyOrdersView> {
     );
   }
 
+
+
   Widget buildControls() {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Obx(() {
-            return AnimatedContainer(
-              width: showNotificationView.value ? 250.0 : 50.0,
-              height: showNotificationView.value ? 350.0 : 50.0,
-              decoration: utils.boxDecorationWhite(),
-              alignment: showNotificationView.value
-                  ? Alignment.center
-                  : AlignmentDirectional.topCenter,
-              duration: const Duration(seconds: 1),
-              curve: Curves.fastOutSlowIn,
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: showNotificationView.value
-                    ? Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        utils.tvCustom("Order Notifications",
-                            AppColors.primaryThemeColor, 13),
-                        InkWell(
-                          onTap: () => showNotificationView.toggle(),
-                          child: const Icon(Icons.close,
-                              color: AppColors.red),
-                        )
-                      ],
-                    ),
-                    utils.dividerBlack(),
-                    Expanded(
-                      child: ListView.builder(
-                        itemCount: controller.ordersList.length,
-                        itemBuilder: (context, pos) =>
-                            ItemMapNotifications(
-                                controller.notifications[pos]),
-                      ),
-                    ),
-                  ],
-                )
-                    : InkWell(
-                  onTap: () => showNotificationView.toggle(),
-                  child: const Center(
-                    child: Icon(Icons.notifications,
-                        color: AppColors.primaryThemeColor),
-                  ),
-                ),
-              ),
-            );
-          }),
+          // Obx(() {
+          //   return AnimatedContainer(
+          //     width: showNotificationView.value ? 250.0 : 50.0,
+          //     height: showNotificationView.value ? 350.0 : 50.0,
+          //     decoration: utils.boxDecorationWhite(),
+          //     alignment: showNotificationView.value
+          //         ? Alignment.center
+          //         : AlignmentDirectional.topCenter,
+          //     duration: const Duration(seconds: 1),
+          //     curve: Curves.fastOutSlowIn,
+          //     child: Padding(
+          //       padding: const EdgeInsets.all(8.0),
+          //       child: showNotificationView.value
+          //           ? Column(
+          //         children: [
+          //           Row(
+          //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          //             children: [
+          //               utils.tvCustom("Order Notifications",
+          //                   AppColors.primaryThemeColor, 13),
+          //               InkWell(
+          //                 onTap: () => showNotificationView.toggle(),
+          //                 child: const Icon(Icons.close,
+          //                     color: AppColors.red),
+          //               )
+          //             ],
+          //           ),
+          //           utils.dividerBlack(),
+          //           Expanded(
+          //             child: ListView.builder(
+          //               itemCount: controller.ordersList.length,
+          //               itemBuilder: (context, pos) =>
+          //                   ItemMapNotifications(
+          //                       controller.notifications[pos]),
+          //             ),
+          //           ),
+          //         ],
+          //       )
+          //           : InkWell(
+          //         onTap: () => showNotificationView.toggle(),
+          //         child: const Center(
+          //           child: Icon(Icons.notifications,
+          //               color: AppColors.primaryThemeColor),
+          //         ),
+          //       ),
+          //     ),
+          //   );
+          // }),
           InkWell(
-            onTap: () => {enableMapLiveCamera.toggle(), fetchNearbyOrders()},
+            onTap: () => {enableMapLiveCamera.toggle(),
+              //fetchNearbyOrders()
+            },
             child: Obx(() {
               return Container(
                 height: 50,
@@ -324,32 +313,32 @@ class _MapPageState extends State<NearbyOrdersView> {
     _locationController.onLocationChanged.listen((LocationData locationData) {
       if (locationData.latitude != null && locationData.longitude != null) {
         setState(() {
-          currentLocation =
-              LatLng(locationData.latitude!, locationData.longitude!);
+          controller.currentLocation =
+              LatLng( latitude: locationData.latitude!, longitude : locationData.longitude!);
         });
         if (enableMapLiveCamera.value) {
-          _cameraToPosition(currentLocation!);
+          _cameraToPosition(controller.currentLocation!);
         }
-        fetchNearbyOrders();
+
       }
     });
   }
 
-  void fetchNearbyOrders() {
-    setState(() {
-      for (var order in controller.ordersList) {
-        double distanceInMeters = calculateDistance(
-          currentLocation!.latitude,
-          currentLocation!.longitude,
-          double.parse(order.pickupLatitude ?? "0.0"),
-          double.parse(order.pickupLongitude ?? "0.0"),
-        );
-        if (distanceInMeters <= 5000) {
-          setMarkers();
-        }
-      }
-    });
-  }
+  // void fetchNearbyOrders() {
+  //   setState(() {
+  //     for (var order in controller.ordersList) {
+  //       double distanceInMeters = calculateDistance(
+  //         currentLocation!.latitude,
+  //         currentLocation!.longitude,
+  //         double.parse(order.pickupLatitude ?? "0.0"),
+  //         double.parse(order.pickupLongitude ?? "0.0"),
+  //       );
+  //       //if (distanceInMeters <= 5000) {
+  //        setMarkers();
+  //      // }
+  //     }
+  //   });
+  // }
 
   double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
     const R = 6371000;
@@ -370,10 +359,11 @@ class _MapPageState extends State<NearbyOrdersView> {
 
 
   Future<void> _cameraToPosition(LatLng position) async {
-    final GoogleMapController controller = await _mapController.future;
+    final GoogleMapViewController controller = await _mapController.future;
     controller.animateCamera(CameraUpdate.newCameraPosition(
-        CameraPosition(target: position, zoom: 14)));
+        CameraPosition(target: position, zoom: 20)));
   }
+
 }
 
 

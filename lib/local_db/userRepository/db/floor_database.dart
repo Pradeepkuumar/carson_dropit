@@ -1,4 +1,7 @@
 
+import 'package:carson_zyppy/firebase_notifications/notification_model/notification_model.dart';
+
+import '../../../firebase_notifications/notification_model/notification.dart';
 import '../../dataBase/database.dart';
 import '../../entity/UserData.dart';
 import '../../user_repo.dart';
@@ -25,6 +28,21 @@ class FloorUserRepository implements UserRepository {
   @override
   Future<void> updateUser(UserData UserData) async {
     return await _db.userDao.updateEmployee(UserData);
+  }
+
+  @override
+  Future<void> deleteNotification() async {
+   return await _db.notificationsDao.deleteNotifications();
+  }
+
+  @override
+  Future<void> saveNotification(LocalNotification notificationModel) async {
+    return await _db.notificationsDao.saveNotification(notificationModel);
+  }
+
+  @override
+  Future<LocalNotification?> getAllNotification() async {
+    return await _db.notificationsDao.getAllNotifications();
   }
 
 

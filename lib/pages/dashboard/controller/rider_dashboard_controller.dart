@@ -26,7 +26,7 @@ class RiderDashboardController extends GetxController {
   var isInternetOn = false.obs;
   var updateRiderLocation = false.obs;
   var driverData = DriverData().obs;
-  var dashBoardData = DashboardData().obs;
+  var dashBoardData = DashBoardData().obs;
   var isAttendanceLoaded = false.obs;
   var attendancesList = [].obs;
 
@@ -129,7 +129,7 @@ class RiderDashboardController extends GetxController {
           apiEndPoints.dashBoardDetails, model);
       var result = BaseApiResponse.fromJson(response);
       if (result.status_code == 200) {
-        dashBoardData.value = DashboardData.fromJson(result.data);
+        dashBoardData.value = DashBoardData.fromJson(result.data);
         utils.closeLoadingDialog();
         update();
         return true;
@@ -214,7 +214,7 @@ class RiderDashboardController extends GetxController {
         return false;
       }
     } catch (e) {
-      utils.errorSnackBar("Exception", e.toString());
+     // utils.errorSnackBar("Exception", e.toString());
       return false;
     }
   }

@@ -27,7 +27,7 @@ class Utils extends GetxController {
     return Get.snackbar(title, message,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green,
-        duration: const Duration(seconds: 1),
+        duration: const Duration(seconds: 2),
         colorText: Colors.white);
   }
 
@@ -419,7 +419,7 @@ class Utils extends GetxController {
              child: Center(
                child: Container(
                  height: 100,
-                 width: 100,
+                 width: 150,
                  alignment: Alignment.center,
                  decoration: utils.boxDecorationWhite(),
                  child: Column(
@@ -832,6 +832,12 @@ class Utils extends GetxController {
     return null;
   }
 
+  String formatDate(String dateString, String format ) {
+     DateTime dateTime = DateTime.parse(dateString).toLocal();
+      return DateFormat(format).format(dateTime);
+
+  }
+
 
   // Future<String?> showFutureDateTimePicker(
   //     BuildContext context, String dateFormat) async {
@@ -1133,7 +1139,7 @@ class Utils extends GetxController {
   Future<File?> pickImage(ImageSource imageSource) async {
     // Capture Image From Camera.
     //final pickedFile = await imagePicker.getImage(source: imageSource);
-    final pickedFile = await imagePicker.pickImage(source: imageSource);
+    final pickedFile = await imagePicker.pickImage(source: imageSource,maxWidth : 500,maxHeight: 500,imageQuality: 50 );
 
     if (pickedFile != null) {
       return File(pickedFile.path);

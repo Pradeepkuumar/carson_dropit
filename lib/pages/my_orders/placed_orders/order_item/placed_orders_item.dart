@@ -128,6 +128,7 @@ placedOrderItem(OrdersData orderData,void Function(OrdersData,String) onClick) {
                       customRow("Order Amount.",orderData.orderAmount ?? ""),
                       customRow("Weight.",  "${orderData.weight}(kg)" ?? ""),
                       customRow("Consignee Name", orderData.consigneeName ?? ""),
+                      customRow("Order Created Date", utils.formatDate(orderData.createdAt.toString(),"dd MMM yyyy hh:mm a")),
                     ],
                   ),
                   Column(

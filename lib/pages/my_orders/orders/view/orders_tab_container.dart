@@ -166,16 +166,16 @@ class OrdersTabContainer extends GetView<OrdersController> {
                 AppColors.red
               ],
               tabs: [
-                Text("Assigned(${riderDashboardController.dashBoardData.value
-                    .assigned})"),
-                Text("Picked(${riderDashboardController.dashBoardData.value
-                    .picked})"),
+                Text("Assigned(${riderDashboardController.dashBoardData.value.allOrdersCount
+                    ?.aSSIGNED})"),
+                Text("Picked(${riderDashboardController.dashBoardData.value.allOrdersCount
+                    ?.pICKED})"),
                 Text(
-                    "Ofd(${riderDashboardController.dashBoardData.value.ofd})"),
-                Text("Delivered(${riderDashboardController.dashBoardData.value
-                    .delivered})"),
-                Text("UnDelivered(${riderDashboardController.dashBoardData.value
-                    .cancelled})"),
+                    "Ofd(${riderDashboardController.dashBoardData.value.allOrdersCount?.oFD})"),
+                Text("Delivered(${riderDashboardController.dashBoardData.value.allOrdersCount
+                    ?.dELIVERED})"),
+                Text("UnDelivered(${riderDashboardController.dashBoardData.value.allOrdersCount
+                    ?.uNDELIVERED})"),
 
               ],
               children: [

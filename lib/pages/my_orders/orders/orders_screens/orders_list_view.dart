@@ -31,7 +31,7 @@ class OrdersListViewState extends State<OrdersListView> {
     controller.getUser();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if(controller.tabController.index == 0) {
-        controller.getFeOrders(["ASSIGNED","RE-ASSIGNED"]);
+        controller.getFeOrders(["ASSIGNED","RE-ASSIGNED","REACHED"]);
       }
     });
     super.initState();
@@ -95,7 +95,7 @@ class OrdersListViewState extends State<OrdersListView> {
                                       borderRadius: BorderRadius.circular(13.0),
                                       borderSide: const BorderSide(
                                           color: AppColors.primaryThemeColor,
-                                          width: 2.0), // Adjust width as needed
+                                          width: 2.0),
                                     ),
                                     contentPadding: const EdgeInsets.symmetric(
                                         vertical: 10.0),
@@ -105,8 +105,10 @@ class OrdersListViewState extends State<OrdersListView> {
                               })),
                         ),
                         Expanded(
-                          child: Obx(() => controller.ordersList.isEmpty
-                                  ? Center(child: utils.iosProgressIndicator(AppColors.white))
+                          child: Obx(() => controller.isLoading.value ?
+                              Center(child: utils.iosProgressIndicator(AppColors.white)):
+                               controller.ordersList.isEmpty ?
+                               Center(child: utils.tvRegular("No Data Found !", AppColors.white))
                                   : ListView.builder(
                                 itemCount: controller.ordersList.length,
                                 itemBuilder: (context, position) {
@@ -138,7 +140,8 @@ class OrdersListViewState extends State<OrdersListView> {
                                         } else if (clickType == orderUpdateToDeliver ||
                                             clickType == fullMapViewCLick) {
                                           controller.selectedOrder.value = clickedOrder;
-                                          controller.viewFullMap.value = true;
+                                          Get.to(() => MapPage(orderDetails:controller.selectedOrder.value,mapView: 1));
+
                                         }
                                       },
                                     ),
@@ -147,76 +150,37 @@ class OrdersListViewState extends State<OrdersListView> {
                               )
                           ),
                         )
-
-
-                        // Expanded(
-                        //     child: Obx(() => controller.ordersList.length == 0
-                        //       ? Center(child: utils.noDataFoundWidget())
-                        //       : ListView.builder(
-                        //           itemCount: controller.ordersList.length,
-                        //           itemBuilder: (context, position) {
-                        //             return Padding(
-                        //               padding: const EdgeInsets.all(8.0),
-                        //               child: orderItem(
-                        //                   controller.ordersList[position],
-                        //                   (clickedOrder, clickType) async {
-                        //                 if (clickType == orderScanCLick) {
-                        //                   var res = await Get.to(
-                        //                     SimpleBarcodeScannerPage(
-                        //                       appBarTitle: clickedOrder.awbNo,
-                        //                     ),
-                        //                   );
-                        //                   if (res is String && res != "-1") {
-                        //                     var result = res;
-                        //                     if (clickedOrder.awbNo == result) {
-                        //                       //controller.markOrderWareHouseIn(clickedOrder);
-                        //                     } else {
-                        //                       utils.errorSnackBar("Error !",
-                        //                           "Wrong Order Scanned");
-                        //                     }
-                        //                   }
-                        //                 } else if(clickType == orderUpdateToOFD) {
-                        //                   controller.selectedOrder.value  = clickedOrder;
-                        //                  controller.updateOrder("OFD");
-                        //                 }else if(clickType == orderUpdateToDeliver || clickType == fullMapViewCLick){
-                        //                   controller.selectedOrder.value = clickedOrder;
-                        //                   controller.viewFullMap.value = true;
-                        //                 }
-                        //               }),
-                        //             );
-                        //           }),
-                        // )),
                       ],
                     ),
                   ),
                 ),
               ),
-              Visibility(
-                  visible: controller.viewFullMap.value,
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          utils.tvCustom(
-                              "Order :${controller.selectedOrder.value.awbNo}",
-                              AppColors.white,
-                              15),
-                          InkWell(
-                            onTap: (){
-                              controller.viewFullMap.value = false;
-                            },
-                            child:Icon(Icons.close,color: AppColors.white),
-                          )
-
-                        ],
-                      ),
-                      SizedBox(
-                          height: Get.height - 130,
-                          width: Get.width,
-                          child: MapPage(orderDetails: controller.selectedOrder.value,mapView: 1)),
-                    ],
-                  ))
+              // Visibility(
+              //     visible: controller.viewFullMap.value,
+              //     child: Column(
+              //       children: [
+              //         Row(
+              //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              //           children: [
+              //             utils.tvCustom(
+              //                 "Order :${controller.selectedOrder.value.awbNo}",
+              //                 AppColors.white,
+              //                 15),
+              //             InkWell(
+              //               onTap: (){
+              //                 controller.viewFullMap.value = false;
+              //               },
+              //               child:Icon(Icons.close,color: AppColors.white),
+              //             )
+              //
+              //           ],
+              //         ),
+              //         SizedBox(
+              //             height: Get.height - 130,
+              //             width: Get.width,
+              //             child: MapPage(orderDetails: controller.selectedOrder.value,mapView: 1)),
+              //       ],
+              //     ))
             ],
           );
         }));

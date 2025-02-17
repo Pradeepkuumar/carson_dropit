@@ -53,7 +53,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                     child: SingleChildScrollView(
                       scrollDirection :Axis.vertical,
                       child: Container(
-                        height: 550,
+                        height: 590,
                         width: 330,
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.white),
@@ -113,29 +113,49 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                     padding: const EdgeInsets.all(8.0),
                                                     child: Row(
                                                       children: [
-                                                        utils.imageView(myOrdersImage, 50, 50),
+                                                        utils.imageView(myOrdersImage, 35, 35),
                                                         const SizedBox(width: 10),
-                                                        utils.tvCustom("My Orders",AppColors.primaryThemeColor, 20)
+                                                        utils.tvCustom("My Orders",AppColors.primaryThemeColor, 15)
                                                       ],
                                                     ),
                                                   ),
-                                                  Padding(
-                                                    padding: const EdgeInsets.symmetric(horizontal :10),
-                                                    child: Row(
-                                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                      children: [
-                                                      utils.tvCustom( "Assigned : "+controller.dashBoardData.value.assigned.toString(),AppColors.black,15),
-                                                      utils.tvCustom( "Picked : "+controller.dashBoardData.value.picked.toString(),AppColors.black,15)
-                                                    ],),
-                                                  ),
-                                                  Padding(
-                                                    padding: const EdgeInsets.symmetric(horizontal :10),
-                                                    child: Row(
-                                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                      children: [
-                                                        utils.tvCustom( "OFD : "+controller.dashBoardData.value.ofd.toString(),AppColors.black,15),
-                                                        utils.tvCustom( "Delivered : "+controller.dashBoardData.value.delivered.toString(),AppColors.black,15)
+                                                  Column(
+                                                    mainAxisAlignment: MainAxisAlignment.start,
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      utils.tvCustom("Today's Orders", AppColors.primaryThemeColor, 14),
+                                                      Row(
+                                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                        children: [
+                                                        utils.tvCustom( "Assigned : ${controller.dashBoardData.value.todayOrdersCount?.aSSIGNED}",AppColors.black,15),
+                                                        utils.tvCustom( "Picked : ${controller.dashBoardData.value.todayOrdersCount?.pICKED}",AppColors.black,15)
                                                       ],),
+                                                      Row(
+                                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                        children: [
+                                                          utils.tvCustom( "OFD : ${controller.dashBoardData.value.todayOrdersCount?.oFD}",AppColors.black,15),
+                                                          utils.tvCustom( "Delivered : ${controller.dashBoardData.value.todayOrdersCount?.dELIVERED}",AppColors.black,15)
+                                                        ],),
+                                                    ],
+                                                  ),
+                                                  Column(
+                                                    mainAxisAlignment: MainAxisAlignment.start,
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      utils.tvCustom("All Orders", AppColors.primaryThemeColor, 14),
+                                                      Row(
+                                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                        children: [
+                                                        utils.tvCustom( "Assigned : ${controller.dashBoardData.value.allOrdersCount?.aSSIGNED}",AppColors.black,15),
+                                                        utils.tvCustom( "Picked : ${controller.dashBoardData.value.allOrdersCount?.pICKED}",AppColors.black,15)
+                                                      ],),
+                                                      Row(
+                                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                        children: [
+                                                          utils.tvCustom( "OFD : ${controller.dashBoardData.value.allOrdersCount?.oFD}",AppColors.black,15),
+                                                          utils.tvCustom( "Delivered : ${controller.dashBoardData.value.allOrdersCount?.dELIVERED}",AppColors.black,15)
+                                                        ],),
+                                                    ],
                                                   )
                                                 ],
                                             ),
@@ -316,23 +336,6 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                   const SizedBox(
                                                     height: 5,
                                                   ),
-                                                  // Row(
-                                                  //   children: [
-                                                  //     Icon(
-                                                  //       Icons.av_timer,
-                                                  //       color: AppColors
-                                                  //           .primaryThemeColor,
-                                                  //     ),
-                                                  //     SizedBox(
-                                                  //       width: 5,
-                                                  //     ),
-                                                  //     utils.tvCustom(
-                                                  //         "${controller.driverData.value.attendances?[0].workingHours} (Hrs)",
-                                                  //         AppColors
-                                                  //             .primaryThemeColor,
-                                                  //         10)
-                                                  //   ],
-                                                  // ),
                                                 ],
                                               );
                                             }),

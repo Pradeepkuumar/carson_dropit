@@ -1,4 +1,10 @@
+import 'package:floor/floor.dart';
+
+@entity
 class LocalNotification {
+  @Insert(onConflict: OnConflictStrategy.replace)
+  @PrimaryKey(autoGenerate: true)
+  int? id;
   String? body;
   String? title;
 

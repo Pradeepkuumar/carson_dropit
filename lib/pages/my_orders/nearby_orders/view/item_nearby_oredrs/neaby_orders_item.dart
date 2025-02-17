@@ -1,15 +1,16 @@
-
 import 'package:carson_zyppy/global/consts.dart';
+import 'package:circular_countdown_timer/circular_countdown_timer.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 import '../../../../../global/global.dart';
+import '../../../../../utils/calculate_sla.dart';
 import '../../../../../utils/colors.dart';
 import '../../../../../utils/utils.dart';
 import '../../../orders/models/orders_model.dart';
 
-
-nearByOrderItem(OrdersData orderData,void Function(OrdersData,String) onClick) {
+nearByOrderItem(
+    OrdersData orderData, void Function(OrdersData, String) onClick) {
   Utils utils = Utils();
   return Card(
       elevation: 4,
@@ -17,7 +18,7 @@ nearByOrderItem(OrdersData orderData,void Function(OrdersData,String) onClick) {
       color: AppColors.white,
       child: SizedBox(
         child: Padding(
-          padding:  const EdgeInsets.all(10.0),
+          padding: const EdgeInsets.all(10.0),
           child: Column(
             children: [
               Row(
@@ -27,7 +28,7 @@ nearByOrderItem(OrdersData orderData,void Function(OrdersData,String) onClick) {
                 children: [
                   Column(
                     children: [
-                       const Text(
+                      const Text(
                         "Order No.",
                         style: TextStyle(
                           fontSize: 12,
@@ -37,7 +38,7 @@ nearByOrderItem(OrdersData orderData,void Function(OrdersData,String) onClick) {
                       Container(
                         child: Text(
                           orderData.awbNo.toString(),
-                          style:  const TextStyle(
+                          style: const TextStyle(
                             fontSize: 10,
                             color: AppColors.black,
                           ),
@@ -45,10 +46,10 @@ nearByOrderItem(OrdersData orderData,void Function(OrdersData,String) onClick) {
                       ),
                     ],
                   ),
-                   const Spacer(),
+                  const Spacer(),
                   Column(
                     children: [
-                       const Text(
+                      const Text(
                         "Order Status",
                         style: TextStyle(
                           fontSize: 12,
@@ -57,15 +58,21 @@ nearByOrderItem(OrdersData orderData,void Function(OrdersData,String) onClick) {
                       ),
                       Container(
                         decoration: BoxDecoration(
-                            color: orderData.status == "ASSIGNED" ? AppColors.linkColor :
-                            orderData.status == "REACHED"? AppColors.primaryThemeColor:orderData.status == "PICKED"?
-                            AppColors.blue : orderData.status == "DELIVERED" ? AppColors.greenLight : AppColors.primaryThemeColor,
+                            color: orderData.status == "ASSIGNED"
+                                ? AppColors.linkColor
+                                : orderData.status == "REACHED"
+                                    ? AppColors.primaryThemeColor
+                                    : orderData.status == "PICKED"
+                                        ? AppColors.blue
+                                        : orderData.status == "DELIVERED"
+                                            ? AppColors.greenLight
+                                            : AppColors.primaryThemeColor,
                             borderRadius: BorderRadius.circular(8)),
                         child: Padding(
-                          padding:  const EdgeInsets.all(4.0),
+                          padding: const EdgeInsets.all(4.0),
                           child: Text(
                             orderData.status.toString().toUpperCase(),
-                            style:  const TextStyle(
+                            style: const TextStyle(
                               fontSize: 10,
                               color: Colors.white,
                             ),
@@ -74,10 +81,10 @@ nearByOrderItem(OrdersData orderData,void Function(OrdersData,String) onClick) {
                       ),
                     ],
                   ),
-                   const Spacer(),
+                  const Spacer(),
                   Column(
                     children: [
-                       const Text(
+                      const Text(
                         "Payment Type",
                         style: TextStyle(
                           fontSize: 12,
@@ -86,7 +93,7 @@ nearByOrderItem(OrdersData orderData,void Function(OrdersData,String) onClick) {
                       ),
                       Text(
                         orderData.paymentType.toString(),
-                        style:  const TextStyle(
+                        style: const TextStyle(
                           fontSize: 10,
                           color: Colors.black,
                         ),
@@ -95,10 +102,10 @@ nearByOrderItem(OrdersData orderData,void Function(OrdersData,String) onClick) {
                   ),
                 ],
               ),
-               const SizedBox(
+              const SizedBox(
                 height: 5,
               ),
-               const Divider(
+              const Divider(
                 thickness: 1,
                 indent: 5,
                 endIndent: 5,
@@ -109,56 +116,70 @@ nearByOrderItem(OrdersData orderData,void Function(OrdersData,String) onClick) {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.max,
                 children: [
-                  ListTile(
-                    leading:  const Icon(
-                      Icons.shopping_cart,
-                      color: AppColors.primaryThemeColor,
-                    ),
-                    title: Text(
-                      "${orderData.merchantName}\n${orderData.itemName}\n${orderData.itemDescription}(${orderData.quantity})",
-                      style:  const TextStyle(
-                        fontSize: 12,
+                  Row(
+                      children: [
+                    Expanded(
+                      flex: 1,
+                      child: ListTile(
+                        leading: const Icon(
+                          Icons.shopping_cart,
+                          color: AppColors.primaryThemeColor,
+                        ),
+                        title: Text(
+                          "${orderData.merchantName}\n${orderData.itemName}\n${orderData.itemDescription}(${orderData.quantity})",
+                          style: const TextStyle(
+                            fontSize: 12,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+
+                    Expanded(
+                      flex: 1,
+                      child:slaTimer(60, 60 ,orderData.createdAt ?? "", int.tryParse(orderData.sla_in_hours.toString()) ?? 0,12)
+                    )
+                  ]),
                   Column(
                     children: [
-                      customRow("Order SLA", "${orderData.sla_in_hours}(Hrs.)" ?? ""),
-                      customRow("Order Amount.",orderData.orderAmount ?? ""),
-                      customRow("Weight.",  "${orderData.weight}(kg)" ?? ""),
-                      customRow("Consignee Name", orderData.consigneeName ?? ""),
+                      customRow(
+                          "Order SLA", "${orderData.sla_in_hours}(Hrs.)" ?? ""),
+                      customRow("Order Amount.", orderData.orderAmount ?? ""),
+                      customRow("Weight", "${orderData.weight}(kg)" ?? ""),
+                      customRow(
+                          "Consignee Name", orderData.consigneeName ?? ""),
+                      customRow("Order Created Date", utils.formatDate(orderData.createdAt.toString(),"dd MMM yyyy hh:mm a")),
                     ],
                   ),
                   Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      customColumn("Pick-Up Location", orderData.pickupAddress ?? ""),
-                      customColumn("Drop-Off Location", orderData.consigneeAddress ?? ""),
+                      customColumn(
+                          "Pick-Up Location", orderData.pickupAddress ?? ""),
+                      customColumn("Drop-Off Location",
+                          orderData.consigneeAddress ?? ""),
                     ],
                   ),
-
                   Visibility(
                     visible: orderData.status == "PLACED" ? true : false,
                     child: Column(
                       children: [
-                        SizedBox(height: 10,),
+                        const SizedBox(height: 10,),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             utils.iconButton("Accept ", () {
-                                onClick(orderData,acceptOrder);
+                              onClick(orderData, acceptOrder);
                             }, Icons.done, AppColors.green, AppColors.white),
                             utils.iconButton("Reject ", () {
-                              onClick(orderData,rejectOrder);
+                              onClick(orderData, rejectOrder);
                             }, Icons.cancel, AppColors.red, AppColors.white),
                           ],
                         ),
                       ],
                     ),
                   ),
-
                 ],
               )
             ],
@@ -168,9 +189,12 @@ nearByOrderItem(OrdersData orderData,void Function(OrdersData,String) onClick) {
 }
 
 
+
+
+
 Widget customRow(String name, String data) {
   return Padding(
-    padding:  const EdgeInsets.only(top: 2.0, bottom: 2, right: 10, left: 10),
+    padding: const EdgeInsets.only(top: 2.0, bottom: 2, right: 10, left: 10),
     child: Visibility(
       visible: data.isNotEmpty,
       child: Row(
@@ -185,22 +209,36 @@ Widget customRow(String name, String data) {
             flex: 2,
             child: utils.tvRegular(":", AppColors.black),
           ),
-          Expanded(flex: 4, child: utils.tvCustom(data, AppColors.black, 12)),
+          Expanded(flex: 4, child: utils.tvCustom(data, AppColors.black, 10)),
         ],
       ),
     ),
   );
 }
+
 Widget customColumn(String name, String data) {
   return Padding(
-    padding:  const EdgeInsets.all(10),
+    padding: const EdgeInsets.all(10),
     child: Visibility(
       visible: data.isNotEmpty,
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          utils.tvCustom(name, AppColors.black,13),
-          utils.tvRegular(data, AppColors.black,),
+           Icon(Icons.location_on_sharp,color: name == "Drop-Off Location" ?AppColors.green : AppColors.blue),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                utils.tvCustom(name, AppColors.black, 13),
+                utils.tvRegular(
+                  data,
+                  AppColors.black,
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     ),

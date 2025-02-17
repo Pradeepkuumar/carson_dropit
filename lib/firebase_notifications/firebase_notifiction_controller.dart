@@ -1,3 +1,4 @@
+import 'package:carson_zyppy/local_db/user_repo.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
@@ -25,7 +26,8 @@ class FirebaseMessagingController extends GetxController {
     );
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       _showNotification(body: message.notification?.body,title: message.notification?.title );
-      addNotification(LocalNotification(body: message.notification?.body,title: message.notification?.title ));
+      //addNotification(LocalNotification(body: message.notification?.body,title: message.notification?.title ));
+      userRepository.saveNotification(LocalNotification(body: message.notification?.body,title: message.notification?.title));
       print('Received message: ${message.notification?.title}');
     });
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
@@ -55,13 +57,10 @@ class FirebaseMessagingController extends GetxController {
   Future<void> _showNotification(
     { String? title,  String? body}) async {
     final androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      'coderootz', 'zyppy',
+      'carson', 'zyppy',
       importance: Importance.high, priority: Priority.high,
       styleInformation: BigTextStyleInformation(''),
       playSound: true,
-      actions: [
-
-      ]
       //sound: RawResourceAndroidNotificationSound('your_sound'),
     );
 //  final iOSPlatformChannelSpecifics = IOSNotificationDetails(

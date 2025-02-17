@@ -1,8 +1,13 @@
+import 'dart:ui';
+
+import 'package:carson_zyppy/global/consts.dart';
 import 'package:carson_zyppy/local_db/entity/UserData.dart';
 import 'package:carson_zyppy/pages/dashboard/controller/rider_dashboard_controller.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:google_navigation_flutter/google_navigation_flutter.dart';
 import '../../../../apis/base_api_response.dart';
 import '../../../../global/global.dart';
 import '../../../../utils/colors.dart';
@@ -15,7 +20,9 @@ class PlacedOrdersController extends GetxController {
   var selectedMerchantOrdersList = <OrdersData>[].obs;
   var user = UserData();
   var viewAcceptView = false.obs;
+  var orderAcceptWaitView = false.obs;
   var selectedLocationId = "".obs;
+  ImageDescriptor?  icon;
 
   final notifications = [
     "Enter Order Number",
@@ -25,10 +32,18 @@ class PlacedOrdersController extends GetxController {
   ];
 
 
+  LatLng? currentLocation;
+  final Map<String, MarkerOptions> markerMap = {};
+  List<Marker> markers = [];
+
+
+
+
 
   @override
   void onInit() {
     getUser();
+    getOrCreateCustomImageFromAsset();
     super.onInit();
   }
 
@@ -68,6 +83,7 @@ class PlacedOrdersController extends GetxController {
           update();
           await Future.delayed(const Duration(milliseconds: 100));
         }
+        setMarkers();
         utils.closeLoadingDialog();
         return true;
       } else {
@@ -85,7 +101,7 @@ class PlacedOrdersController extends GetxController {
   }
 
   Future<bool> acceptRejectOrder(String type, String orderNumber) async {
-    utils.showLoadingDialog("Loading...");
+    utils.showLoadingDialog("wait while updating order...");
     try {
       Map<String, dynamic> model = {
         apiKeys.feCode: user.code,
@@ -96,10 +112,18 @@ class PlacedOrdersController extends GetxController {
           apiEndPoints.acceptRejectOrder, model);
       var result = BaseApiResponse.fromJson(response);
       if (result.data != null) {
-         await fetchOrders();
-        riderDashboardController.getDashBoardData();
+        await fetchOrders();
+        await riderDashboardController.getDashBoardData();
         selectedLocationOrders();
+        orderAcceptWaitView.value = false;
         viewAcceptView.value = false;
+        if(type == acceptOrder) {
+          utils.successSnackBar("Order Accepted Successfully",
+              "Please find accepted order in My Orders");
+        }else{
+          utils.errorSnackBar("Order Rejected",
+              "This order no longer belongs to you");
+        }
         utils.closeLoadingDialog();
         return true;
       } else {
@@ -114,6 +138,61 @@ class PlacedOrdersController extends GetxController {
       utils.errorSnackBar("Exception", e.toString());
     }
     return false;
+  }
+
+
+  Future<ImageDescriptor?> getOrCreateCustomImageFromAsset() async {
+    const AssetImage assetImage = AssetImage('assets/icons/icon_pickup.png');
+    final ImageConfiguration configuration =
+    createLocalImageConfiguration(Get.context!);
+    final AssetBundleImageKey assetBundleImageKey =
+    await assetImage.obtainKey(configuration);
+    final double imagePixelRatio = assetBundleImageKey.scale;
+    final ByteData imageBytes = await rootBundle.load(assetBundleImageKey.name);
+    icon = await registerBitmapImage(
+        bitmap: imageBytes, imagePixelRatio: imagePixelRatio,width: 48,height: 48);
+    return icon;
+  }
+
+  Future<void> setMarkers() async {
+    markers.clear();
+    markerMap.clear();
+
+    if (currentLocation != null) {
+      final marker = Marker(
+        markerId: "current_location",
+        options: MarkerOptions(
+          position: LatLng(
+            latitude: currentLocation?.latitude ?? 0.0,
+            longitude: currentLocation?.longitude ?? 0.0,
+          ),
+          icon: ImageDescriptor.defaultImage,
+          infoWindow: const InfoWindow(title: "Current Location", snippet: ""),
+          consumeTapEvents: true,
+        ),
+      );
+
+      markers.add(marker);
+      markerMap[marker.markerId] = marker.options;
+    }
+
+    for (var order in ordersList) {
+      final marker = Marker(
+        markerId: order.locationId.toString(),
+        options: MarkerOptions(
+          position: LatLng(
+            latitude: double.parse(order.pickupLatitude ?? "0.0"),
+            longitude: double.parse(order.pickupLongitude ?? "0.0"),
+          ),
+          icon: icon!,
+          infoWindow: InfoWindow(title: order.pickupLocationName, snippet: ""),
+          consumeTapEvents: true,
+        ),
+      );
+
+      markers.add(marker);
+      markerMap[marker.markerId] = marker.options;
+    }
   }
 
 
@@ -186,5 +265,8 @@ class PlacedOrdersController extends GetxController {
       ),
     );
   }
+
+
+
 
 }
