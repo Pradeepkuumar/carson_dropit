@@ -49,9 +49,10 @@ Column slaTimer(double height,double width,String createdAt, int slaHours,double
         },
       ),
       const SizedBox(height: 2,),
-      Text("Remaning Time",style: TextStyle(
-        color: Colors.black,fontSize: Get.context!.isPhone ?10:13
-      ),)
+      Text("Remaining Time",style: TextStyle(
+        color: Colors.black,fontSize: Get.context!.isPhone ?7:13
+      ),
+      textAlign: TextAlign.center,)
     ],
   );
 }

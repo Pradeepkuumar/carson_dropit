@@ -232,8 +232,8 @@ class _RiderDashboardState extends State<RiderDashboard> {
                           showMenu.value = true;
                         },
                         child: AnimatedContainer(
-                          width: showMenu.value ? 350.0 : 45.0,
-                          height: showMenu.value ? 600.0 : 45.0,
+                          width: showMenu.value ? context.isPhone?250 :350.0 : 45.0,
+                          height: showMenu.value ? context.isPhone?450:600 : 45.0,
                           decoration: showMenu.value
                               ? utils.boxDecorationWhite()
                               : null,

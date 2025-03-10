@@ -197,7 +197,7 @@ class _MapPageState extends State<MapPage> {
 
                     },
                     child: Container(
-                      height: context.isPhone ?60:100,
+                      height: context.isPhone ?62:100,
                       width: context.isPhone ?60:100,
                       decoration: utils.boxDecorationWhite(),
                       child: Padding(
