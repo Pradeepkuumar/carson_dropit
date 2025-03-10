@@ -16,6 +16,7 @@ import 'package:google_navigation_flutter/google_navigation_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:location/location.dart';
 import 'package:signature/signature.dart';
+import '../../global/consts.dart';
 import '../../utils/calculate_sla.dart';
 import '../my_orders/orders/models/orders_model.dart';
 import 'getLatlongFromAddress.dart';
@@ -53,7 +54,6 @@ class _MapPageState extends State<MapPage> {
 
 
   LatLng? curentLocation = null;
-
 
 
   final List<NavigationWaypoint> _waypoints = <NavigationWaypoint>[];
@@ -123,6 +123,7 @@ class _MapPageState extends State<MapPage> {
   void _onViewCreated(GoogleNavigationViewController controller) async {
     navigationViewController = controller;
     await controller.setMyLocationEnabled(true);
+    await controller.setTrafficIncidentCardsEnabled(true);
     await GoogleMapsNavigator.setDestinations(Destinations(
       waypoints: _waypoints,
       displayOptions: NavigationDisplayOptions(
@@ -137,29 +138,30 @@ class _MapPageState extends State<MapPage> {
 
   Future<void> startGuidedNavigation() async {
     await navigationViewController?.setNavigationUIEnabled(true);
+    await navigationViewController?.setTrafficIncidentCardsEnabled(true);
     await navigationViewController?.setSpeedometerEnabled(true);
     await GoogleMapsNavigator.startGuidance();
     await navigationViewController?.followMyLocation(CameraPerspective.tilted);
-
   }
 
-  void _onRemainingTimeOrDistanceChangedEvent(RemainingTimeOrDistanceChangedEvent event) {
+  void _onRemainingTimeOrDistanceChangedEvent(
+      RemainingTimeOrDistanceChangedEvent event) {
     if (!mounted) {
       return;
     }
-      var value = event.remainingDistance.toInt();
-    if(value <= 50){
+    var value = event.remainingDistance.toInt();
+    if (value <= 50) {
       setState(() {
         isUpdateCardVisible.value = true;
       });
     }
-
   }
 
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // backgroundColor: AppColors.primaryThemeColor,
       body: curentLocation == null
           ? Center(
         child: utils.iosProgressIndicator(AppColors.primaryThemeColor),
@@ -195,12 +197,12 @@ class _MapPageState extends State<MapPage> {
 
                     },
                     child: Container(
-                      height: 62,
-                      width: 60,
+                      height: context.isPhone ?60:100,
+                      width: context.isPhone ?60:100,
                       decoration: utils.boxDecorationWhite(),
                       child: Padding(
                         padding: const EdgeInsets.all(5),
-                        child: slaTimer(30, 30,
+                        child: slaTimer(context.isPhone ?30:60, context.isPhone ?30:60,
                             widget.orderDetails.createdAt ?? "", int.tryParse(
                                 widget.orderDetails.sla_in_hours.toString()) ??
                                 0, 7
@@ -221,8 +223,8 @@ class _MapPageState extends State<MapPage> {
                   },
                   child: Obx(() {
                     return Container(
-                        height: 60,
-                        width: 60,
+                        height: context.isPhone ?60:100,
+                        width: context.isPhone ?60:100,
                         decoration: utils.boxDecorationWhite(),
                         child: Padding(
                           padding: const EdgeInsets.all(5),
@@ -230,7 +232,7 @@ class _MapPageState extends State<MapPage> {
                             children: [
                               Icon(Icons.map,
                                   size:
-                                  enableMapType.value ? 30 : 35,
+                                  enableMapType.value ? context.isPhone ?30:50 : context.isPhone ?35:55,
                                   color: enableMapType.value
                                       ? AppColors.greyColor4
                                       : AppColors.selectedBlue),
@@ -239,7 +241,7 @@ class _MapPageState extends State<MapPage> {
                                 child: Text(
                                   enableMapType.value ? "Normal" : "Satellite",
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(fontSize: 10),),
+                                  style: TextStyle(fontSize: context.isPhone ?10:20),),
                               )
 
                             ],
@@ -549,6 +551,7 @@ class _MapPageState extends State<MapPage> {
                                                       MainAxisAlignment
                                                           .spaceBetween,
                                                       children: [
+
                                                         utils.tvCustom(
                                                             "Image Proof",
                                                             AppColors
@@ -559,7 +562,8 @@ class _MapPageState extends State<MapPage> {
                                                               controller
                                                                   .captureImage(
                                                                   ImageSource
-                                                                      .camera);
+                                                                      .camera,
+                                                                  imageOne);
                                                             },
                                                             child: Icon(
                                                               Icons.refresh,
@@ -574,7 +578,8 @@ class _MapPageState extends State<MapPage> {
                                                   Padding(
                                                     padding:
                                                     EdgeInsets.all(5),
-                                                    child: Container(
+                                                    child:
+                                                    Container(
                                                       height: 200,
                                                       width:
                                                       double.infinity,
@@ -599,7 +604,8 @@ class _MapPageState extends State<MapPage> {
                                                           controller
                                                               .captureImage(
                                                               ImageSource
-                                                                  .camera);
+                                                                  .camera,
+                                                              imageOne);
                                                         },
                                                         child: Column(
                                                           mainAxisAlignment:
@@ -623,7 +629,198 @@ class _MapPageState extends State<MapPage> {
                                                         ),
                                                       ),
                                                     ),
+
+
                                                   ),
+                                                  Padding(
+                                                    padding:
+                                                    const EdgeInsets
+                                                        .symmetric(
+                                                        horizontal: 5),
+                                                    child: Row(
+                                                      mainAxisAlignment: MainAxisAlignment
+                                                          .spaceBetween,
+                                                      children: [
+                                                        utils.tvCustom(
+                                                            "Delivery Proof",
+                                                            AppColors
+                                                                .primaryThemeColor,
+                                                            10),
+                                                        InkWell(
+                                                            onTap: () {
+                                                              utils
+                                                                  .showCustomDialog(
+                                                                title: "Need Your Action",
+                                                                middleText: "Choose Image Source",
+                                                                buttons: [
+                                                                  TextButton
+                                                                      .icon(
+                                                                    onPressed: () {
+                                                                      controller
+                                                                          .captureImage(
+                                                                          ImageSource
+                                                                              .camera,
+                                                                          imageTwo);
+                                                                      Get
+                                                                          .back();
+                                                                    },
+                                                                    icon: const Icon(
+                                                                        Icons
+                                                                            .camera_alt,
+                                                                        color: AppColors
+                                                                            .primaryThemeColor),
+                                                                    label: const Text(
+                                                                        "Camera",
+                                                                        style: TextStyle(
+                                                                            color: AppColors
+                                                                                .primaryThemeColor)),
+                                                                  ),
+                                                                  TextButton
+                                                                      .icon(
+                                                                    onPressed: () {
+                                                                      controller
+                                                                          .captureImage(
+                                                                          ImageSource
+                                                                              .gallery,
+                                                                          imageTwo);
+                                                                      Get
+                                                                          .back();
+                                                                    },
+                                                                    icon: const Icon(
+                                                                        Icons
+                                                                            .image,
+                                                                        color: AppColors
+                                                                            .lightBlue),
+                                                                    label: const Text(
+                                                                        "Gallery",
+                                                                        style: TextStyle(
+                                                                            color: AppColors
+                                                                                .lightBlue)),
+                                                                  ),
+                                                                ],
+                                                              );
+                                                            },
+                                                            child: const Icon(
+                                                              Icons
+                                                                  .edit_note_rounded,
+                                                              color:
+                                                              AppColors
+                                                                  .blue,
+                                                              size: 20,
+                                                            ))
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  Padding(
+                                                    padding:
+                                                    const EdgeInsets.all(5),
+                                                    child:
+                                                    Container(
+                                                      height: 200,
+                                                      width:
+                                                      double.infinity,
+                                                      decoration: utils
+                                                          .roundedBorder(
+                                                          AppColors
+                                                              .lightBlue,
+                                                          5),
+                                                      child: controller
+                                                          .paymentProof.value !=
+                                                          null
+                                                          ? Image.file(
+                                                        controller
+                                                            .paymentProof
+                                                            .value!,
+                                                        fit: BoxFit
+                                                            .fill,
+                                                      )
+                                                          : InkWell(
+                                                        onTap: () {
+                                                          utils
+                                                              .showCustomDialog(
+                                                            title: "Need Your Action",
+                                                            middleText: "Choose Image Source",
+                                                            buttons: [
+                                                              TextButton.icon(
+                                                                onPressed: () {
+                                                                  controller
+                                                                      .captureImage(
+                                                                      ImageSource
+                                                                          .camera,
+                                                                      imageTwo);
+                                                                  Get.back();
+                                                                },
+                                                                icon: const Icon(
+                                                                    Icons
+                                                                        .camera_alt,
+                                                                    color: AppColors
+                                                                        .primaryThemeColor),
+                                                                label: const Text(
+                                                                    "Camera",
+                                                                    style: TextStyle(
+                                                                        color: AppColors
+                                                                            .primaryThemeColor)),
+                                                              ),
+
+                                                              Obx(() {
+                                                                return Visibility(
+                                                                  visible: controller
+                                                                      .markUnDelivered
+                                                                      .value ==
+                                                                      true,
+                                                                  child: TextButton
+                                                                      .icon(
+                                                                    onPressed: () {
+                                                                      controller
+                                                                          .captureImage(
+                                                                          ImageSource
+                                                                              .gallery,
+                                                                          imageTwo);
+                                                                      Get
+                                                                          .back();
+                                                                    },
+                                                                    icon: const Icon(
+                                                                        Icons
+                                                                            .image,
+                                                                        color: AppColors
+                                                                            .lightBlue),
+                                                                    label: const Text(
+                                                                        "Gallery",
+                                                                        style: TextStyle(
+                                                                            color: AppColors
+                                                                                .lightBlue)),
+                                                                  ),
+                                                                );
+                                                              }),
+                                                            ],
+                                                          );
+                                                        },
+                                                        child: Column(
+                                                          mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .center,
+                                                          children: [
+                                                            const Icon(
+                                                              Icons
+                                                                  .image_outlined,
+                                                              size: 80,
+                                                              color: AppColors
+                                                                  .lightBlue,
+                                                            ),
+                                                            utils.tvCustom(
+                                                                "capture/select Image",
+                                                                AppColors
+                                                                    .lightBlue,
+                                                                10)
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ),
+
+
+                                                  ),
+
+
                                                   Visibility(
                                                     visible: controller
                                                         .markDelivered
@@ -642,7 +839,7 @@ class _MapPageState extends State<MapPage> {
                                                                 .spaceBetween,
                                                             children: [
                                                               utils.tvCustom(
-                                                                  "Signature",
+                                                                  "Signature (optional)",
                                                                   AppColors
                                                                       .primaryThemeColor,
                                                                   10),
@@ -848,10 +1045,7 @@ class _MapPageState extends State<MapPage> {
                                                 "Mark Delivered", () async {
                                               if (controller
                                                   .deliveredImage !=
-                                                  null &&
-                                                  controller
-                                                      .signatureFile !=
-                                                      null) {
+                                                  null) {
                                                 var isDElivered =
                                                 await controller
                                                     .updateOrder(
@@ -861,8 +1055,8 @@ class _MapPageState extends State<MapPage> {
                                                 }
                                               } else {
                                                 utils.errorSnackBar(
-                                                    "Image/Sign Error !",
-                                                    "Delivery Image & Signature required");
+                                                    " Error !",
+                                                    "Delivery Image required");
                                               }
                                               // Get.toNamed(Routes.signatureImageScreen);
                                             },
@@ -984,8 +1178,6 @@ class _MapPageState extends State<MapPage> {
               GoogleMapsNavigator.setOnRemainingTimeOrDistanceChangedListener(
                   _onRemainingTimeOrDistanceChangedEvent,
                   remainingDistanceThresholdMeters: 10);
-
-
         });
       }
     });

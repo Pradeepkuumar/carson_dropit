@@ -1,6 +1,8 @@
 import 'package:carson_zyppy/global/global.dart';
 import 'package:circular_countdown_timer/circular_countdown_timer.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
 
 import 'colors.dart';
 
@@ -47,7 +49,9 @@ Column slaTimer(double height,double width,String createdAt, int slaHours,double
         },
       ),
       const SizedBox(height: 2,),
-      utils.tvCustom("Remaining Time", AppColors.black, textSize)
+      Text("Remaning Time",style: TextStyle(
+        color: Colors.black,fontSize: Get.context!.isPhone ?10:13
+      ),)
     ],
   );
 }

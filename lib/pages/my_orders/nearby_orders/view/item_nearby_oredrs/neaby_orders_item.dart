@@ -1,5 +1,4 @@
 import 'package:carson_zyppy/global/consts.dart';
-import 'package:circular_countdown_timer/circular_countdown_timer.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
@@ -11,7 +10,7 @@ import '../../../orders/models/orders_model.dart';
 
 nearByOrderItem(
     OrdersData orderData, void Function(OrdersData, String) onClick) {
-  Utils utils = Utils();
+    Utils utils = Utils();
   return Card(
       elevation: 4,
       shadowColor: Colors.black,
@@ -28,18 +27,18 @@ nearByOrderItem(
                 children: [
                   Column(
                     children: [
-                      const Text(
+                       Text(
                         "Order No.",
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: Get.context!.isPhone ? 12 : 15,
                           color: Colors.black,
                         ),
                       ),
                       Container(
                         child: Text(
                           orderData.awbNo.toString(),
-                          style: const TextStyle(
-                            fontSize: 10,
+                          style:  TextStyle(
+                            fontSize: Get.context!.isPhone ? 12 : 15,
                             color: AppColors.black,
                           ),
                         ),
@@ -49,10 +48,10 @@ nearByOrderItem(
                   const Spacer(),
                   Column(
                     children: [
-                      const Text(
+                       Text(
                         "Order Status",
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: Get.context!.isPhone ? 12 : 15,
                           color: Colors.black,
                         ),
                       ),
@@ -72,8 +71,8 @@ nearByOrderItem(
                           padding: const EdgeInsets.all(4.0),
                           child: Text(
                             orderData.status.toString().toUpperCase(),
-                            style: const TextStyle(
-                              fontSize: 10,
+                            style:  TextStyle(
+                              fontSize: Get.context!.isPhone ? 12 : 15,
                               color: Colors.white,
                             ),
                           ),
@@ -84,17 +83,17 @@ nearByOrderItem(
                   const Spacer(),
                   Column(
                     children: [
-                      const Text(
+                       Text(
                         "Payment Type",
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: Get.context!.isPhone ? 12 : 15,
                           color: Colors.black,
                         ),
                       ),
                       Text(
                         orderData.paymentType.toString(),
-                        style: const TextStyle(
-                          fontSize: 10,
+                        style:  TextStyle(
+                          fontSize: Get.context!.isPhone ? 12 : 15,
                           color: Colors.black,
                         ),
                       ),
@@ -112,75 +111,80 @@ nearByOrderItem(
                 color: AppColors.greyColor4,
                 height: 5,
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.max,
-                children: [
-                  Row(
-                      children: [
-                    Expanded(
-                      flex: 1,
-                      child: ListTile(
-                        leading: const Icon(
-                          Icons.shopping_cart,
-                          color: AppColors.primaryThemeColor,
-                        ),
-                        title: Text(
-                          "${orderData.merchantName}\n${orderData.itemName}\n${orderData.itemDescription}(${orderData.quantity})",
-                          style: const TextStyle(
-                            fontSize: 12,
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.max,
+                  children: [
+                    Row(
+                        children: [
+                      Expanded(
+                        flex: 1,
+                        child: ListTile(
+                          leading: const Icon(
+                            Icons.shopping_cart,
+                            color: AppColors.primaryThemeColor,
+                          ),
+                          title: Text(
+                            "${orderData.merchantName}\n${orderData.itemName}\n${orderData.itemDescription}(${orderData.quantity})",
+                            style:  TextStyle(
+                              fontSize: Get.context!.isPhone ? 12 : 15,
+                            ),
                           ),
                         ),
                       ),
-                    ),
 
-                    Expanded(
-                      flex: 1,
-                      child:slaTimer(60, 60 ,orderData.createdAt ?? "", int.tryParse(orderData.sla_in_hours.toString()) ?? 0,12)
-                    )
-                  ]),
-                  Column(
-                    children: [
-                      customRow(
-                          "Order SLA", "${orderData.sla_in_hours}(Hrs.)" ?? ""),
-                      customRow("Order Amount.", orderData.orderAmount ?? ""),
-                      customRow("Weight", "${orderData.weight}(kg)" ?? ""),
-                      customRow(
-                          "Consignee Name", orderData.consigneeName ?? ""),
-                      customRow("Order Created Date", utils.formatDate(orderData.createdAt.toString(),"dd MMM yyyy hh:mm a")),
-                    ],
-                  ),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      customColumn(
-                          "Pick-Up Location", orderData.pickupAddress ?? ""),
-                      customColumn("Drop-Off Location",
-                          orderData.consigneeAddress ?? ""),
-                    ],
-                  ),
-                  Visibility(
-                    visible: orderData.status == "PLACED" ? true : false,
-                    child: Column(
+                      Expanded(
+                        flex: 1,
+                        child:slaTimer(60, 60 ,orderData.createdAt ?? "", int.tryParse(orderData.sla_in_hours.toString()) ?? 0,12)
+                      )
+                    ]),
+                    Column(
                       children: [
-                        const SizedBox(height: 10,),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            utils.iconButton("Accept ", () {
-                              onClick(orderData, acceptOrder);
-                            }, Icons.done, AppColors.green, AppColors.white),
-                            utils.iconButton("Reject ", () {
-                              onClick(orderData, rejectOrder);
-                            }, Icons.cancel, AppColors.red, AppColors.white),
-                          ],
-                        ),
+                        customRow(
+                            "Order SLA", "${orderData.sla_in_hours}(Hrs.)" ?? ""),
+                        customRow("Pickup-Delivery Distance",orderData.distance ?? ""),
+                        customRow("Approx. Time",orderData.duration ?? ""),
+                        customRow("Order Amount.", orderData.orderAmount ?? ""),
+                        customRow("Weight", "${orderData.weight}(kg)" ?? ""),
+                        customRow(
+                            "Consignee Name", orderData.consigneeName ?? ""),
+                        customRow("Order Created Date", utils.formatDate(orderData.createdAt.toString(),"dd MMM yyyy hh:mm a")),
                       ],
                     ),
-                  ),
-                ],
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        customColumn(
+                            "Pick-Up Location", orderData.pickupAddress ?? ""),
+                        customColumn("Drop-Off Location",
+                            orderData.consigneeAddress ?? ""),
+                      ],
+                    ),
+                    Visibility(
+                      visible: orderData.status == "PLACED" ? true : false,
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 10,),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              utils.iconButton("Accept ", () {
+                                onClick(orderData, acceptOrder);
+                              }, Icons.done, AppColors.green, AppColors.white),
+                              utils.iconButton("Reject ", () {
+                                onClick(orderData, rejectOrder);
+                              }, Icons.cancel, AppColors.red, AppColors.white),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               )
             ],
           ),

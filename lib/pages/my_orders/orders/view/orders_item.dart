@@ -13,6 +13,7 @@ import '../models/orders_model.dart';
 
 orderItem(OrdersData orderData, void Function(OrdersData,int) onClick) {
   Utils utils = Utils();
+
   return Card(
       elevation: 4,
       shadowColor: Colors.black,
@@ -30,17 +31,17 @@ orderItem(OrdersData orderData, void Function(OrdersData,int) onClick) {
                 children: [
                   Column(
                     children: [
-                       const Text(
+                        Text(
                         "Order No.",
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize:  Get.context!.isPhone ? 12 : 15,
                           color: Colors.black,
                         ),
                       ),
                       Text(
                         orderData.awbNo.toString(),
-                        style:  const TextStyle(
-                          fontSize: 10,
+                        style:   TextStyle(
+                          fontSize: Get.context!.isPhone ?10:15,
                           color: AppColors.black,
                         ),
                       ),
@@ -49,10 +50,10 @@ orderItem(OrdersData orderData, void Function(OrdersData,int) onClick) {
                    const Spacer(),
                   Column(
                     children: [
-                       const Text(
+                        Text(
                         "Order Status",
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: Get.context!.isPhone?12:15,
                           color: Colors.black,
                         ),
                       ),
@@ -66,8 +67,8 @@ orderItem(OrdersData orderData, void Function(OrdersData,int) onClick) {
                           padding:  const EdgeInsets.all(4.0),
                           child: Text(
                             orderData.status.toString().toUpperCase(),
-                            style:  const TextStyle(
-                              fontSize: 10,
+                            style:   TextStyle(
+                              fontSize: Get.context!.isPhone ?10 :15,
                               color: Colors.white,
                             ),
                           ),
@@ -78,17 +79,17 @@ orderItem(OrdersData orderData, void Function(OrdersData,int) onClick) {
                    const Spacer(),
                   Column(
                     children: [
-                       const Text(
+                        Text(
                         "Payment Type",
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: Get.context!.isPhone?12:15,
                           color: Colors.black,
                         ),
                       ),
                       Text(
                         orderData.paymentType.toString(),
-                        style:  const TextStyle(
-                          fontSize: 10,
+                        style:   TextStyle(
+                          fontSize: Get.context!.isPhone?12:15,
                           color: Colors.black,
                         ),
                       ),
@@ -110,38 +111,42 @@ orderItem(OrdersData orderData, void Function(OrdersData,int) onClick) {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.max,
                 children: [
-                  Row(
-                      children: [
-                        Expanded(
-                          flex: 1,
-                          child: ListTile(
-                            leading: const Icon(
-                              Icons.shopping_cart,
-                              color: AppColors.primaryThemeColor,
-                            ),
-                            title: Text(
-                              "${orderData.merchantName}\n${orderData.itemName}\n${orderData.itemDescription}(${orderData.quantity})",
-                              style: const TextStyle(
-                                fontSize: 12,
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Row(
+                        children: [
+                          Expanded(
+                            flex: 1,
+                            child: ListTile(
+                              leading: const Icon(
+                                Icons.shopping_cart,
+                                color: AppColors.primaryThemeColor,
+                              ),
+                              title: Text(
+                                "${orderData.merchantName}\n${orderData.itemName}\n${orderData.itemDescription}(${orderData.quantity})",
+                                style:  TextStyle(
+                                  fontSize: Get.context!.isPhone?12:20,
+                                ),
                               ),
                             ),
                           ),
-                        ),
 
-                        Visibility(
-                          visible:orderData.status == "DELIVERED" || orderData.status == "UNDELIVERED"  ? false : true ,
-                          child: Expanded(
-                              flex: 1,
-                              child:
-                                  slaTimer(60, 60,orderData.createdAt ?? "", int.tryParse(orderData.sla_in_hours.toString()) ?? 0 ,12),
+                          Visibility(
+                            visible:orderData.status == "DELIVERED" || orderData.status == "UNDELIVERED"  ? false : true ,
+                            child: Expanded(
+                                flex: 1,
+                                child: slaTimer(60, 60,orderData.createdAt ?? "", int.tryParse(orderData.sla_in_hours.toString()) ?? 0 ,12),
 
-                          ),
-                        )
-                      ]),
+                            ),
+                          )
+                        ]),
+                  ),
 
                   Column(
                     children: [
                       customRow("Order SLA","${orderData.sla_in_hours!}(Hrs)"),
+                      customRow("Pickup-Delivery Distance",orderData.distance ?? ""),
+                      customRow("Approx. Time",orderData.duration ?? ""),
                       customRow("Order Amount.",orderData.orderAmount ?? ""),
                       customRow("Weight.",  orderData.weight ?? ""),
                       customRow("Consignee Name", orderData.consigneeName ?? ""),

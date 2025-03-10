@@ -22,5 +22,9 @@ const String USER_ID_KEY = "user_id";
  const String rejectOrder =  "REJECTED";
 
 
+const String imageOne =  "0";
+const String imageTwo =  "1";
+
+
 
 

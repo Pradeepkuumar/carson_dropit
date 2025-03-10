@@ -18,9 +18,34 @@ import 'colors.dart';
 typedef OnDropdownItemSelected = void Function(String);
 
 class Utils extends GetxController {
-  late BuildContext context;
+   BuildContext? context = Get.context;
+
+
 
   // final RoundedLoadingButtonController _btnController = RoundedLoadingButtonController();
+
+
+   double getScreenWidth(BuildContext context) {
+    return MediaQuery.of(context).size.width;
+  }
+
+   double getScreenHeight(BuildContext context) {
+    return MediaQuery.of(context).size.height;
+  }
+
+   bool isMobileScreen(BuildContext context) {
+    return getScreenWidth(context) < 600;
+  }
+
+   bool isTabletScreen(BuildContext context) {
+    return getScreenWidth(context) >= 600 && getScreenWidth(context) < 1024;
+  }
+
+   bool isLargeScreen(BuildContext context) {
+    return getScreenWidth(context) >= 1024;
+  }
+
+
 
   // success snackBar this requires title and message in return
   successSnackBar(String title, String message) {
@@ -98,6 +123,7 @@ class Utils extends GetxController {
     return InkWell(
       child: Container(
         width: null,
+        height: Get.context!.isPhone? 30:50,
         child: DecoratedBox(
           decoration: BoxDecoration(
               color: btnColor,
@@ -116,7 +142,7 @@ class Utils extends GetxController {
                 SizedBox(width: 5),
                 Text(
                   title.toString(),
-                  style: TextStyle(fontSize: 10, color: textAndIconColor),
+                  style: TextStyle(fontSize: Get.context!.isPhone?12:15, color: textAndIconColor),
                 )
               ],
             ),
@@ -412,37 +438,39 @@ class Utils extends GetxController {
      if(Get.isDialogOpen == false) {
        Get.dialog(
          Center(
-           child: Container(
-             height: Get.height,
-             width: Get.width,
-             color: AppColors.transparent,
-             child: Center(
-               child: Container(
-                 height: 100,
-                 width: 150,
-                 alignment: Alignment.center,
-                 decoration: utils.boxDecorationWhite(),
-                 child: Column(
-                   mainAxisAlignment: MainAxisAlignment.center,
-                   crossAxisAlignment: CrossAxisAlignment.center,
-                   children: [
-                     Padding(
-                       padding: const EdgeInsets.all(10.0),
-                       child: Container(
-                         height: 50,
-                         width: 50,
-                         // child: Lottie.asset(ImageConstants.ANIM_LOADING_DOTS),
-                         child: utils.iosProgressIndicator(AppColors.primaryThemeColor),
-                         // GetPlatform.isAndroid
-                         //     ? CircularProgressIndicator(
-                         //   color: AppColors.primaryThemeColor,
-                         // )
-                         //     : utils.iosProgressIndicator(AppColors.white),
+           child: Scaffold(
+             body: Container(
+               height: Get.height,
+               width: Get.width,
+               color: AppColors.transparent,
+               child: Center(
+                 child: Container(
+                   height: 100,
+                   width: 150,
+                   alignment: Alignment.center,
+                   decoration: utils.boxDecorationWhite(),
+                   child: Column(
+                     mainAxisAlignment: MainAxisAlignment.center,
+                     crossAxisAlignment: CrossAxisAlignment.center,
+                     children: [
+                       Padding(
+                         padding: const EdgeInsets.all(10.0),
+                         child: Container(
+                           height: 50,
+                           width: 50,
+                           // child: Lottie.asset(ImageConstants.ANIM_LOADING_DOTS),
+                           child: utils.iosProgressIndicator(AppColors.primaryThemeColor),
+                           // GetPlatform.isAndroid
+                           //     ? CircularProgressIndicator(
+                           //   color: AppColors.primaryThemeColor,
+                           // )
+                           //     : utils.iosProgressIndicator(AppColors.white),
+                         ),
                        ),
-                     ),
-                     utils.tvCustom(
-                       message ?? "Loading...", AppColors.black,10)
-                   ],
+                       utils.tvCustom(
+                         message ?? "Loading...", AppColors.black,10)
+                     ],
+                   ),
                  ),
                ),
              ),
@@ -476,7 +504,7 @@ class Utils extends GetxController {
   backButton() {
     return GestureDetector(
       onTap: () {
-        Navigator.pop(context);
+        Navigator.pop(context!);
       },
       child: Container(
         decoration: BoxDecoration(
@@ -719,9 +747,13 @@ class Utils extends GetxController {
 
 
   openDialPad(String phoneNumber) async {
-    Uri url = Uri(scheme: "tel", path: phoneNumber);
+    final Uri phoneUri = Uri.parse("tel:$phoneNumber");
+    if (await canLaunchUrl(phoneUri)) {
+      await launchUrl(phoneUri);
+    } else {
+      throw "Could not open dial pad";
+    }
 
-      await launchUrl(url);
 
   }
 
@@ -884,6 +916,20 @@ class Utils extends GetxController {
       onConfirm: clickListener,
       onCancel: clickListenerCancelButton,
       barrierDismissible: false,
+    );
+  }
+
+  void showCustomDialog({
+    required String title,
+    required String middleText,
+    required List<Widget> buttons,
+  }) {
+    Get.defaultDialog(
+      title: title,
+      middleText: middleText,
+      barrierDismissible: false,
+      contentPadding: const EdgeInsets.all(16),
+      actions: buttons,
     );
   }
 
@@ -1080,7 +1126,7 @@ class Utils extends GetxController {
     return Text(
       text ?? "",
       softWrap: true,
-      style: AppTextStyle.tsCustom(textColor, fontSize),
+      style: AppTextStyle.tsCustom(textColor, context!.isTablet ? 20:fontSize),
       textAlign: TextAlign.center,
     );
   }
@@ -1090,7 +1136,7 @@ class Utils extends GetxController {
         softWrap: true,
         style: TextStyle(
           color: Colors.black,
-          fontSize: 10,
+          fontSize: context!.isPhone ?10:20,
         ));
   }
 
@@ -1137,9 +1183,8 @@ class Utils extends GetxController {
   // }
 
   Future<File?> pickImage(ImageSource imageSource) async {
-    // Capture Image From Camera.
-    //final pickedFile = await imagePicker.getImage(source: imageSource);
-    final pickedFile = await imagePicker.pickImage(source: imageSource,maxWidth : 500,maxHeight: 500,imageQuality: 50 );
+
+    final pickedFile = await imagePicker.pickImage(source: imageSource,maxWidth : 720,maxHeight: 1080,imageQuality: 90 );
 
     if (pickedFile != null) {
       return File(pickedFile.path);

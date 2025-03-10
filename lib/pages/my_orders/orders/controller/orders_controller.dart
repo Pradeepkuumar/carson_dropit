@@ -10,6 +10,7 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../../apis/base_api_response.dart';
+import '../../../../global/consts.dart';
 import '../../../../global/global.dart';
 import '../../../dashboard/controller/rider_dashboard_controller.dart';
 import '../../../map/reasonsItem.dart';
@@ -29,6 +30,7 @@ class OrdersController extends GetxController with GetTickerProviderStateMixin {
   final paymentProof = Rxn<File>();
 
   File? deliveredImage;
+  File? deliveryProof;
 
   File? signatureFile;
   Uint8List? signImage;
@@ -38,9 +40,6 @@ class OrdersController extends GetxController with GetTickerProviderStateMixin {
   var markUnDelivered = false.obs;
 
   var selectedReason = "".obs;
-
-
-
 
   final List<String> hintTexts = [
     "Enter Order Number",
@@ -52,7 +51,6 @@ class OrdersController extends GetxController with GetTickerProviderStateMixin {
   final riderDashboardController = Get.put(RiderDashboardController());
   var notificationList = <String>[].obs;
 
-
   final SignatureController signatureController = SignatureController(
     penStrokeWidth: 2,
     penColor: Colors.black,
@@ -60,7 +58,7 @@ class OrdersController extends GetxController with GetTickerProviderStateMixin {
   );
 
   @override
-  void onInit()  {
+  void onInit() {
     super.onInit();
     tabController = TabController(initialIndex: 0, length: 5, vsync: this);
     getUser();
@@ -78,11 +76,9 @@ class OrdersController extends GetxController with GetTickerProviderStateMixin {
         getFeOrders(["UNDELIVERED"]);
       }
       signatureController.addListener(signatureListner);
-
     });
     startHintTextTimer();
   }
-
 
   getUser() async {
     await userRepository.getUser().then((value) => {user = value!});
@@ -97,7 +93,6 @@ class OrdersController extends GetxController with GetTickerProviderStateMixin {
     currentHintIndex.value = (currentHintIndex.value + 1) % hintTexts.length;
   }
 
-
   String get currentHintText => hintTexts[currentHintIndex.value];
 
   void signatureListner() {
@@ -106,9 +101,9 @@ class OrdersController extends GetxController with GetTickerProviderStateMixin {
     }
   }
 
-  void getNotification() async{
-   LocalNotification? noti = await  userRepository.getAllNotification();
-   notificationList.add(noti?.title ?? "");
+  void getNotification() async {
+    LocalNotification? noti = await userRepository.getAllNotification();
+    notificationList.add(noti?.title ?? "");
   }
 
   Future<bool?> getFeOrders(List<String> status) async {
@@ -201,7 +196,8 @@ class OrdersController extends GetxController with GetTickerProviderStateMixin {
           {'key': 'delivery_proof', 'file': deliveredImage},
         if (markUnDelivered.value)
           {'key': 'failed_delivery_proof', 'file': deliveredImage},
-        if (signatureFile != null) {'key': 'signature', 'file': signatureFile}
+        if (signatureFile != null) {'key': 'signature', 'file': signatureFile},
+        if (deliveryProof != null) {'key': 'delivery_proof_image_2', 'file': deliveryProof}
       ];
 
       Map<String, dynamic> data = {
@@ -245,19 +241,21 @@ class OrdersController extends GetxController with GetTickerProviderStateMixin {
     }
   }
 
-  captureImage(ImageSource imageSource) async {
-    if (imageSource == ImageSource.camera) {
+  captureImage(ImageSource imageSource, String type) async {
+    if (imageSource == ImageSource.camera && type == imageOne) {
       image.value = await utils.pickImage(imageSource);
-    } else {
+      deliveredImage = image.value;
+    } else if(imageSource == ImageSource.camera && type == imageTwo) {
       paymentProof.value = await utils.pickImage(imageSource);
+      deliveryProof = paymentProof.value;
+    }else{
+      paymentProof.value = await utils.pickImage(imageSource);
+          deliveryProof = paymentProof.value;
+
     }
+
     update();
-
-    deliveredImage =  image.value;
-
-    }
-
-
+  }
 
   exportSignature() async {
     signImage = await signatureController.toPngBytes(width: 500, height: 500);

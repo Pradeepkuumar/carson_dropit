@@ -61,7 +61,7 @@ class OrdersListViewState extends State<OrdersListView> {
                         Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: Container(
-                              height: 40,
+                              height: context.isPhone?40:60,
                               child: Obx(() {
                                 return TextField(
                                   onChanged: (value) {

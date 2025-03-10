@@ -2,7 +2,6 @@ import 'dart:ui';
 
 import 'package:carson_zyppy/global/global.dart';
 import 'package:carson_zyppy/pages/dashboard/controller/rider_dashboard_controller.dart';
-import 'package:carson_zyppy/pages/my_orders/nearby_orders/view/nearby_orders_view.dart';
 import 'package:carson_zyppy/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -46,15 +45,16 @@ class _RiderDashboardState extends State<RiderDashboard> {
           ),
           Obx(() {
             return Visibility(
-              visible: controller.isAttendanceMarked.value,
+              visible: true,
+              //visible: controller.isAttendanceMarked.value,
               child: Stack(
                 children: [
                   Center(
                     child: SingleChildScrollView(
                       scrollDirection :Axis.vertical,
                       child: Container(
-                        height: 590,
-                        width: 330,
+                        height: utils.isMobileScreen(context)? 590 : 920,
+                        width: Get.width-20,
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.white),
                           borderRadius: BorderRadius.circular(10),
@@ -71,7 +71,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                     children: [
                                       Obx(() {
                                         return Container(
-                                          height: 160,
+                                          height: utils.isMobileScreen(context)?160:260,
                                           margin: const EdgeInsets.symmetric(horizontal: 15),
                                           decoration: utils.roundedBorder(AppColors.white, 10),
                                           child:  Padding(
@@ -82,7 +82,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                   children: [
                                                     utils.tvCustom("Working Hours/Day", AppColors.white, 10),
                                                     SizedBox(
-                                                    height: 100,
+                                                    height: context.isPhone? 100 :160,
                                                       child: ListView.builder(
                                                           scrollDirection: Axis.horizontal,
                                                        itemCount:controller.attendancesList.length ,
@@ -105,7 +105,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                           margin: const EdgeInsets.symmetric(horizontal: 15),
                                           decoration: utils.boxDecorationWhite(),
                                           child: Padding(
-                                            padding: const EdgeInsets.all(8.0),
+                                            padding:  EdgeInsets.all( utils.isMobileScreen(context)?8.0:20),
                                             child: Column(
                                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                                 children: [
@@ -113,7 +113,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                     padding: const EdgeInsets.all(8.0),
                                                     child: Row(
                                                       children: [
-                                                        utils.imageView(myOrdersImage, 35, 35),
+                                                        utils.imageView(myOrdersImage, utils.isMobileScreen(context)?35:60, utils.isMobileScreen(context)?35:50),
                                                         const SizedBox(width: 10),
                                                         utils.tvCustom("My Orders",AppColors.primaryThemeColor, 15)
                                                       ],
@@ -179,7 +179,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                   padding: const EdgeInsets.all(8.0),
                                                   child: Row(
                                                     children: [
-                                                      utils.imageView(placedOrdersImage, 50, 50),
+                                                      utils.imageView(placedOrdersImage, context.isPhone ? 50 :60, context.isPhone ? 50 :50),
                                                       const SizedBox(width: 10,),
                                                       utils.tvCustom("Placed Orders",AppColors.primaryThemeColor, 20)
                                                     ],
@@ -207,7 +207,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                   padding: const EdgeInsets.all(8.0),
                                                   child: Row(
                                                     children: [
-                                                      utils.imageView(nearByImage, 50, 50),
+                                                      utils.imageView(nearByImage, context.isPhone ? 50 :60, context.isPhone ? 50 :50),
                                                       const SizedBox(width: 10,),
                                                       utils.tvCustom("Nearby Orders",AppColors.primaryThemeColor, 20)
                                                     ],
@@ -232,8 +232,8 @@ class _RiderDashboardState extends State<RiderDashboard> {
                           showMenu.value = true;
                         },
                         child: AnimatedContainer(
-                          width: showMenu.value ? 250.0 : 45.0,
-                          height: showMenu.value ? 450.0 : 45.0,
+                          width: showMenu.value ? 350.0 : 45.0,
+                          height: showMenu.value ? 600.0 : 45.0,
                           decoration: showMenu.value
                               ? utils.boxDecorationWhite()
                               : null,

@@ -28,18 +28,18 @@ placedOrderItem(OrdersData orderData,void Function(OrdersData,String) onClick) {
                 children: [
                   Column(
                     children: [
-                       const Text(
+                        Text(
                         "Order No.",
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: Get.context!.isPhone ? 12 : 15,
                           color: Colors.black,
                         ),
                       ),
                       Container(
                         child: Text(
                           orderData.awbNo.toString(),
-                          style:  const TextStyle(
-                            fontSize: 10,
+                          style:   TextStyle(
+                            fontSize: Get.context!.isPhone ? 12 : 15,
                             color: AppColors.black,
                           ),
                         ),
@@ -49,10 +49,10 @@ placedOrderItem(OrdersData orderData,void Function(OrdersData,String) onClick) {
                    const Spacer(),
                   Column(
                     children: [
-                       const Text(
+                        Text(
                         "Order Status",
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: Get.context!.isPhone ? 12 : 15,
                           color: Colors.black,
                         ),
                       ),
@@ -66,8 +66,8 @@ placedOrderItem(OrdersData orderData,void Function(OrdersData,String) onClick) {
                           padding:  const EdgeInsets.all(4.0),
                           child: Text(
                             orderData.status.toString().toUpperCase(),
-                            style:  const TextStyle(
-                              fontSize: 10,
+                            style:   TextStyle(
+                              fontSize: Get.context!.isPhone ? 12 : 15,
                               color: Colors.white,
                             ),
                           ),
@@ -78,17 +78,17 @@ placedOrderItem(OrdersData orderData,void Function(OrdersData,String) onClick) {
                    const Spacer(),
                   Column(
                     children: [
-                       const Text(
+                        Text(
                         "Payment Type",
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: Get.context!.isPhone ? 12 : 15,
                           color: Colors.black,
                         ),
                       ),
                       Text(
                         orderData.paymentType.toString(),
-                        style:  const TextStyle(
-                          fontSize: 10,
+                        style:   TextStyle(
+                          fontSize: Get.context!.isPhone ? 12 : 15,
                           color: Colors.black,
                         ),
                       ),
@@ -117,14 +117,16 @@ placedOrderItem(OrdersData orderData,void Function(OrdersData,String) onClick) {
                     ),
                     title: Text(
                       "${orderData.merchantName}\n${orderData.itemName}\n${orderData.itemDescription}(${orderData.quantity})",
-                      style:  const TextStyle(
-                        fontSize: 12,
+                      style:   TextStyle(
+                        fontSize: Get.context!.isPhone ? 12 : 15,
                       ),
                     ),
                   ),
                   Column(
                     children: [
                       customRow("Order SLA", "${orderData.sla_in_hours}(Hrs.)" ?? ""),
+                      customRow("Pickup-Delivery Distance",orderData.distance ?? ""),
+                      customRow("Approx. Time",orderData.duration ?? ""),
                       customRow("Order Amount.",orderData.orderAmount ?? ""),
                       customRow("Weight.",  "${orderData.weight}(kg)" ?? ""),
                       customRow("Consignee Name", orderData.consigneeName ?? ""),

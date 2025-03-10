@@ -83,7 +83,7 @@ class ImageSignatureView extends GetView<OrdersController> {
                           padding: EdgeInsets.all(5),
                           child: InkWell(
                             onTap: () {
-                              controller.captureImage(ImageSource.camera);
+                             // controller.captureImage(ImageSource.camera,0);
                             },
                             child: Container(
                               width: Get.width,
@@ -99,9 +99,9 @@ class ImageSignatureView extends GetView<OrdersController> {
                                       children: [
                                         utils.iconButtonWithoutBorder("Change",
                                                 () {
-                                              controller.image.refresh();
-                                              controller.captureImage(
-                                                  ImageSource.camera);
+                                              // controller.image.refresh();
+                                              // controller.captureImage(
+                                              //     ImageSource.camera,0);
                                             }, Icons.refresh, null)
                                       ],
                                     ),

@@ -35,7 +35,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         alignment: Alignment.center,
         child: Container(
-          height: 350,
+          height: utils.isMobileScreen(context) ? 350 : 550,
           width: double.infinity,
           margin: const EdgeInsets.symmetric(horizontal: 30),
           decoration: BoxDecoration(
@@ -120,7 +120,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                           },
                           child: Container(
-                            height: 40,
+                            height: utils.isMobileScreen(context)?40:60,
                             width: double.infinity,
                             decoration: BoxDecoration(
                                 color: Colors.white,

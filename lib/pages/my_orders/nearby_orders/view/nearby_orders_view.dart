@@ -1,4 +1,4 @@
-import 'dart:ffi';
+
 import 'dart:math';
 import 'package:carson_zyppy/pages/my_orders/placed_orders/controller/placed_orders_controller.dart';
 import 'package:flutter/material.dart';
@@ -54,6 +54,7 @@ class _MapPageState extends State<NearbyOrdersView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // backgroundColor: AppColors.primaryThemeColor,
       body: SafeArea(
         child: Stack(
           children: [
@@ -150,7 +151,7 @@ class _MapPageState extends State<NearbyOrdersView> {
                               Expanded(
                                 flex: 20,
                                 child: SizedBox(
-                                  height: 480,
+                                  height: context.isPhone? 520:800,
                                   child: PageView.builder(
                                       scrollDirection: Axis.horizontal,
                                       controller: PageController(
