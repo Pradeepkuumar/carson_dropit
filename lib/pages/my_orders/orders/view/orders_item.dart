@@ -1,6 +1,5 @@
 
 import 'package:carson_zyppy/global/consts.dart';
-import 'package:carson_zyppy/pages/map/map_page.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../global/global.dart';
@@ -162,12 +161,12 @@ orderItem(OrdersData orderData, void Function(OrdersData,int) onClick) {
                       customColumn("Drop-Off Location", orderData.consigneeAddress ?? ""),
                     ],
                   ),
-                  Visibility(
-                    visible: orderData.status == "UNDELIVERED",
-                      child: Column( children: [
-                          customRow("Undelivered Reason", orderData.reason ?? ""),
-                          Image.network(orderData.failed_delivery_proof ?? "",height: 350,width: 300,fit: BoxFit.fill,)
-                      ])),
+                  // Visibility(
+                  //   visible: orderData.status == "UNDELIVERED",
+                  //     child: Column( children: [
+                  //         customRow("Undelivered Reason", orderData.reason ?? ""),
+                  //         Image.network(orderData.failed_delivery_proof ?? "",height: 350,width: 300,fit: BoxFit.fill,)
+                  //     ])),
                   Visibility(
                     visible: orderData.status == "ASSIGNED" || orderData.status == "RE-ASSIGNED" ||orderData.status == "REACHED" ? true : false,
                     child: Column(
@@ -181,17 +180,17 @@ orderItem(OrdersData orderData, void Function(OrdersData,int) onClick) {
                                 utils.openDialPad(
                                     orderData.pickupPhoneNo.toString());
                               }),
-                             SizedBox(width:5,),
+                             const SizedBox(width:5,),
                             utils.clickableImageVertical("Pickup", AppColors.black, AppColors.green, icWhatsApp,30, 30, (){
                               utils.openWhtsApp(
                                   orderData.pickupPhoneNo.toString());
                               }),
-                            SizedBox(width:5,),
+                            const SizedBox(width:5,),
                             utils.clickableImageVertical("Call Consignee", AppColors.black, AppColors.blue, icTelephone, 30, 30, (){
                               utils.openDialPad(
                                   orderData.consigneeMobileNo.toString());
                               }),
-                            SizedBox(width:5,),
+                            const SizedBox(width:5,),
                             utils.clickableImageVertical("Consignee", AppColors.black, AppColors.green, icWhatsApp,30, 30, (){
                               utils.openWhtsApp(
                                   orderData.pickupPhoneNo.toString());

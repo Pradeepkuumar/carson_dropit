@@ -1,8 +1,6 @@
-import 'package:carson_zyppy/global/global.dart';
 import 'package:circular_countdown_timer/circular_countdown_timer.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 
 import 'colors.dart';
 
@@ -32,7 +30,8 @@ Column slaTimer(double height,double width,String createdAt, int slaHours,double
         width: width,
         height: height,
         ringColor:isOrderTimeOver? AppColors.red:Colors.grey[300]!,
-        fillColor:AppColors.green ,
+        fillColor:AppColors.green
+        ,
         backgroundColor: Colors.white,
         isReverseAnimation: true,
         isReverse: true,

@@ -2,7 +2,6 @@ import 'dart:math';
 
 import 'package:carson_zyppy/local_db/entity/UserData.dart';
 import 'package:carson_zyppy/pages/dashboard/models/dashboard_data.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:location/location.dart';
@@ -30,28 +29,13 @@ class RiderDashboardController extends GetxController {
   var isAttendanceLoaded = false.obs;
   var attendancesList = [].obs;
 
+
   @override
   void onInit() {
     requestBackgroundPermission();
     getUser();
     updateLocation();
     super.onInit();
-  }
-
-  updateLocation() async {
-    await getCurrentLocation();
-    checkAttendance();
-    await getCountinuesLocation();
-  }
-
-  void checkAttendance() {
-    if (driverData.value.attendances?.last.markAttendance == 1) {
-      isAttendanceMarked.value = true;
-    } else {
-      isAttendanceMarked.value = false;
-    }
-    isAttendanceLoaded.value = true;
-
   }
 
   // final listener = InternetConnection().onStatusChange.listen((InternetStatus status) {
@@ -63,6 +47,22 @@ class RiderDashboardController extends GetxController {
   //       break;
   //   }
   // });
+
+  updateLocation() async {
+    await getCurrentLocation();
+    checkAttendance();
+    await getCountinuesLocation();
+    await fetchWalletAmount();
+  }
+
+  void checkAttendance() {
+    if (driverData.value.attendances?.last.markAttendance == 1) {
+      isAttendanceMarked.value = true;
+    } else {
+      isAttendanceMarked.value = false;
+    }
+    isAttendanceLoaded.value = true;
+  }
 
   Future<void> requestBackgroundPermission() async {
     if (await Permission.locationWhenInUse.isGranted) {
@@ -92,7 +92,7 @@ class RiderDashboardController extends GetxController {
         await getDashBoardData();
       }
     } catch (e) {
-      utils.errorSnackBar("Exception", e.toString());
+      //  utils.errorSnackBar("Exception", e.toString());
     }
   }
 
@@ -115,7 +115,7 @@ class RiderDashboardController extends GetxController {
       }
     } catch (e) {
       utils.closeLoadingDialog();
-      utils.errorSnackBar("Exception", e.toString());
+      //  utils.errorSnackBar("Exception", e.toString());
       return false;
     }
   }
@@ -140,7 +140,31 @@ class RiderDashboardController extends GetxController {
       }
     } catch (e) {
       utils.closeLoadingDialog();
-      utils.errorSnackBar("Exception", e.toString());
+      //   utils.errorSnackBar("Exception", e.toString());
+      return false;
+    }
+  }
+
+  Future<bool> fetchWalletAmount() async {
+    try {
+      Map<String, dynamic> model = {
+        apiKeys.feCode: userData.code,
+      };
+      var response = await apiProvider.getRequestWithQueryParams(
+          apiEndPoints.fetchWalletAmount, model);
+      var result = BaseApiResponse.fromJson(response);
+      if (result.status_code == 200) {
+        walletAmount.value = result.data.toString();
+        utils.closeLoadingDialog();
+        update();
+        return true;
+      } else {
+        utils.closeLoadingDialog();
+        update();
+        return false;
+      }
+    } catch (e) {
+      utils.closeLoadingDialog();
       return false;
     }
   }
@@ -202,7 +226,7 @@ class RiderDashboardController extends GetxController {
       var result = BaseApiResponse.fromJson(response);
       if (result.status_code == 200) {
         driverData.value = DriverData.fromJson(result.data);
-        attendancesList.value =  driverData.value.attendances!.reversed.toList();
+        attendancesList.value = driverData.value.attendances!.reversed.toList();
         // print(driverData.value.toJson().toString());
         await getDashBoardData();
         utils.closeLoadingDialog();
@@ -214,7 +238,7 @@ class RiderDashboardController extends GetxController {
         return false;
       }
     } catch (e) {
-     // utils.errorSnackBar("Exception", e.toString());
+      // utils.errorSnackBar("Exception", e.toString());
       return false;
     }
   }
@@ -226,14 +250,10 @@ class RiderDashboardController extends GetxController {
 
   getCurrentLocation() async {
     startLocation = (await locationUtils.getCurrentLocation())!;
-    if (startLocation != null) {
-      await sendDriverLocation(startLocation);
-      print(
-          'Current Location: ${startLocation.latitude}, ${startLocation.longitude}');
-    } else {
-      print('Unable to fetch location.');
+    await sendDriverLocation(startLocation);
+    print(
+        'Current Location: ${startLocation.latitude}, ${startLocation.longitude}');
     }
-  }
 
   getCountinuesLocation() {
     locationUtils.startListeningToLocationUpdates(

@@ -1,7 +1,6 @@
 import 'package:carson_zyppy/global/consts.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 import '../../../../../global/global.dart';
 import '../../../../../utils/calculate_sla.dart';
 import '../../../../../utils/colors.dart';

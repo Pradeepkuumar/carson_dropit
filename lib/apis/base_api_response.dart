@@ -3,7 +3,7 @@ class BaseApiResponse {
   int? status_code;
   String? method;
   String? status;
-  dynamic? data;
+  dynamic data;
   String? message;
 
   BaseApiResponse({this.success, this.status_code, this.method,this.status, this.data, this.message});

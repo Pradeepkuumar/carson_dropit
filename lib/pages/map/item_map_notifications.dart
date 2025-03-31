@@ -1,6 +1,5 @@
 import 'package:carson_zyppy/global/global.dart';
 import 'package:carson_zyppy/utils/colors.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 ItemMapNotifications(String notificationText) {
@@ -11,7 +10,7 @@ ItemMapNotifications(String notificationText) {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Icon(
+          const Icon(
             Icons.notifications_rounded,
             color: AppColors.primaryThemeColor,
           ),
@@ -21,7 +20,7 @@ ItemMapNotifications(String notificationText) {
               utils.tvCustom(notificationText, AppColors.black, 12),
             ],
           ),
-          Icon(
+          const Icon(
             Icons.delete_forever,
             color: AppColors.red,
           ),

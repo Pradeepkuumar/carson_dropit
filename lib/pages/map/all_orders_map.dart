@@ -1,397 +1,599 @@
 import 'dart:async';
+
 import 'package:carson_zyppy/global/global.dart';
-import 'package:carson_zyppy/pages/my_orders/orders/controller/orders_controller.dart';
+import 'package:carson_zyppy/pages/map/controller/all_orders_map_controller.dart';
 import 'package:carson_zyppy/utils/colors.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:google_navigation_flutter/google_navigation_flutter.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:location/location.dart';
 import 'package:signature/signature.dart';
 import '../../global/consts.dart';
 import '../../utils/calculate_sla.dart';
-import '../my_orders/orders/models/orders_model.dart';
+import 'orderItem/clickedOrderItem.dart';
+
+class AllOrdersMapPage extends GetView<AllOrdersMapController> {
 
 
-class MapPage extends StatefulWidget {
-  final OrdersData orderDetails;
-  int mapView;
+  StreamSubscription<RemainingTimeOrDistanceChangedEvent>?
+  remainingTimeOrDistanceChangedSubscription;
 
-  MapPage({super.key, required this.orderDetails, required this.mapView});
 
   @override
-  State<MapPage> createState() => _MapPageState();
-}
+  final controller = Get.put(AllOrdersMapController());
 
-class _MapPageState extends State<MapPage> {
-  late StreamSubscription<LocationData> _locationSubscription;
-  final Location _locationController = Location();
-  GoogleNavigationViewController? navigationViewController;
-  bool _navigationSessionInitialized = false;
 
-  final controller = Get.put(OrdersController());
   var enableMapLiveCamera = false.obs;
   var enableMapType = false.obs;
   var enableNavigation = false.obs;
   var showNotificationView = false.obs;
   late LatLng pickUpLocation;
-  final GoogleMapsNavigator googleMapsNavigator  = GoogleMapsNavigator() ;
-
-
   late LatLng deliveryLocation;
+
 
   var orderDurationByGoogle = "".obs;
   var orderDistanceByGoogle = "".obs;
-  MapType mapType = MapType.hybrid;
-  var isUpdateCardVisible = false.obs;
+
+  AllOrdersMapPage({super.key});
 
 
-
-  final List<NavigationWaypoint> _waypoints = <NavigationWaypoint>[];
-  StreamSubscription<RemainingTimeOrDistanceChangedEvent>?
-  remainingTimeOrDistanceChangedSubscription;
-
-  @override
-  void initState() {
-    _initializeNavigationSession();
-    controller.getDeliveryDirectionData().then((value) {
-      if (value != null) {
-
-      }
-    });
+  // @override
+  // void initState() {
+  //   // WidgetsBinding.instance.addPostFrameCallback((_) {
+  //     controller.getLocationUpdates();
+  //   // });
+  //   super.initState();
+  // }
 
 
-    // getDeliveryAddress().then((_) {
-    //   pickUpLocation = LatLng(
-    //     latitude: double.parse(widget.orderDetails.pickupLatitude ?? "0.0"),
-    //     longitude: double.parse(widget.orderDetails.pickupLongitude ?? "0.0"),
-    //   );
-    //
-    //   if (widget.orderDetails.status == "OFD") {
-    //     _waypoints.add(NavigationWaypoint.withLatLngTarget(
-    //         title: "Delivery Location",
-    //         target: deliveryLocation
-    //     ));
-    //   } else {
-    //     _waypoints.add(NavigationWaypoint.withLatLngTarget(
-    //         title: "Pick-Up Location",
-    //         target: pickUpLocation
-    //     ));
-    //   }
-    // });
-
-
-    controller.getLocationUpdates().then(
-          (_) =>
-      {
-          remainingTimeOrDistanceChangedSubscription =
-          googleMapsNavigator.setOnRemainingTimeOrDistanceChangedListener(
-          _onRemainingTimeOrDistanceChangedEvent,
-          remainingDistanceThresholdMeters: 10)
-      },
-    );
-    // loadCustomIcons();
-    super.initState();
-  }
-
-  Future<void> _initializeNavigationSession() async {
-    if (!await googleMapsNavigator.areTermsAccepted()) {
-      await googleMapsNavigator.showTermsAndConditionsDialog(
-        'Carson Zyppy',
-        'Logistics solutions',
-      );
+  void _onViewCreated(GoogleNavigationViewController mapController) async {
+    controller.navigationViewController = mapController;
+    await mapController.setMyLocationEnabled(true);
+    for (var marker in controller.markers) {
+      mapController.addMarkers([marker]);
     }
-    await googleMapsNavigator.initializeNavigationSession();
-    setState(() {
-      _navigationSessionInitialized = true;
-    });
-  }
-
-
-  void _onViewCreated(GoogleNavigationViewController controller) async {
-    navigationViewController = controller;
-    await controller.setMyLocationEnabled(true);
-    await controller.setTrafficIncidentCardsEnabled(true);
-    await googleMapsNavigator.setDestinations(Destinations(
-      waypoints: _waypoints,
+    await controller.googleMapsNavigator.setDestinations(Destinations(
+      waypoints: controller.waypoints,
       displayOptions: NavigationDisplayOptions(
         showDestinationMarkers: true,
         showStopSigns: true,
         showTrafficLights: true,
       ),
-      routingOptions: RoutingOptions(
-          travelMode: NavigationTravelMode.driving),));
-    startGuidedNavigation();
+      routingOptions: RoutingOptions(travelMode: NavigationTravelMode.driving),
+
+    ));
+    await controller.navigationViewController?.setNavigationUIEnabled(true);
+    await controller.navigationViewController?.setSpeedometerEnabled(true);
+    await controller.navigationViewController?.setMapStyle('''
+   [{
+    "featureType": "administrative",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "visibility": "off"
+      }
+    ]
+  },
+  {
+    "featureType": "poi",
+    "stylers": [
+      {
+        "visibility": "off"
+      }
+    ]
+  },
+  {
+    "featureType": "road",
+    "elementType": "labels.icon",
+    "stylers": [
+      {
+        "visibility": "off"
+      }
+    ]
+  },
+  {
+    "featureType": "transit",
+    "stylers": [
+      {
+        "visibility": "off"
+      }
+    ]
+  }
+]
+    ''');
+    await controller.navigationViewController?.settings.setTrafficEnabled(true);
   }
 
-  Future<void> startGuidedNavigation() async {
-    await navigationViewController?.setNavigationUIEnabled(true);
-    await navigationViewController?.setTrafficIncidentCardsEnabled(true);
-    await navigationViewController?.setSpeedometerEnabled(true);
-    await googleMapsNavigator.startGuidance();
-    await navigationViewController?.followMyLocation(CameraPerspective.tilted);
-  }
 
-  void _onRemainingTimeOrDistanceChangedEvent(
-      RemainingTimeOrDistanceChangedEvent event) {
-    if (!mounted) {
-      return;
-    }
-    var value = event.remainingDistance.toInt();
-    if (value <= 50) {
-      setState(() {
-        isUpdateCardVisible.value = true;
-      });
-    }
-  }
+  // void _onRemainingTimeOrDistanceChangedEvent(
+  //     RemainingTimeOrDistanceChangedEvent event) {
+  //   if (!mounted) {
+  //     return;
+  //   }
+  //   var value = event.remainingDistance.toInt();
+  //   if (value <= 50) {
+  //     setState(() {
+  //       isUpdateCardVisible.value = true;
+  //     });
+  //   }
+  // }
 
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       // backgroundColor: AppColors.primaryThemeColor,
-      body: controller.currentLocation == null
-          ? Center(
-        child: utils.iosProgressIndicator(AppColors.primaryThemeColor),
-      )
-          : SafeArea(
-        child: Stack(children: [
-          _navigationSessionInitialized ?
-          GoogleMapsNavigationView(
-            key: ValueKey(mapType),
-            gestureRecognizers: Set()
-              ..add(Factory<PanGestureRecognizer>(
-                      () => PanGestureRecognizer()))..add(
-                  Factory<ScaleGestureRecognizer>(
-                          () => ScaleGestureRecognizer())),
-            onViewCreated: _onViewCreated,
-            initialMapType: mapType,
-            initialNavigationUIEnabledPreference: NavigationUIEnabledPreference
-                .automatic,
-            initialCameraPosition: CameraPosition(
-              target: controller.currentLocation!,
-              zoom: 14,
+        body:
+        Obx(() =>
+        controller.isLoading.value
+            ? Align(
+          alignment: Alignment.center,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  utils.iosProgressIndicator(AppColors.primaryThemeColor),
+                  const SizedBox(height: 10,),
+                  Obx(() {
+                    return utils.tvCustom(
+                        controller.currentHintText, AppColors.primaryThemeColor,
+                        15);
+                  }),
+                ],
+              ),
+            )
+            : SafeArea(
+          child: Stack(children: [
+            controller.initializeNavigation.value
+                ? GoogleMapsNavigationView(
+              key: ValueKey(controller.mapType),
+              gestureRecognizers: Set()
+                ..add(Factory<PanGestureRecognizer>(
+                        () => PanGestureRecognizer()))..add(
+                    Factory<ScaleGestureRecognizer>(
+                            () => ScaleGestureRecognizer())),
+              onViewCreated: _onViewCreated,
+              initialMapType: controller.mapType,
+              initialNavigationUIEnabledPreference:
+              NavigationUIEnabledPreference.automatic,
+              initialCameraPosition: CameraPosition(
+                target: controller.currentLocation!,
+                zoom: 14,
+              ),
+              onMarkerClicked: (value) async {
+                if (value != "current_location") {
+                  controller.selectedOrderAwbId.value = value;
+                  await controller.selectedLocationOrders();
+                  controller.viewAcceptView.value = true;
+                  controller.bottomBarListType.value = 0;
+                } else {
+                  if (kDebugMode) {
+                    print("Marker not found in map.");
+                  }
+                }
+              },
+            )
+                : Center(
+              child: utils.iosProgressIndicator(AppColors.primaryThemeColor),
             ),
-          ) : Center(
-            child: utils.iosProgressIndicator(AppColors.primaryThemeColor),),
-          Padding(
-            padding: const EdgeInsets.only(top: 100, left: 5),
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(5),
-                  child: InkWell(
-                    onTap: () {
+            Positioned(
+                top: 100,
+                right: 10,
+                child: Container(
+                  decoration: utils.boxDecorationWhite(),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          mainAxisSize: MainAxisSize.max,
+                          children: [
+                            Column(
+                              children: [
+                                Text(
+                                  "Order No.",
+                                  style: TextStyle(
+                                    fontSize: Get.context!.isPhone ? 12 : 15,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                                Text(
+                                  controller.sortedOrders.first.awbNo.toString(),
+                                  style: TextStyle(
+                                    fontSize: Get.context!.isPhone ? 12 : 15,
+                                    color: AppColors.black,
+                                  ),
+                                ),
 
-                    },
-                    child: Container(
-                      height: context.isPhone ?60:100,
-                      width: context.isPhone ?60:100,
-                      decoration: utils.boxDecorationWhite(),
-                      child: Padding(
-                        padding: const EdgeInsets.all(5),
-                        child: slaTimer(context.isPhone ?30:60, context.isPhone ?30:60,
-                            widget.orderDetails.createdAt ?? "", int.tryParse(
-                                widget.orderDetails.sla_in_hours.toString()) ??
-                                0, 7
+                              ],
+                            ),
+                            slaTimer(40, 40, controller.sortedOrders.first
+                                .createdAt ?? "", int.tryParse(
+                                controller.sortedOrders.first.sla_in_hours
+                                    .toString()) ?? 0, 12),
+
+                          ],
                         ),
+                        InkWell(
+                          onTap: (){
+                            controller.bottomBarListType.value = 0;
+                            controller.viewAcceptView.value = true;
+                          },
+                          child: utils.tvCustom("Show All", AppColors.primaryThemeColor, 14),)
+                      ],
+                    ),
+                  ),
+                )
+            ),
+            Positioned(
+                bottom: 50,
+                right: 10,
+                child:
+                Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(5),
+                      child: InkWell(
+                        onTap: () {
+                          controller.startGuidedNavigation();
+                        },
+                        child: Container(
+                          height: context.isPhone ? 62 : 100,
+                          width: context.isPhone ? 60 : 100,
+                          decoration: utils.boxDecorationWhite(),
+                          child: Padding(
+                              padding: const EdgeInsets.all(5),
+                              child: Column(
+                                children: [
+                                  Icon(Icons.navigation,
+                                      size: enableMapType.value
+                                          ? context.isPhone
+                                          ? 30
+                                          : 50
+                                          : context.isPhone
+                                          ? 35
+                                          : 55,
+                                      color: AppColors.selectedBlue),
+                                  Align(
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      enableMapType.value
+                                          ? "Start"
+                                          : "Start",
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                          fontSize:
+                                          context.isPhone ? 10 : 20),
+                                    ),
+                                  )
+                                ],
+                              )
+                          ),
+                        ),
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () {
+                        controller.mapType = (controller.mapType == MapType
+                            .normal)
+                            ? MapType.hybrid
+                            : MapType.normal;
+                        enableMapType.toggle();
+                      },
+                      child: Obx(() {
+                        return Container(
+                            height: context.isPhone ? 60 : 100,
+                            width: context.isPhone ? 60 : 100,
+                            decoration: utils.boxDecorationWhite(),
+                            child: Padding(
+                              padding: const EdgeInsets.all(5),
+                              child: Column(
+                                children: [
+                                  Icon(Icons.map,
+                                      size: enableMapType.value
+                                          ? context.isPhone
+                                          ? 30
+                                          : 50
+                                          : context.isPhone
+                                          ? 35
+                                          : 55,
+                                      color: enableMapType.value
+                                          ? AppColors.greyColor4
+                                          : AppColors.selectedBlue),
+                                  Align(
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      enableMapType.value
+                                          ? "Normal"
+                                          : "Satellite",
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                          fontSize:
+                                          context.isPhone ? 10 : 20),
+                                    ),
+                                  )
+                                ],
+                              ),
+                            ));
+                      }),
+                    ),
+                    // Padding(
+                    //   padding: EdgeInsets.all(5),
+                    //   child: InkWell(
+                    //     onTap: () {
+                    //       enableNavigation.toggle();
+                    //       if(enableNavigation.value) {
+                    //         startGuidedNavigation();
+                    //       }else{
+                    //         stopGuidedNavigation();
+                    //       }
+                    //     },
+                    //     child: Obx(() {
+                    //       return Container(
+                    //           height: 65,
+                    //           width: 60,
+                    //           decoration: utils.boxDecorationWhite(),
+                    //           child:Column(
+                    //             children: [
+                    //               Icon(Icons.navigation,
+                    //                   size: enableNavigation.value ? 35 : 30,
+                    //                   color: enableNavigation.value
+                    //                       ? AppColors.selectedBlue
+                    //                       : AppColors.greyColor4),
+                    //               Align(
+                    //                 alignment: Alignment.center,
+                    //                 child:  Text(enableNavigation.value?"Stop Navigation":"Start Navigation",textAlign: TextAlign.center,style: TextStyle(fontSize: 10),),
+                    //               )
+                    //
+                    //             ],
+                    //           )
+                    //       );
+                    //     }),
+                    //   ),
+                    // ),
+                  ],
+                )),
+            Obx(() {
+              return Visibility(
+                visible: controller.viewAcceptView.value,
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Container(
+                    decoration: utils.boxDecorationWhite(),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Wrap(
+                        children: [
+                          Visibility(
+                            visible: controller.bottomBarListType.value == 0,
+                            child: Align(
+                              alignment: Alignment.topRight,
+                              child: InkWell(
+                                  onTap: () {
+                                    controller.viewAcceptView.value = false;
+                                  },
+                                  child: const Icon(
+                                    Icons.cancel,
+                                    color: AppColors.red,
+                                    size: 20,
+                                  )),
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              Visibility(
+                                visible: controller.bottomBarListType.value == 0,
+                                child: InkWell(
+                                  onTap: () {
+                                    if (
+                                    controller.selectedOrderIndex.value > 0) {
+                                      controller.selectedOrderIndex.value--;
+                                      controller.pageController.animateToPage(
+                                        controller.selectedOrderIndex.value,
+                                        duration:
+                                        const Duration(milliseconds: 300),
+                                        curve: Curves.easeInOut,
+                                      );
+                                    }
+                                  },
+                                  child: const Expanded(
+                                    flex: 1,
+                                    child: Icon(
+                                      Icons.arrow_back_ios,
+                                      color: AppColors.greyColor4,
+                                      size: 15,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 15,
+                                child: SizedBox(
+                                  height: context.isPhone ? 220 : 300,
+                                  child: PageView.builder(
+                                      scrollDirection: Axis.horizontal,
+                                      controller: controller.pageController,
+                                      itemCount: controller.bottomBarListType
+                                          .value == 0 ? controller.sortedOrders
+                                          .length : controller
+                                          .currentLocationOrders.length,
+                                      itemBuilder: (context, position) {
+                                        return clickedOrderItem(
+                                            controller.bottomBarListType
+                                                .value == 0
+                                                ? controller
+                                                .sortedOrders[position]
+                                                : controller
+                                                .currentLocationOrders[position],
+                                                (clickedOrder, type) async {
+                                              controller.selectedOrder.value =
+                                                  clickedOrder;
+                                              if (type == updateStatus) {
+                                                controller.updateOrder(
+                                                    clickedOrder.status == "ASSIGNED" || clickedOrder.status == "RE-ASSIGNED"  ? "PICKED" : clickedOrder.status == "PICKED" ? "OFD" : "");
+                                              } else if (type == updateOrder) {
+                                                controller.viewAcceptView
+                                                    .value = false;
+                                                controller
+                                                    .isUpdateCardVisibleForUpdate
+                                                    .value = true;
+                                              }
+                                            }, controller.bottomBarListType
+                                            .value == 0 ? 0 : 1);
+                                      }),
+                                ),
+                              ),
+                              Visibility(
+                                visible: controller.bottomBarListType.value == 0,
+                                child: Expanded(
+                                    flex: 1,
+                                    child: InkWell(
+                                        onTap: () {
+                                          if (controller
+                                              .selectedOrderIndex.value <
+                                              controller.ordersList.length -
+                                                  1) {
+                                            controller.selectedOrderIndex.value++;
+                                            controller.pageController
+                                                .animateToPage(
+                                              controller.selectedOrderIndex.value,
+                                              duration: const Duration(
+                                                  milliseconds: 300),
+                                              curve: Curves.easeInOut,
+                                            );
+                                          }
+                                        },
+                                        child: const Icon(
+                                          Icons.arrow_forward_ios,
+                                          color: AppColors.greyColor4,
+                                          size: 15,
+                                        ))),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
-
-                InkWell(
-                  onTap: () {
-                    setState(() {
-                      mapType = (mapType == MapType.normal)
-                          ? MapType.hybrid
-                          : MapType.normal;
-                      enableMapType.toggle();
-                    });
-                  },
-                  child: Obx(() {
-                    return Container(
-                        height: context.isPhone ?60:100,
-                        width: context.isPhone ?60:100,
-                        decoration: utils.boxDecorationWhite(),
-                        child: Padding(
-                          padding: const EdgeInsets.all(5),
-                          child: Column(
-                            children: [
-                              Icon(Icons.map,
-                                  size:
-                                  enableMapType.value ? 30 : 35,
-                                  color: enableMapType.value
-                                      ? AppColors.greyColor4
-                                      : AppColors.selectedBlue),
-                              Align(
-                                alignment: Alignment.center,
-                                child: Text(
-                                  enableMapType.value ? "Normal" : "Satellite",
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(fontSize: context.isPhone ?10:20),),
-                              )
-
-                            ],
-                          ),
-                        )
-                    );
-                  }),
-                ),
-                // Padding(
-                //   padding: EdgeInsets.all(5),
-                //   child: InkWell(
-                //     onTap: () {
-                //       enableNavigation.toggle();
-                //       if(enableNavigation.value) {
-                //         startGuidedNavigation();
-                //       }else{
-                //         stopGuidedNavigation();
-                //       }
-                //     },
-                //     child: Obx(() {
-                //       return Container(
-                //           height: 65,
-                //           width: 60,
-                //           decoration: utils.boxDecorationWhite(),
-                //           child:Column(
-                //             children: [
-                //               Icon(Icons.navigation,
-                //                   size: enableNavigation.value ? 35 : 30,
-                //                   color: enableNavigation.value
-                //                       ? AppColors.selectedBlue
-                //                       : AppColors.greyColor4),
-                //               Align(
-                //                 alignment: Alignment.center,
-                //                 child:  Text(enableNavigation.value?"Stop Navigation":"Start Navigation",textAlign: TextAlign.center,style: TextStyle(fontSize: 10),),
-                //               )
-                //
-                //             ],
-                //           )
-                //       );
-                //     }),
-                //   ),
-                // ),
-              ],
-            ),
-          ),
-
-          Obx(() {
-            return Visibility(
-              visible: isUpdateCardVisible.value,
-              child: Stack(
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          // Obx(() {
-                          //   return AnimatedContainer(
-                          //       width: showNotificationView.value
-                          //           ? 250.0
-                          //           : 50.0,
-                          //       height: showNotificationView.value
-                          //           ? 350.0
-                          //           : 50.0,
-                          //       decoration: utils.boxDecorationWhite(),
-                          //       alignment: showNotificationView.value
-                          //           ? Alignment.center
-                          //           : AlignmentDirectional.topCenter,
-                          //       duration: const Duration(seconds: 1),
-                          //       curve: Curves.fastOutSlowIn,
-                          //       child: Padding(
-                          //           padding: const EdgeInsets.all(8.0),
-                          //           child: showNotificationView.value
-                          //               ? Column(
-                          //                   children: [
-                          //                     Row(
-                          //                       mainAxisAlignment:
-                          //                           MainAxisAlignment
-                          //                               .spaceBetween,
-                          //                       children: [
-                          //                         utils.tvCustom(
-                          //                             "Order Notifications",
-                          //                             AppColors
-                          //                                 .primaryThemeColor,
-                          //                             13),
-                          //                         InkWell(
-                          //                           onTap: () {
-                          //                             setState(() {
-                          //                               controller.getNotification();
-                          //                               showNotificationView
-                          //                                   .toggle();
-                          //                             });
-                          //                           },
-                          //                           child: const Icon(
-                          //                             Icons.close,
-                          //                             color: AppColors.red,
-                          //                           ),
-                          //                         )
-                          //                       ],
-                          //                     ),
-                          //                     utils.dividerBlack(),
-                          //                     Expanded(
-                          //                       child: ListView.builder(
-                          //                           itemCount: controller.notificationList.length,
-                          //                           itemBuilder: (context, pos) {
-                          //                             return ItemMapNotifications(
-                          //                                 controller.notificationList[pos]);
-                          //                           }),
-                          //                     )
-                          //                   ],
-                          //                 )
-                          //               : InkWell(
-                          //                   onTap: () {
-                          //                     setState(() {
-                          //                       showNotificationView
-                          //                           .toggle();
-                          //                     });
-                          //                   },
-                          //                   child: const Center(
-                          //                     child: Icon(
-                          //                       Icons.notifications,
-                          //                       color: AppColors
-                          //                           .primaryThemeColor,
-                          //                     ),
-                          //                   ))));
-                          // }),
-                          // InkWell(
-                          //   onTap: () {
-                          //     enableMapLiveCamera.toggle();
-                          //   },
-                          //   child: Obx(() {
-                          //     return Container(
-                          //       height: 50,
-                          //       width: 50,
-                          //       decoration: utils.boxDecorationWhite(),
-                          //       child: Icon(Icons.share_location_sharp,
-                          //           size:
-                          //               enableMapLiveCamera.value ? 36 : 30,
-                          //           color: enableMapLiveCamera.value
-                          //               ? AppColors.selectedBlue
-                          //               : AppColors.greyColor4),
-                          //     );
-                          //   }),
-                          // ),
-                        ]),
-                  ),
-                  Align(
-                    alignment: Alignment.bottomCenter,
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                          left: 20,
-                          right: 20,
-                          bottom:
-                          controller.markDelivered.value ? 10 : 100),
-                      child: Container(
-                        decoration: utils.boxDecorationWhite(),
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.vertical,
-                          child: Container(
+              );
+            }),
+            Obx(() {
+              return Visibility(
+                visible: controller.isUpdateCardVisibleForUpdate.value,
+                child: Stack(
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            // Obx(() {
+                            //   return AnimatedContainer(
+                            //       width: showNotificationView.value
+                            //           ? 250.0
+                            //           : 50.0,
+                            //       height: showNotificationView.value
+                            //           ? 350.0
+                            //           : 50.0,
+                            //       decoration: utils.boxDecorationWhite(),
+                            //       alignment: showNotificationView.value
+                            //           ? Alignment.center
+                            //           : AlignmentDirectional.topCenter,
+                            //       duration: const Duration(seconds: 1),
+                            //       curve: Curves.fastOutSlowIn,
+                            //       child: Padding(
+                            //           padding: const EdgeInsets.all(8.0),
+                            //           child: showNotificationView.value
+                            //               ? Column(
+                            //                   children: [
+                            //                     Row(
+                            //                       mainAxisAlignment:
+                            //                           MainAxisAlignment
+                            //                               .spaceBetween,
+                            //                       children: [
+                            //                         utils.tvCustom(
+                            //                             "Order Notifications",
+                            //                             AppColors
+                            //                                 .primaryThemeColor,
+                            //                             13),
+                            //                         InkWell(
+                            //                           onTap: () {
+                            //                             setState(() {
+                            //                               controller.getNotification();
+                            //                               showNotificationView
+                            //                                   .toggle();
+                            //                             });
+                            //                           },
+                            //                           child: const Icon(
+                            //                             Icons.close,
+                            //                             color: AppColors.red,
+                            //                           ),
+                            //                         )
+                            //                       ],
+                            //                     ),
+                            //                     utils.dividerBlack(),
+                            //                     Expanded(
+                            //                       child: ListView.builder(
+                            //                           itemCount: controller.notificationList.length,
+                            //                           itemBuilder: (context, pos) {
+                            //                             return ItemMapNotifications(
+                            //                                 controller.notificationList[pos]);
+                            //                           }),
+                            //                     )
+                            //                   ],
+                            //                 )
+                            //               : InkWell(
+                            //                   onTap: () {
+                            //                     setState(() {
+                            //                       showNotificationView
+                            //                           .toggle();
+                            //                     });
+                            //                   },
+                            //                   child: const Center(
+                            //                     child: Icon(
+                            //                       Icons.notifications,
+                            //                       color: AppColors
+                            //                           .primaryThemeColor,
+                            //                     ),
+                            //                   ))));
+                            // }),
+                            // InkWell(
+                            //   onTap: () {
+                            //     enableMapLiveCamera.toggle();
+                            //   },
+                            //   child: Obx(() {
+                            //     return Container(
+                            //       height: 50,
+                            //       width: 50,
+                            //       decoration: utils.boxDecorationWhite(),
+                            //       child: Icon(Icons.share_location_sharp,
+                            //           size:
+                            //               enableMapLiveCamera.value ? 36 : 30,
+                            //           color: enableMapLiveCamera.value
+                            //               ? AppColors.selectedBlue
+                            //               : AppColors.greyColor4),
+                            //     );
+                            //   }),
+                            // ),
+                          ]),
+                    ),
+                    Align(
+                      alignment: Alignment.bottomCenter,
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                            left: 20,
+                            right: 20,
+                            bottom:
+                            controller.markDelivered.value ? 10 : 100),
+                        child: Container(
+                          decoration: utils.boxDecorationWhite(),
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.vertical,
                             child: Padding(
                               padding: const EdgeInsets.all(8.0),
                               child: Obx(() {
@@ -525,8 +727,7 @@ class _MapPageState extends State<MapPage> {
                                         ),
                                         Obx(() {
                                           return Visibility(
-                                              visible: controller
-                                                  .markDelivered
+                                              visible: controller.markDelivered
                                                   .value ||
                                                   controller.markUnDelivered
                                                       .value,
@@ -542,7 +743,6 @@ class _MapPageState extends State<MapPage> {
                                                       MainAxisAlignment
                                                           .spaceBetween,
                                                       children: [
-
                                                         utils.tvCustom(
                                                             "Image Proof",
                                                             AppColors
@@ -569,8 +769,7 @@ class _MapPageState extends State<MapPage> {
                                                   Padding(
                                                     padding:
                                                     const EdgeInsets.all(5),
-                                                    child:
-                                                    Container(
+                                                    child: Container(
                                                       height: 200,
                                                       width:
                                                       double.infinity,
@@ -620,8 +819,6 @@ class _MapPageState extends State<MapPage> {
                                                         ),
                                                       ),
                                                     ),
-
-
                                                   ),
                                                   Padding(
                                                     padding:
@@ -629,7 +826,8 @@ class _MapPageState extends State<MapPage> {
                                                         .symmetric(
                                                         horizontal: 5),
                                                     child: Row(
-                                                      mainAxisAlignment: MainAxisAlignment
+                                                      mainAxisAlignment:
+                                                      MainAxisAlignment
                                                           .spaceBetween,
                                                       children: [
                                                         utils.tvCustom(
@@ -641,12 +839,15 @@ class _MapPageState extends State<MapPage> {
                                                             onTap: () {
                                                               utils
                                                                   .showCustomDialog(
-                                                                title: "Need Your Action",
-                                                                middleText: "Choose Image Source",
+                                                                title:
+                                                                "Need Your Action",
+                                                                middleText:
+                                                                "Choose Image Source",
                                                                 buttons: [
                                                                   TextButton
                                                                       .icon(
-                                                                    onPressed: () {
+                                                                    onPressed:
+                                                                        () {
                                                                       controller
                                                                           .captureImage(
                                                                           ImageSource
@@ -658,17 +859,20 @@ class _MapPageState extends State<MapPage> {
                                                                     icon: const Icon(
                                                                         Icons
                                                                             .camera_alt,
-                                                                        color: AppColors
+                                                                        color:
+                                                                        AppColors
                                                                             .primaryThemeColor),
                                                                     label: const Text(
                                                                         "Camera",
-                                                                        style: TextStyle(
+                                                                        style:
+                                                                        TextStyle(
                                                                             color: AppColors
                                                                                 .primaryThemeColor)),
                                                                   ),
                                                                   TextButton
                                                                       .icon(
-                                                                    onPressed: () {
+                                                                    onPressed:
+                                                                        () {
                                                                       controller
                                                                           .captureImage(
                                                                           ImageSource
@@ -680,18 +884,21 @@ class _MapPageState extends State<MapPage> {
                                                                     icon: const Icon(
                                                                         Icons
                                                                             .image,
-                                                                        color: AppColors
+                                                                        color:
+                                                                        AppColors
                                                                             .lightBlue),
                                                                     label: const Text(
                                                                         "Gallery",
-                                                                        style: TextStyle(
+                                                                        style:
+                                                                        TextStyle(
                                                                             color: AppColors
                                                                                 .lightBlue)),
                                                                   ),
                                                                 ],
                                                               );
                                                             },
-                                                            child: const Icon(
+                                                            child:
+                                                            const Icon(
                                                               Icons
                                                                   .edit_note_rounded,
                                                               color:
@@ -704,9 +911,9 @@ class _MapPageState extends State<MapPage> {
                                                   ),
                                                   Padding(
                                                     padding:
-                                                    const EdgeInsets.all(5),
-                                                    child:
-                                                    Container(
+                                                    const EdgeInsets
+                                                        .all(5),
+                                                    child: Container(
                                                       height: 200,
                                                       width:
                                                       double.infinity,
@@ -716,7 +923,8 @@ class _MapPageState extends State<MapPage> {
                                                               .lightBlue,
                                                           5),
                                                       child: controller
-                                                          .paymentProof.value !=
+                                                          .paymentProof
+                                                          .value !=
                                                           null
                                                           ? Image.file(
                                                         controller
@@ -729,11 +937,15 @@ class _MapPageState extends State<MapPage> {
                                                         onTap: () {
                                                           utils
                                                               .showCustomDialog(
-                                                            title: "Need Your Action",
-                                                            middleText: "Choose Image Source",
+                                                            title:
+                                                            "Need Your Action",
+                                                            middleText:
+                                                            "Choose Image Source",
                                                             buttons: [
-                                                              TextButton.icon(
-                                                                onPressed: () {
+                                                              TextButton
+                                                                  .icon(
+                                                                onPressed:
+                                                                    () {
                                                                   controller
                                                                       .captureImage(
                                                                       ImageSource
@@ -752,14 +964,15 @@ class _MapPageState extends State<MapPage> {
                                                                         color: AppColors
                                                                             .primaryThemeColor)),
                                                               ),
-
                                                               Obx(() {
                                                                 return Visibility(
-                                                                  visible: controller
+                                                                  visible:
+                                                                  controller
                                                                       .markUnDelivered
                                                                       .value ==
                                                                       true,
-                                                                  child: TextButton
+                                                                  child:
+                                                                  TextButton
                                                                       .icon(
                                                                     onPressed: () {
                                                                       controller
@@ -794,7 +1007,8 @@ class _MapPageState extends State<MapPage> {
                                                             const Icon(
                                                               Icons
                                                                   .image_outlined,
-                                                              size: 80,
+                                                              size:
+                                                              80,
                                                               color: AppColors
                                                                   .lightBlue,
                                                             ),
@@ -807,11 +1021,7 @@ class _MapPageState extends State<MapPage> {
                                                         ),
                                                       ),
                                                     ),
-
-
                                                   ),
-
-
                                                   Visibility(
                                                     visible: controller
                                                         .markDelivered
@@ -972,7 +1182,8 @@ class _MapPageState extends State<MapPage> {
                                                     "REACHED",
                                                 child: utils.iconButton(
                                                     "Mark Pick", () async {
-                                                  await controller.updateOrder(
+                                                  await controller
+                                                      .updateOrder(
                                                       "PICKED");
                                                 },
                                                     Icons.signpost_rounded,
@@ -1060,10 +1271,13 @@ class _MapPageState extends State<MapPage> {
                                       return Align(
                                         alignment: Alignment.bottomCenter,
                                         child: Visibility(
-                                            visible: controller.selectedOrder
-                                                .value.status == "OFD" &&
-                                                controller.markUnDelivered
-                                                    .value,
+                                            visible: controller
+                                                .selectedOrder
+                                                .value
+                                                .status ==
+                                                "OFD" &&
+                                                controller
+                                                    .markUnDelivered.value,
                                             child: utils.iconButton(
                                                 "Mark Un-Delivered",
                                                     () async {
@@ -1088,17 +1302,15 @@ class _MapPageState extends State<MapPage> {
                           ),
                         ),
                       ),
-                    ),
-                  )
-                ],
-              ),
-            );
-          })
-        ]),
-      ),
-    );
+                    )
+                  ],
+                ),
+              );
+            })
+          ]),
+        ),
+        ));
   }
-
 
   // Future<void> _cameraToPosition(LatLng pos) async {
   //   final GoogleMapController controller = await _mapController.future;
@@ -1112,72 +1324,6 @@ class _MapPageState extends State<MapPage> {
   //     CameraUpdate.newCameraPosition(_newCameraPosition),
   //   );
   // }
-  //
-  // Future<void> getLocationUpdates() async {
-  //   bool _serviceEnabled;
-  //   PermissionStatus _permissionGranted;
-  //
-  //   _serviceEnabled = await _locationController.serviceEnabled();
-  //   if (!_serviceEnabled) {
-  //     _serviceEnabled = await _locationController.requestService();
-  //     if (!_serviceEnabled) {
-  //       return;
-  //     }
-  //   }
-  //
-  //   _permissionGranted = await _locationController.hasPermission();
-  //   if (_permissionGranted == PermissionStatus.denied) {
-  //     _permissionGranted = await _locationController.requestPermission();
-  //     if (_permissionGranted != PermissionStatus.granted) {
-  //       return;
-  //     }
-  //   }
-  //
-  //   if (!mounted) return;
-  //
-  //   _locationSubscription = _locationController.onLocationChanged.listen((
-  //       LocationData currentLocation) {
-  //     if (currentLocation.latitude != null &&
-  //         currentLocation.longitude != null) {
-  //       setState(() {
-  //         curentLocation = LatLng(latitude: currentLocation.latitude!,
-  //             longitude: currentLocation.longitude!);
-  //         if (enableMapLiveCamera.value) {
-  //           // _cameraToPosition(curentLocation!);
-  //         }
-  //
-  //         // double distance = 0.0;
-  //         //
-  //         // LatLng matchingLocation;
-  //         //
-  //         // if(widget.orderDetails.status == "OFD"){
-  //         //   matchingLocation =  LatLng(latitude: deliveryLocation.latitude, longitude: deliveryLocation.longitude);
-  //         // }else{
-  //         //   matchingLocation =  LatLng(latitude: pickUpLocation.latitude, longitude: pickUpLocation.longitude);
-  //         // }
-  //         //   distance = calculateDistance(
-  //         //     curentLocation!.latitude,
-  //         //     curentLocation!.longitude,
-  //         //     matchingLocation.latitude,
-  //         //     matchingLocation.longitude,
-  //         //   );
-  //
-  //         // if(distance <= 50){
-  //         //      controller.isUpdateCardVisible.value = true;
-  //         // }
-  //         remainingTimeOrDistanceChangedSubscription =
-  //             GoogleMapsNavigator.setOnRemainingTimeOrDistanceChangedListener(
-  //                 _onRemainingTimeOrDistanceChangedEvent,
-  //                 remainingDistanceThresholdMeters: 10);
-  //       });
-  //     }
-  //   });
-  // }
-
-
-  double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-    return Geolocator.distanceBetween(lat1, lon1, lat2, lon2);
-  }
 
 
   //
@@ -1229,116 +1375,110 @@ class _MapPageState extends State<MapPage> {
     controller.image.value = null;
     controller.signatureFile = null;
     controller.signatureController.value.clear();
-    controller.viewFullMap.value = false;
     controller.markDelivered.value = false;
     controller.markUnDelivered.value = false;
   }
 
-  void showCustomMarker(OrdersData data, int type) {
-    showModalBottomSheet(
-        context: context,
-        builder: (BuildContext context) {
-          return Wrap(
-            children: [
-              Column(
-                children: [
-                  Align(
-                    alignment: Alignment.topRight,
-                    child: InkWell(
-                        onTap: () {
-                          Get.back();
-                        },
-                        child: const Padding(
-                          padding: EdgeInsets.all(8.0),
-                          child: Icon(
-                            Icons.cancel,
-                            color: AppColors.red,
-                          ),
-                        )),
-                  ),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      utils.tvCustom(
-                          type == 0
-                              ? "${data.merchantName!}\n${data
-                              .pickupAddress!},${data.pickupZoneNo!}"
-                              : "${data.consigneeName!}\n${data
-                              .consigneeAddress!},${data
-                              .consigneeStreetNumber!},${data
-                              .consigneeBuildingNo!},${data
-                              .consigneeUnitNo!},${data.consigneeZone!}",
-                          AppColors.black,
-                          14),
-                    ],
-                  ),
-                  const SizedBox(
-                    height: 5,
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      utils.tvRegular("Landmark", AppColors.black),
-                      utils.tvRegular(":", AppColors.black),
-                      utils.tvCustom(
-                          type == 0
-                              ? data.pickupLocationName
-                              : data.consigneeAddress,
-                          AppColors.blue,
-                          13)
-                    ],
-                  ),
-                  Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: utils.iconButtonWithRoundedBorder(
-                          "Navigate Address",
-                          40, () {
-                        utils.openMaps(type == 0
-                            ? data.pickupAddress!
-                            : data.consigneeAddress!);
-                      },
-                          Icons.assistant_navigation,
-                          AppColors.primaryThemeColor,
-                          Icons.alt_route_rounded,
-                          2,
-                          AppColors.primaryThemeColor))
-                ],
-              )
-            ],
-          );
-        });
-  }
-
-  @override
-  void dispose() async {
-    _locationSubscription.cancel();
-    await googleMapsNavigator.cleanup();
-    _navigationSessionInitialized = false;
-    await navigationViewController?.clear();
-    super.dispose();
-  }
+// void showCustomMarker(OrdersData data, int type) {
+//   showModalBottomSheet(
+//       context: context,
+//       builder: (BuildContext context) {
+//         return Wrap(
+//           children: [
+//             Column(
+//               children: [
+//                 Align(
+//                   alignment: Alignment.topRight,
+//                   child: InkWell(
+//                       onTap: () {
+//                         Get.back();
+//                       },
+//                       child: const Padding(
+//                         padding: EdgeInsets.all(8.0),
+//                         child: Icon(
+//                           Icons.cancel,
+//                           color: AppColors.red,
+//                         ),
+//                       )),
+//                 ),
+//                 Column(
+//                   mainAxisAlignment: MainAxisAlignment.start,
+//                   crossAxisAlignment: CrossAxisAlignment.start,
+//                   children: [
+//                     utils.tvCustom(
+//                         type == 0
+//                             ? "${data.merchantName!}\n${data.pickupAddress!},${data.pickupZoneNo!}"
+//                             : "${data.consigneeName!}\n${data.consigneeAddress!},${data.consigneeStreetNumber!},${data.consigneeBuildingNo!},${data.consigneeUnitNo!},${data.consigneeZone!}",
+//                         AppColors.black,
+//                         14),
+//                   ],
+//                 ),
+//                 const SizedBox(
+//                   height: 5,
+//                 ),
+//                 Row(
+//                   mainAxisAlignment: MainAxisAlignment.spaceAround,
+//                   children: [
+//                     utils.tvRegular("Landmark", AppColors.black),
+//                     utils.tvRegular(":", AppColors.black),
+//                     utils.tvCustom(
+//                         type == 0
+//                             ? data.pickupLocationName
+//                             : data.consigneeAddress,
+//                         AppColors.blue,
+//                         13)
+//                   ],
+//                 ),
+//                 Padding(
+//                     padding: const EdgeInsets.all(20),
+//                     child: utils.iconButtonWithRoundedBorder(
+//                         "Navigate Address", 40, () {
+//                       utils.openMaps(type == 0
+//                           ? data.pickupAddress!
+//                           : data.consigneeAddress!);
+//                     },
+//                         Icons.assistant_navigation,
+//                         AppColors.primaryThemeColor,
+//                         Icons.alt_route_rounded,
+//                         2,
+//                         AppColors.primaryThemeColor))
+//               ],
+//             )
+//           ],
+//         );
+//       });
+// }
 
 
-  // getDeliveryAddress() async {
-  //   var address = await getLatLangFromAddress(
-  //       widget.orderDetails.consigneeAddress);
-  //   setState(() {
-  //     if (widget.orderDetails.dropoffLatitude != null &&
-  //         widget.orderDetails.dropoffLongitude != null) {
-  //       deliveryLocation = LatLng(latitude:
-  //       double.parse(widget.orderDetails.dropoffLatitude ?? "0.0"),
-  //         longitude: double.parse(
-  //             widget.orderDetails.dropoffLongitude ?? "0.0"),
-  //       );
-  //     } else {
-  //       deliveryLocation = LatLng(
-  //         latitude: address!.latitude,
-  //         longitude: address.longitude,
-  //       );
-  //     }
-  //   });
-  // }
+// @override
+// void dispose() async {
+//   _locationSubscription.cancel();
+//   await GoogleMapsNavigator.cleanup();
+//   _navigationSessionInitialized = false;
+//   await controller.navigationViewController?.clear();
+//   super.dispose();
+// }
+
+/*getDeliveryAddress() async {
+    var address = await getLatLangFromAddress(
+        controller.selectedOrder.value.consigneeAddress);
+    setState(() {
+      if (controller.selectedOrder.value.dropoffLatitude != null &&
+          controller.selectedOrder.value.dropoffLongitude != null) {
+        deliveryLocation = LatLng(
+          latitude: double.parse(
+              controller.selectedOrder.value.dropoffLatitude ?? "0.0"),
+          longitude: double.parse(
+              controller.selectedOrder.value.dropoffLongitude ?? "0.0"),
+        );
+      } else {
+        deliveryLocation = LatLng(
+          latitude: address!.latitude,
+          longitude: address.longitude,
+        );
+      }
+    });*/
+// }
 }
 
 
@@ -1434,5 +1574,3 @@ class _MapPageState extends State<MapPage> {
 //     }
 //   });
 // }
-
-

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:carson_zyppy/firebase_notifications/notification_model/notification_model.dart';
 import 'package:floor/floor.dart';
 import '../../firebase_notifications/notification_model/notification.dart';
 import '../dao/notificatiosDao.dart';

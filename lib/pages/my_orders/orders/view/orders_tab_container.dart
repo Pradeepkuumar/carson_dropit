@@ -1,7 +1,5 @@
 import 'package:carson_zyppy/pages/dashboard/controller/rider_dashboard_controller.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:tab_container/tab_container.dart';
 
@@ -12,6 +10,8 @@ import '../orders_screens/orders_list_view.dart';
 class OrdersTabContainer extends GetView<OrdersController> {
 
   final RiderDashboardController riderDashboardController = Get.put(RiderDashboardController());
+
+  OrdersTabContainer({super.key});
 
   @override
   Widget build(BuildContext context) {

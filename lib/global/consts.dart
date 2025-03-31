@@ -10,6 +10,8 @@ const String USER_ID_KEY = "user_id";
  const String nearByImage = 'assets/images/ic_nearby_location.png';
  const String icTelephone = 'assets/icons/ic_telephone.png';
  const String icWhatsApp = 'assets/icons/ic_whtasapp.png';
+ const String icPickUpOrders = 'assets/images/pick_orders.png';
+ const String icDropOrders = 'assets/images/ic_ofd_orders.png';
 
 
  //App CONSTANTS
@@ -24,6 +26,10 @@ const String USER_ID_KEY = "user_id";
 
 const String imageOne =  "0";
 const String imageTwo =  "1";
+
+const String updateOrder =  "UPDATE_ORDER";
+const String updateStatus =  "UPDATE_STATUS";
+
 
 
 

@@ -54,7 +54,7 @@ class MyApp extends StatelessWidget {
           return GetMaterialApp(
             debugShowCheckedModeBanner: false,
             title: 'Carson Zyppy',
-            home: SplashScreen(),
+            home: const SplashScreen(),
            getPages: AppPages.routes,
           );
         });

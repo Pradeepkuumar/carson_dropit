@@ -6,20 +6,20 @@ class DashBoardData {
 
   DashBoardData.fromJson(Map<String, dynamic> json) {
     todayOrdersCount = json['today_orders_count'] != null
-        ? new TodayOrdersCount.fromJson(json['today_orders_count'])
+        ? TodayOrdersCount.fromJson(json['today_orders_count'])
         : null;
     allOrdersCount = json['all_orders_count'] != null
-        ? new TodayOrdersCount.fromJson(json['all_orders_count'])
+        ? TodayOrdersCount.fromJson(json['all_orders_count'])
         : null;
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    if (this.todayOrdersCount != null) {
-      data['today_orders_count'] = this.todayOrdersCount!.toJson();
+    final Map<String, dynamic> data = <String, dynamic>{};
+    if (todayOrdersCount != null) {
+      data['today_orders_count'] = todayOrdersCount!.toJson();
     }
-    if (this.allOrdersCount != null) {
-      data['all_orders_count'] = this.allOrdersCount!.toJson();
+    if (allOrdersCount != null) {
+      data['all_orders_count'] = allOrdersCount!.toJson();
     }
     return data;
   }
@@ -51,13 +51,13 @@ class TodayOrdersCount {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['ALL_ORDER'] = this.aLLORDER;
-    data['ASSIGNED'] = this.aSSIGNED;
-    data['PICKED'] = this.pICKED;
-    data['OFD'] = this.oFD;
-    data['UNDELIVERED'] = this.uNDELIVERED;
-    data['DELIVERED'] = this.dELIVERED;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['ALL_ORDER'] = aLLORDER;
+    data['ASSIGNED'] = aSSIGNED;
+    data['PICKED'] = pICKED;
+    data['OFD'] = oFD;
+    data['UNDELIVERED'] = uNDELIVERED;
+    data['DELIVERED'] = dELIVERED;
     return data;
   }
 }

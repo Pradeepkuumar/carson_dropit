@@ -2,7 +2,6 @@
 import 'package:carson_zyppy/global/consts.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 import '../../../../global/global.dart';
 import '../../../../utils/colors.dart';
 import '../../../../utils/utils.dart';
@@ -149,7 +148,7 @@ placedOrderItem(OrdersData orderData,void Function(OrdersData,String) onClick) {
                         // SizedBox (
                         //   height: 300,
                         //   child: MapPage(orderDetails: orderData,mapView: 0)),
-                        SizedBox(height: 10,),
+                        const SizedBox(height: 10,),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           crossAxisAlignment: CrossAxisAlignment.end,

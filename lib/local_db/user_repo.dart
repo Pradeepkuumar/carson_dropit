@@ -1,4 +1,3 @@
-import 'package:carson_zyppy/firebase_notifications/notification_model/notification_model.dart';
 
 import '../firebase_notifications/notification_model/notification.dart';
 import 'entity/UserData.dart';

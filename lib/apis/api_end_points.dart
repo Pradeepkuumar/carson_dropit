@@ -12,6 +12,7 @@ class ApiEndPoints {
   final String fetchPlacedOrders  = "driver/fetch-placed-order";
   final String acceptRejectOrder  = "driver/accept-reject-order";
   final String getDeliveryDirectionData  = "driver/get-delivery-direction-data";
+  final String fetchWalletAmount  = "driver/get-wallet-amount";
 
 
 }

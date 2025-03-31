@@ -9,19 +9,19 @@ import 'package:carson_zyppy/utils/colors.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:google_navigation_flutter/google_navigation_flutter.dart';
-// import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import '../../../../global/consts.dart';
-import '../../../map/item_map_notifications.dart';
 import 'item_nearby_oredrs/neaby_orders_item.dart';
 
 class NearbyOrdersView extends StatefulWidget {
+  const NearbyOrdersView({super.key});
+
   @override
   State<NearbyOrdersView> createState() => _MapPageState();
 }
 
 class _MapPageState extends State<NearbyOrdersView> {
-  final Location _locationController = Location();
+
   final controller = Get.put(PlacedOrdersController());
   late final Completer<GoogleMapViewController> _mapController =
   Completer<GoogleMapViewController>();
@@ -32,22 +32,19 @@ class _MapPageState extends State<NearbyOrdersView> {
   var acceptView = false.obs;
 
 
-
   @override
   void initState() {
     super.initState();
     fetchOrdersAndInitialize();
-    getLocationUpdates().then((_){
-     // updateMarkers();
-    });
+    // getLocationUpdates().then((_){
+    //  // updateMarkers();
+    // });
   }
 
   Future<void> fetchOrdersAndInitialize() async {
      controller.getUser();
     // updateMarkers();
   }
-
-
 
 
 
@@ -59,10 +56,10 @@ class _MapPageState extends State<NearbyOrdersView> {
         child: Stack(
           children: [
             Obx(() {
-              if (controller.ordersList.isEmpty) {
-                return Center(child:  utils.iosProgressIndicator(AppColors.primaryThemeColor));
+              if(controller.isLoading.value){
+                return Center(child: utils.iosProgressIndicator(AppColors.primaryThemeColor),);
               }
-              return controller.markers.isNotEmpty ? GoogleMapsMapView(
+              return controller.ordersList.isNotEmpty ? GoogleMapsMapView(
                 gestureRecognizers: Set()
                   ..add(Factory<PanGestureRecognizer>(
                           () => PanGestureRecognizer()))..add(
@@ -77,17 +74,9 @@ class _MapPageState extends State<NearbyOrdersView> {
                   _mapController.complete(mapController);
 
                 },
-                initialMapType: MapType.hybrid,
+                initialMapType: MapType.normal,
                 initialCameraPosition: CameraPosition(
-                  // target: currentLocation ??
-                      target: LatLng(
-                        latitude : double.parse(
-                            controller.ordersList.first.pickupLatitude ??
-                                "0.0"),
-                        longitude: double.parse(
-                            controller.ordersList.first.pickupLongitude ??
-                                "0.0"),
-                      ),
+                  target: controller.currentLocation! ,
                   zoom: 14,
                 ),
 
@@ -101,7 +90,7 @@ class _MapPageState extends State<NearbyOrdersView> {
                 },
 
               ): Center(
-                child: utils.iosProgressIndicator(AppColors.primaryThemeColor),
+                child:  Center(child: utils.noDataFoundWidget()),
               );
             }),
             buildControls(),
@@ -199,7 +188,7 @@ class _MapPageState extends State<NearbyOrdersView> {
                                       onTap: () {
 
                                       },
-                                      child: Icon(Icons.arrow_forward_ios,
+                                      child: const Icon(Icons.arrow_forward_ios,
                                         color: AppColors.greyColor4,
                                         size: 15,))),
                             ],
@@ -297,33 +286,32 @@ class _MapPageState extends State<NearbyOrdersView> {
     );
   }
 
-  Future<void> getLocationUpdates() async {
-    bool serviceEnabled = await _locationController.serviceEnabled();
-    if (!serviceEnabled) {
-      serviceEnabled = await _locationController.requestService();
-      if (!serviceEnabled) return;
-    }
-
-    PermissionStatus permissionGranted =
-    await _locationController.hasPermission();
-    if (permissionGranted == PermissionStatus.denied) {
-      permissionGranted = await _locationController.requestPermission();
-      if (permissionGranted != PermissionStatus.granted) return;
-    }
-
-    _locationController.onLocationChanged.listen((LocationData locationData) {
-      if (locationData.latitude != null && locationData.longitude != null) {
-        setState(() {
-          controller.currentLocation =
-              LatLng( latitude: locationData.latitude!, longitude : locationData.longitude!);
-        });
-        if (enableMapLiveCamera.value) {
-          _cameraToPosition(controller.currentLocation!);
-        }
-
-      }
-    });
-  }
+  // Future<void> getLocationUpdates() async {
+  //   bool serviceEnabled = await _locationController.serviceEnabled();
+  //   if (!serviceEnabled) {
+  //     serviceEnabled = await _locationController.requestService();
+  //     if (!serviceEnabled) return;
+  //   }
+  //   PermissionStatus permissionGranted =
+  //   await _locationController.hasPermission();
+  //   if (permissionGranted == PermissionStatus.denied) {
+  //     permissionGranted = await _locationController.requestPermission();
+  //     if (permissionGranted != PermissionStatus.granted) return;
+  //   }
+  //
+  //   _locationController.onLocationChanged.listen((LocationData locationData) {
+  //     if (locationData.latitude != null && locationData.longitude != null) {
+  //       setState(() {
+  //         controller.currentLocation =
+  //             LatLng( latitude: locationData.latitude!, longitude : locationData.longitude!);
+  //       });
+  //       if (enableMapLiveCamera.value) {
+  //         _cameraToPosition(controller.currentLocation!);
+  //       }
+  //
+  //     }
+  //   });
+  // }
 
   // void fetchNearbyOrders() {
   //   setState(() {

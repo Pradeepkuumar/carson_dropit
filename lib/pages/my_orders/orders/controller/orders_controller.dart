@@ -1,17 +1,21 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:carson_zyppy/firebase_notifications/notification_model/notification.dart';
 import 'package:carson_zyppy/local_db/entity/UserData.dart';
 import 'package:carson_zyppy/pages/my_orders/orders/models/reason_data.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
+import 'package:google_navigation_flutter/google_navigation_flutter.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:location/location.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../../apis/base_api_response.dart';
 import '../../../../global/consts.dart';
 import '../../../../global/global.dart';
+import '../../../../utils/colors.dart';
 import '../../../dashboard/controller/rider_dashboard_controller.dart';
 import '../../../map/reasonsItem.dart';
 import 'package:signature/signature.dart';
@@ -45,7 +49,17 @@ class OrdersController extends GetxController with GetTickerProviderStateMixin {
     "Enter Order Number",
     "Scan QR Code for Order",
   ];
+
+  List<Marker> markers = [];
+  LatLng? currentLocation;
+  final Map<String, MarkerOptions> markerMap = {};
+  ImageDescriptor?  icon;
+  final Location _locationController = Location();
+  late StreamSubscription<LocationData> _locationSubscription;
+
+
   var ordersList = <OrdersData>[].obs;
+  var sortedOrders = <OrdersData>[].obs;
   var reasonsList = <CancelReason>[].obs;
   TextEditingController searchEditTextController = TextEditingController();
   final riderDashboardController = Get.put(RiderDashboardController());
@@ -60,6 +74,8 @@ class OrdersController extends GetxController with GetTickerProviderStateMixin {
   @override
   void onInit() {
     super.onInit();
+    getLocationUpdates();
+    getOrCreateCustomImageFromAsset();
     tabController = TabController(initialIndex: 0, length: 5, vsync: this);
     getUser();
     tabController.addListener(() {
@@ -83,10 +99,11 @@ class OrdersController extends GetxController with GetTickerProviderStateMixin {
   getUser() async {
     await userRepository.getUser().then((value) => {user = value!});
     await getReasons();
+
   }
 
   void startHintTextTimer() {
-    Timer.periodic(Duration(seconds: 2), (_) => _changeHintText());
+    Timer.periodic(const Duration(seconds: 2), (_) => _changeHintText());
   }
 
   void _changeHintText() {
@@ -121,6 +138,9 @@ class OrdersController extends GetxController with GetTickerProviderStateMixin {
         await Future.forEach(result.data, (json) async {
           ordersList.add(OrdersData.fromJson(json as Map<String, dynamic>));
         });
+
+        setMarkers();
+        await  sortOrdersBySLAAndDistance(currentLocation!,ordersList);
         isLoading.value = false;
         utils.closeLoadingDialog();
         return true;
@@ -318,6 +338,234 @@ class OrdersController extends GetxController with GetTickerProviderStateMixin {
     );
   }
 
+  Future<ImageDescriptor?> getOrCreateCustomImageFromAsset() async {
+    const AssetImage assetImage = AssetImage('assets/icons/icon_pickup.png');
+    final ImageConfiguration configuration =
+    createLocalImageConfiguration(Get.context!);
+    final AssetBundleImageKey assetBundleImageKey =
+    await assetImage.obtainKey(configuration);
+    final double imagePixelRatio = assetBundleImageKey.scale;
+    final ByteData imageBytes = await rootBundle.load(assetBundleImageKey.name);
+    icon = await registerBitmapImage(
+        bitmap: imageBytes, imagePixelRatio: imagePixelRatio,width: 48,height: 48);
+    return icon;
+  }
+
+  Future<void> setMarkers() async {
+    markers.clear();
+    markerMap.clear();
+
+    if (currentLocation != null) {
+      final marker = Marker(
+        markerId: "current_location",
+        options: MarkerOptions(
+          position: LatLng(
+            latitude: currentLocation?.latitude ?? 0.0,
+            longitude: currentLocation?.longitude ?? 0.0,
+          ),
+          icon: ImageDescriptor.defaultImage,
+          infoWindow: const InfoWindow(title: "Current Location", snippet: ""),
+          consumeTapEvents: true,
+        ),
+      );
+
+      markers.add(marker);
+      markerMap[marker.markerId] = marker.options;
+    }
+
+    for (var order in ordersList) {
+      final marker = Marker(
+        markerId: order.locationId.toString(),
+        options: MarkerOptions(
+          position: LatLng(
+            latitude: double.parse(order.pickupLatitude ?? "0.0"),
+            longitude: double.parse(order.pickupLongitude ?? "0.0"),
+          ),
+          icon: icon!,
+          infoWindow: InfoWindow(title: order.pickupLocationName, snippet: ""),
+          consumeTapEvents: true,
+        ),
+      );
+
+      markers.add(marker);
+      markerMap[marker.markerId] = marker.options;
+    }
+  }
+
+
+  Future showCustomMarker(OrdersData data, int type) {
+    return Get.defaultDialog(
+      barrierDismissible: false,
+      title: data.awbNo.toString(),
+      content: Stack(
+        children: [
+          Column(
+            children: [
+              Align(
+                alignment: Alignment.topRight,
+                child: InkWell(
+                    onTap: () {
+                      Get.back();
+                    },
+                    child: const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Icon(
+                        Icons.cancel,
+                        color: AppColors.red,
+                      ),
+                    )),
+              ),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  utils.tvCustom(
+                      type == 0
+                          ? "${data.merchantName!}\n${data.pickupAddress!},${data.pickupZoneNo!}"
+                          : "${data.consigneeName!}\n${data.consigneeAddress!},${data.consigneeStreetNumber!},${data.consigneeBuildingNo!},${data.consigneeUnitNo!},${data.consigneeZone!}",
+                      AppColors.black,
+                      14),
+                ],
+              ),
+              const SizedBox(
+                height: 5,
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  utils.tvRegular("Landmark", AppColors.black),
+                  utils.tvRegular(":", AppColors.black),
+                  utils.tvCustom(
+                      type == 0
+                          ? data.pickupLocationName
+                          : data.consigneeAddress,
+                      AppColors.blue,
+                      13)
+                ],
+              ),
+              Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: utils.iconButtonWithRoundedBorder("Navigate", 40,
+                          () {
+                        utils.openMaps(type == 0
+                            ? data.pickupAddress!
+                            : data.consigneeAddress!);
+                      },
+                      Icons.assistant_navigation,
+                      AppColors.primaryThemeColor,
+                      Icons.alt_route_rounded,
+                      2,
+                      AppColors.primaryThemeColor))
+            ],
+          )
+        ],
+      ),
+    );
+  }
+
+
+
+
+
+  Future<void> getLocationUpdates() async {
+    bool serviceEnabled;
+    PermissionStatus permissionGranted;
+
+    serviceEnabled = await _locationController.serviceEnabled();
+    if (!serviceEnabled) {
+      serviceEnabled = await _locationController.requestService();
+      if (!serviceEnabled) {
+        return;
+      }
+    }
+    permissionGranted = await _locationController.hasPermission();
+    if (permissionGranted == PermissionStatus.denied) {
+      permissionGranted = await _locationController.requestPermission();
+      if (permissionGranted != PermissionStatus.granted) {
+        return;
+      }
+    }
+    _locationSubscription = _locationController.onLocationChanged.listen((
+        LocationData current) {
+      if (current.latitude != null &&
+          current.longitude != null) {
+
+        currentLocation = LatLng(latitude: current.latitude!,
+              longitude: current.longitude!);
+
+      }
+    });
+  }
+
+
+
+  double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    return Geolocator.distanceBetween(lat1, lon1, lat2, lon2);
+  }
+
+
+  LatLng? findNearestDestination(
+      LatLng currentLocation, List<LatLng> destinations) {
+    if (destinations.isEmpty) return null;
+
+    LatLng nearestDestination = destinations[0];
+    double nearestDistance = calculateDistance(
+      currentLocation.latitude,
+      currentLocation.longitude,
+      nearestDestination.latitude,
+      nearestDestination.longitude,
+    );
+
+    for (var destination in destinations) {
+      double distance = calculateDistance(
+        currentLocation.latitude,
+        currentLocation.longitude,
+        destination.latitude,
+        destination.longitude,
+      );
+
+      if (distance < nearestDistance) {
+        nearestDestination = destination;
+        nearestDistance = distance;
+      }
+    }
+
+    return nearestDestination;
+  }
+
+   sortOrdersBySLAAndDistance(LatLng currentLocation, List<OrdersData> ordersList) async{
+    final ordersWithDistance = ordersList.map((order) {
+      final pickupLatLng = LatLng(latitude:
+        double.parse(order.pickupLatitude!),
+       longitude:  double.parse(order.pickupLongitude!),
+      );
+      final distance = calculateDistance(
+        currentLocation.latitude,
+        currentLocation.longitude,
+        pickupLatLng.latitude,
+        pickupLatLng.longitude,
+      );
+      return {
+        'order': order,
+        'distance': distance,
+      };
+    }).toList();
+
+    ordersWithDistance.sort((a, b) {
+      final slaComparison = (a['order'] as OrdersData).sla_in_hours?.compareTo(
+        (b['order'] as OrdersData).sla_in_hours!,
+      );
+      if (slaComparison != 0) {
+        return slaComparison!;
+      }
+      return (a['distance'] as double).compareTo(b['distance'] as double);
+    });
+
+    sortedOrders.value = ordersWithDistance.map((order) => order['order'] as OrdersData).toList();
+  }
+
   @override
-  void onClose() {}
+  void onClose() {
+
+  }
 }

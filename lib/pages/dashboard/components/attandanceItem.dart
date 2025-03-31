@@ -24,7 +24,7 @@ class AttendanceProgressBar extends StatelessWidget {
           alignment: Alignment.bottomCenter,
           children: [
             FractionallySizedBox(
-              heightFactor: double.parse(attendance?.workingHours.toString() ?? "0.0").clamp(0.0, 8.0) / 8.0,
+              heightFactor: double.parse(attendance?.workingHours.toString() ?? "0.0").clamp(0.0, 12.0) / 12.0,
               child: Container(
                 decoration: BoxDecoration(
                   color:

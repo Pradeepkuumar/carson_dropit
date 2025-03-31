@@ -1,9 +1,7 @@
 import 'package:carson_zyppy/global/consts.dart';
 import 'package:carson_zyppy/pages/map/map_page.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:simple_barcode_scanner/enum.dart';
 import 'package:simple_barcode_scanner/simple_barcode_scanner.dart';
 
 import '../../../../utils/colors.dart';
@@ -14,7 +12,7 @@ import '../view/orders_item.dart';
 class OrdersListView extends StatefulWidget {
   var orderStatus = "";
 
-  OrdersListView({required this.orderStatus});
+  OrdersListView({super.key, required this.orderStatus});
 
   @override
   OrdersListViewState createState() => OrdersListViewState();
@@ -60,7 +58,7 @@ class OrdersListViewState extends State<OrdersListView> {
                       children: [
                         Padding(
                           padding: const EdgeInsets.all(8.0),
-                          child: Container(
+                          child: SizedBox(
                               height: context.isPhone?40:60,
                               child: Obx(() {
                                 return TextField(
@@ -107,15 +105,15 @@ class OrdersListViewState extends State<OrdersListView> {
                         Expanded(
                           child: Obx(() => controller.isLoading.value ?
                               Center(child: utils.iosProgressIndicator(AppColors.white)):
-                               controller.ordersList.isEmpty ?
+                               controller.sortedOrders.isEmpty ?
                                Center(child: utils.tvRegular("No Data Found !", AppColors.white))
                                   : ListView.builder(
-                                itemCount: controller.ordersList.length,
+                                itemCount: controller.sortedOrders.length,
                                 itemBuilder: (context, position) {
                                   return Padding(
                                     padding: const EdgeInsets.all(8.0),
                                     child: orderItem(
-                                      controller.ordersList[position],
+                                      controller.sortedOrders[position],
                                           (clickedOrder, clickType) async {
                                         if (clickType == orderScanCLick) {
                                           var res = await Get.to(
@@ -188,12 +186,12 @@ class OrdersListViewState extends State<OrdersListView> {
 
   void searchResult(String value, int type) {
     if (value.isNotEmpty) {
-      var filteredList = controller.ordersList
+      var filteredList = controller.sortedOrders
           .where((element) => element.awbNo!.contains(value))
           .toList();
       setState(() {
         if (filteredList.isNotEmpty) {
-          controller.ordersList.value = filteredList;
+          controller.sortedOrders.value = filteredList;
           if (type == 2) {
             // ecomOrdersController.changeOrderStatus(
             //     order.hawbNo, order.referenceNo, "");
@@ -204,7 +202,7 @@ class OrdersListViewState extends State<OrdersListView> {
         }
       });
     } else {
-      controller.ordersList = controller.ordersList;
+      controller.sortedOrders = controller.sortedOrders;
     }
   }
 }

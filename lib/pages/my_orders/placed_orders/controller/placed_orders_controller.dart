@@ -1,19 +1,21 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:carson_zyppy/global/consts.dart';
 import 'package:carson_zyppy/local_db/entity/UserData.dart';
 import 'package:carson_zyppy/pages/dashboard/controller/rider_dashboard_controller.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:google_navigation_flutter/google_navigation_flutter.dart';
+import 'package:location/location.dart';
 import '../../../../apis/base_api_response.dart';
 import '../../../../global/global.dart';
 import '../../../../utils/colors.dart';
 import '../../orders/models/orders_model.dart';
 
 class PlacedOrdersController extends GetxController {
+  var isLoading = false.obs;
   TextEditingController searchEditTextController = TextEditingController();
   final riderDashboardController  = Get.put(RiderDashboardController());
   var ordersList = <OrdersData>[].obs;
@@ -23,34 +25,34 @@ class PlacedOrdersController extends GetxController {
   var orderAcceptWaitView = false.obs;
   var selectedLocationId = "".obs;
   ImageDescriptor?  icon;
+  final Location _locationController = Location();
 
   final notifications = [
     "Enter Order Number",
     "Scan QR Code for Order",
-    "Enter Order Number",
-    "Scan QR Code for Order",
   ];
-
 
   LatLng? currentLocation;
   final Map<String, MarkerOptions> markerMap = {};
   List<Marker> markers = [];
 
 
-
-
-
   @override
   void onInit() {
     getUser();
-    getOrCreateCustomImageFromAsset();
+    loadIcon();
     super.onInit();
   }
 
   void getUser() async{
     user = (await userRepository.getUser())!;
     if(user.code != null) {
-      await fetchOrders();
+      await getLocationUpdates().then((updated) async {
+        if (updated == true) {
+          await fetchOrders();
+        }
+      });
+
     }
   }
 
@@ -67,11 +69,45 @@ class PlacedOrdersController extends GetxController {
     viewAcceptView.value = true;
   }
 
+  Future<bool?> getLocationUpdates() async {
+    bool serviceEnabled = await _locationController.serviceEnabled();
+    if (!serviceEnabled) {
+      serviceEnabled = await _locationController.requestService();
+      if (!serviceEnabled) return false;
+    }
+
+    PermissionStatus permissionGranted = await _locationController.hasPermission();
+    if (permissionGranted == PermissionStatus.denied) {
+      permissionGranted = await _locationController.requestPermission();
+      if (permissionGranted != PermissionStatus.granted) return false;
+    }
+
+    Completer<bool> locationUpdated = Completer<bool>();
+
+    StreamSubscription<LocationData>? subscription;
+    subscription = _locationController.onLocationChanged.listen((LocationData locationData) {
+      if (locationData.latitude != null && locationData.longitude != null) {
+        currentLocation = LatLng(latitude: locationData.latitude!, longitude: locationData.longitude!);
+
+        if (!locationUpdated.isCompleted) {
+          locationUpdated.complete(true);
+        }
+
+        subscription?.cancel();
+      }
+    });
+
+    return locationUpdated.future;
+  }
+
   Future<bool?> fetchOrders() async {
+    isLoading.value  = true;
     utils.showLoadingDialog("Loading...");
     try {
       Map<String, dynamic> model = {
         apiKeys.feCode: user.code,
+        apiKeys.latitude: currentLocation?.latitude,
+        apiKeys.longitude: currentLocation?.longitude,
       };
       dynamic response = await apiProvider.postRequest(
           apiEndPoints.fetchPlacedOrders, model);
@@ -85,6 +121,7 @@ class PlacedOrdersController extends GetxController {
         }
         setMarkers();
         utils.closeLoadingDialog();
+        isLoading.value  = false;
         return true;
       } else {
         utils.errorSnackBar("Exception", result.message.toString());
@@ -141,17 +178,18 @@ class PlacedOrdersController extends GetxController {
   }
 
 
-  Future<ImageDescriptor?> getOrCreateCustomImageFromAsset() async {
-    const AssetImage assetImage = AssetImage('assets/icons/icon_pickup.png');
+  Future<ImageDescriptor?> getOrCreateCustomImageFromAsset(
+      String assetPath, double width, double height) async {
+    final AssetImage assetImage = AssetImage(assetPath);
     final ImageConfiguration configuration =
     createLocalImageConfiguration(Get.context!);
     final AssetBundleImageKey assetBundleImageKey =
     await assetImage.obtainKey(configuration);
     final double imagePixelRatio = assetBundleImageKey.scale;
     final ByteData imageBytes = await rootBundle.load(assetBundleImageKey.name);
-    icon = await registerBitmapImage(
-        bitmap: imageBytes, imagePixelRatio: imagePixelRatio,width: 48,height: 48);
-    return icon;
+
+    return await registerBitmapImage(
+        bitmap: imageBytes, imagePixelRatio: imagePixelRatio, width: width, height: height);
   }
 
   Future<void> setMarkers() async {
@@ -264,6 +302,11 @@ class PlacedOrdersController extends GetxController {
         ],
       ),
     );
+  }
+
+  void loadIcon() async {
+    icon =   await getOrCreateCustomImageFromAsset(
+        'assets/icons/ic_scooter.png', 48, 48);
   }
 
 

@@ -18,7 +18,7 @@ class AuthController extends GetxController {
   @override
   void onInit() {
     getUser();
-   Future.delayed(Duration(seconds: 3), () {
+   Future.delayed(const Duration(seconds: 3), () {
      showSplashScreen.value = false;
    });
     super.onInit();

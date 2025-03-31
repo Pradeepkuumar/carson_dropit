@@ -15,7 +15,7 @@ Widget popUpWindowItem<T>(T item,String name,void Function(T) onClick) {
               padding: const EdgeInsets.all(4.0),
               child: Text(
                 name.toString(),
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                   overflow: TextOverflow.fade,

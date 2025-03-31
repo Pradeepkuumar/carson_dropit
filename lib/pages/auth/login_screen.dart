@@ -6,12 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../app_pages/app_pages.dart';
-import '../../global/consts.dart';
-import '../../utils/animations.dart';
 import '../../utils/text_utils.dart';
 
 class LoginScreen extends StatefulWidget {
-   LoginScreen({super.key});
+   const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();

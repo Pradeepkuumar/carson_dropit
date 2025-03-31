@@ -41,13 +41,13 @@ class FirebaseMessagingController extends GetxController {
 
 
   void initializeLocalNotifications() {
-    final initializationSettingsAndroid =
+    const initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
     // final initializationSettingsIOS = IOSInitializationSettings(
     //    requestSoundPermission: false,
     //     requestBadgePermission: false,
     //      requestAlertPermission: false, );
-    final initializationSettings = InitializationSettings(
+    const initializationSettings = InitializationSettings(
       android: initializationSettingsAndroid,
       // iOS: initializationSettingsIOS,
     );
@@ -56,7 +56,7 @@ class FirebaseMessagingController extends GetxController {
 
   Future<void> _showNotification(
     { String? title,  String? body}) async {
-    final androidPlatformChannelSpecifics = AndroidNotificationDetails(
+    const androidPlatformChannelSpecifics = AndroidNotificationDetails(
       'carson', 'zyppy',
       importance: Importance.high, priority: Priority.high,
       styleInformation: BigTextStyleInformation(''),
@@ -67,7 +67,7 @@ class FirebaseMessagingController extends GetxController {
 //   //sound: 'your_sound.m4a',
 //   );
 
-    final platformChannelSpecifics = NotificationDetails(
+    const platformChannelSpecifics = NotificationDetails(
       android: androidPlatformChannelSpecifics,
       //  iOS: iOSPlatformChannelSpecifics,
     );

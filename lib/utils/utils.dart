@@ -1,4 +1,3 @@
-import 'dart:ffi';
 import 'dart:io';
 import 'dart:ui';
 import 'package:carson_zyppy/utils/text_style_util.dart';
@@ -96,12 +95,10 @@ class Utils extends GetxController {
   // }
 
   mainButton(String? title, void Function() onClick, Color color) {
-    return Container(
+    return SizedBox(
       height: 40,
       width: Get.width,
       child: ElevatedButton(
-        child: Text(
-          title!, style: TextStyle(color: AppColors.white, fontSize: 18,),),
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
           textStyle: const TextStyle(
@@ -113,6 +110,8 @@ class Utils extends GetxController {
           ),
         ),
         onPressed: onClick,
+        child: Text(
+          title!, style: const TextStyle(color: AppColors.white, fontSize: 18,),),
       ),
     );
   }
@@ -121,15 +120,17 @@ class Utils extends GetxController {
   Widget iconButton(String? title, void Function() onClick, IconData? icon,
       Color btnColor, Color textAndIconColor) {
     return InkWell(
-      child: Container(
+      onTap: onClick,
+      splashColor: AppColors.white,
+      child: SizedBox(
         width: null,
         height: Get.context!.isPhone? 30:50,
         child: DecoratedBox(
           decoration: BoxDecoration(
               color: btnColor,
-              borderRadius: BorderRadius.all(Radius.circular(5))),
+              borderRadius: const BorderRadius.all(Radius.circular(5))),
           child: Padding(
-            padding: EdgeInsets.all(5),
+            padding: const EdgeInsets.all(5),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -139,7 +140,7 @@ class Utils extends GetxController {
                   size: 18.0,
                   color: textAndIconColor,
                 ),
-                SizedBox(width: 5),
+                const SizedBox(width: 5),
                 Text(
                   title.toString(),
                   style: TextStyle(fontSize: Get.context!.isPhone?12:15, color: textAndIconColor),
@@ -149,8 +150,6 @@ class Utils extends GetxController {
           ),
         ),
       ),
-      onTap: onClick,
-      splashColor: AppColors.white,
     );
   }
 
@@ -158,8 +157,10 @@ class Utils extends GetxController {
   iconButtonWithoutBorder(String? title, void Function() onClick,
       IconData? icon, Color? color) {
     return InkWell(
+        onTap: onClick,
+        splashColor: Get.isDarkMode ? AppColors.white : color,
         child: Padding(
-          padding: EdgeInsets.all(5),
+          padding: const EdgeInsets.all(5),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -169,7 +170,7 @@ class Utils extends GetxController {
                 size: 18.0,
                 color: Get.isDarkMode ? AppColors.white : color,
               ),
-              SizedBox(width: 5),
+              const SizedBox(width: 5),
               Text(
                 title.toString(),
                 style: TextStyle(
@@ -178,16 +179,16 @@ class Utils extends GetxController {
               )
             ],
           ),
-        ),
-        onTap: onClick,
-        splashColor: Get.isDarkMode ? AppColors.white : color);
+        ));
   }
 
   iconButtonWithoutBorderVertical(String? title, void Function() onClick,
       IconData? icon, Color? color) {
     return InkWell(
+        onTap: onClick,
+        splashColor: Get.isDarkMode ? AppColors.white : color,
         child: Padding(
-          padding: EdgeInsets.all(0),
+          padding: const EdgeInsets.all(0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -197,7 +198,7 @@ class Utils extends GetxController {
                 size: 30.0,
                 color: Get.isDarkMode ? AppColors.white : color,
               ),
-              SizedBox(height: 5),
+              const SizedBox(height: 5),
               Text(
                 title.toString(),
                 style: TextStyle(
@@ -206,15 +207,15 @@ class Utils extends GetxController {
               )
             ],
           ),
-        ),
-        onTap: onClick,
-        splashColor: Get.isDarkMode ? AppColors.white : color);
+        ));
   }
 
   // Icon Button with Border
   iconButtonWithRoundedBorder(String? title,double height, void Function() onClick,
       IconData? icon, Color borderColor, IconData? startIcon,double borderSize, Color iconsColor) {
     return InkWell(
+      onTap: onClick,
+      splashColor: AppColors.primaryThemeColor,
       child: Container(
         height: height,
         decoration: BoxDecoration(
@@ -225,7 +226,7 @@ class Utils extends GetxController {
           ),
         ),
         child: Padding(
-          padding: EdgeInsets.all(8),
+          padding: const EdgeInsets.all(8),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -235,7 +236,7 @@ class Utils extends GetxController {
                 size: 20.0,
                 color: iconsColor,
               ),
-              SizedBox(width: 1),
+              const SizedBox(width: 1),
               SizedBox(
                 width: 150.0,
                 child: Align(
@@ -252,7 +253,7 @@ class Utils extends GetxController {
                   ),
                 ),
               ),
-              SizedBox(width: 5),
+              const SizedBox(width: 5),
               Icon(
                 icon,
                 size: 20.0,
@@ -262,8 +263,6 @@ class Utils extends GetxController {
           ),
         ),
       ),
-      onTap: onClick,
-      splashColor: AppColors.primaryThemeColor,
     );
   }
 
@@ -276,7 +275,7 @@ class Utils extends GetxController {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Container(
+            SizedBox(
               height: 100,
               width: 100,
               child: Lottie.asset(ANIM_SUCCESS),
@@ -284,7 +283,7 @@ class Utils extends GetxController {
             Align(
               alignment: Alignment.center,
               child: Padding(
-                padding: EdgeInsets.all(5),
+                padding: const EdgeInsets.all(5),
                 child: utils.tvLarge(title, AppColors.black),
               ),
             )
@@ -298,21 +297,21 @@ class Utils extends GetxController {
   nonCancellableDialog(String? title) {
     return Get.defaultDialog(
       title: "Error !",
-      titleStyle: TextStyle(color: AppColors.red),
+      titleStyle: const TextStyle(color: AppColors.red),
       backgroundColor: AppColors.white,
       content: Container(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Container(
+            SizedBox(
               height: 80,
               width: 80,
               child: Lottie.asset(ANIM_ERROR),
             ),
             Center(
               child: Padding(
-                padding: EdgeInsets.all(5),
+                padding: const EdgeInsets.all(5),
                 child: utils.tvCustom(title, AppColors.red, 15),
               ),
             )
@@ -327,21 +326,21 @@ class Utils extends GetxController {
   errorDialog(String? title) {
     return Get.defaultDialog(
       title: "Error !",
-      titleStyle: TextStyle(color: AppColors.red),
+      titleStyle: const TextStyle(color: AppColors.red),
       backgroundColor: AppColors.white,
       content: Container(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Container(
+            SizedBox(
               height: 80,
               width: 80,
               child: Lottie.asset(ANIM_ERROR),
             ),
             Center(
               child: Padding(
-                padding: EdgeInsets.all(5),
+                padding: const EdgeInsets.all(5),
                 child: utils.tvCustom(title, AppColors.red, 15),
               ),
             )
@@ -403,7 +402,7 @@ class Utils extends GetxController {
   noDataFoundWidget() {
     return Padding(
       padding: const EdgeInsets.all(8.0),
-      child: Container(
+      child: SizedBox(
         height: 250,
         width: 250,
         child: Card(
@@ -415,13 +414,13 @@ class Utils extends GetxController {
               crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
+                SizedBox(
                   height: 100,
                   width: 100,
                   child: Lottie.asset(ANIM_ERROR),
                 ),
                 utils.tvCustom("No Data Found !", AppColors.red, 15),
-                SizedBox(height: 25,),
+                const SizedBox(height: 25,),
                 utils.iconButton("Go Back", (){
                   Get.back();
                 }, Icons.arrow_back_ios_new_outlined, AppColors.primaryThemeColor, AppColors.white)
@@ -439,6 +438,7 @@ class Utils extends GetxController {
        Get.dialog(
          Center(
            child: Scaffold(
+             backgroundColor: AppColors.transparent,
              body: Container(
                height: Get.height,
                width: Get.width,
@@ -455,7 +455,7 @@ class Utils extends GetxController {
                      children: [
                        Padding(
                          padding: const EdgeInsets.all(10.0),
-                         child: Container(
+                         child: SizedBox(
                            height: 50,
                            width: 50,
                            // child: Lottie.asset(ImageConstants.ANIM_LOADING_DOTS),
@@ -492,7 +492,7 @@ class Utils extends GetxController {
   searchBox({required Null Function(dynamic value) onChanged}) {
     return TextField(
       onChanged: onChanged,
-      decoration: InputDecoration(
+      decoration: const InputDecoration(
           labelText: "Search",
           hintText: "Search",
           prefixIcon: Icon(Icons.search),
@@ -511,8 +511,8 @@ class Utils extends GetxController {
           color: AppColors.white,
           borderRadius: BorderRadius.circular(50),
         ),
-        padding: EdgeInsets.all(10),
-        child: Icon(
+        padding: const EdgeInsets.all(10),
+        child: const Icon(
           Icons.arrow_back,
           color: Colors.black,
           size: 24,
@@ -558,7 +558,7 @@ class Utils extends GetxController {
     return BoxDecoration(
       borderRadius: BorderRadius.circular(5),
       // color: AppColors.mainColorTwo,
-      gradient: LinearGradient(
+      gradient: const LinearGradient(
         begin: FractionalOffset(0.0, 0.0),
         end: FractionalOffset(0.0, 1.0),
         colors: [
@@ -637,8 +637,8 @@ class Utils extends GetxController {
   }
 
   boxDacorationVerticalGradient() {
-    return BoxDecoration(
-      gradient: const LinearGradient(
+    return const BoxDecoration(
+      gradient: LinearGradient(
         begin: FractionalOffset(4.0, 1.0),
         end: FractionalOffset(1.0, 2.0),
         colors: [
@@ -647,7 +647,7 @@ class Utils extends GetxController {
           AppColors.yellow,
         ],
       ),
-      boxShadow: const [
+      boxShadow: [
         BoxShadow(
           color: Color.fromARGB(156, 0, 0, 0),
           blurRadius: 3,
@@ -663,7 +663,7 @@ class Utils extends GetxController {
         width: 2,
         color: AppColors.primaryThemeColor,
       ),
-      borderRadius: BorderRadius.all(Radius.circular(5)),
+      borderRadius: const BorderRadius.all(Radius.circular(5)),
     );
   }
 
@@ -672,7 +672,7 @@ class Utils extends GetxController {
   textFieldBorder() {
     return OutlineInputBorder(
         borderRadius: BorderRadius.circular(5.sp),
-        borderSide: BorderSide(color: AppColors.primaryThemeColor, width: 1));
+        borderSide: const BorderSide(color: AppColors.primaryThemeColor, width: 1));
   }
 
   mainButtonBackground() {
@@ -814,7 +814,7 @@ class Utils extends GetxController {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
+            colorScheme: const ColorScheme.light(
               primary: AppColors.primaryThemeColor,
               onPrimary: AppColors.white,
               onSurface: AppColors.black,
@@ -838,7 +838,7 @@ class Utils extends GetxController {
         builder: (context, child) {
           return Theme(
             data: Theme.of(context).copyWith(
-              colorScheme: ColorScheme.light(
+              colorScheme: const ColorScheme.light(
                 primary: AppColors.primaryThemeColor,
                 onPrimary: AppColors.white,
                 onSurface: AppColors.black,
@@ -950,7 +950,7 @@ class Utils extends GetxController {
         ),
         Text(
           title,
-          style: TextStyle(color: AppColors.primaryThemeColor),
+          style: const TextStyle(color: AppColors.primaryThemeColor),
         ),
       ],
     );
@@ -974,7 +974,7 @@ class Utils extends GetxController {
         ),
         Text(
           title,
-          style: TextStyle(color: AppColors.primaryThemeColor),
+          style: const TextStyle(color: AppColors.primaryThemeColor),
         ),
       ],
     );
@@ -1033,7 +1033,7 @@ class Utils extends GetxController {
   }
 
   whiteDivider() {
-    return Divider(
+    return const Divider(
       thickness: 1,
       height: 5,
       color: AppColors.white,
@@ -1045,7 +1045,7 @@ class Utils extends GetxController {
   }
 
   dividerBlack() {
-    return Divider(
+    return const Divider(
       height: 2,
       thickness: 1,
       color: Colors.black,
@@ -1074,7 +1074,7 @@ class Utils extends GetxController {
           Text(text!,
               softWrap: true,
               style: AppTextStyle.textPoppins14(AppColors.primaryThemeColor)),
-          Align(
+          const Align(
             alignment: Alignment.topLeft,
             child: Text("*",
                 style: TextStyle(
@@ -1091,7 +1091,7 @@ class Utils extends GetxController {
       Color fontColor) {
     return Padding(
       padding: const EdgeInsets.only(top: 2.0, bottom: 2),
-      child: Container(
+      child: SizedBox(
         height: 22.sp,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -1342,7 +1342,7 @@ class Utils extends GetxController {
       void Function(String?)? onChanged,) {
     return DropdownButton<String>(
       value: selectedItemId,
-      hint: Text('Select a reason'),
+      hint: const Text('Select a reason'),
       onChanged: onChanged,
       items: reasons.map<DropdownMenuItem<String>>((reason) {
         return DropdownMenuItem<String>(
