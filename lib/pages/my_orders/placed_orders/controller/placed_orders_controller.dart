@@ -92,7 +92,6 @@ class PlacedOrdersController extends GetxController {
         if (!locationUpdated.isCompleted) {
           locationUpdated.complete(true);
         }
-
         subscription?.cancel();
       }
     });

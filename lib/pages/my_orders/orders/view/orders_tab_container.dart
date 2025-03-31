@@ -19,7 +19,6 @@ class OrdersTabContainer extends GetView<OrdersController> {
       body: SafeArea(
         child: SizedBox.expand(
           child:
-
           Obx(() {
             return TabContainer(
               controller: controller.tabController,
@@ -27,7 +26,7 @@ class OrdersTabContainer extends GetView<OrdersController> {
               tabExtent: context.isTablet?55:45,
               borderRadius: BorderRadius.circular(1),
               tabBorderRadius: BorderRadius.circular(10),
-              tabMaxLength: context.isTablet ? 200 : 100,
+              tabMaxLength: context.isTablet ? 200 : 150,
               childPadding: const EdgeInsets.all(3.0),
               selectedTextStyle:  TextStyle(
                 color: Colors.white,
