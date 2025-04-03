@@ -104,7 +104,7 @@ class OrdersListViewState extends State<OrdersListView> {
                         ),
                         Expanded(
                           child: Obx(() => controller.isLoading.value ?
-                              Center(child: utils.iosProgressIndicator(AppColors.white)):
+                              Center(child: utils.iosProgressIndicator(AppColors.white,"Loading...")):
                                controller.sortedOrders.isEmpty ?
                                Center(child: utils.tvRegular("No Data Found !", AppColors.white))
                                   : ListView.builder(

@@ -52,6 +52,7 @@ class AllOrdersMapController extends GetxController  {
   final Location _locationController = Location();
   late var  googleMapsNavigator ;
   MapType mapType = MapType.normal;
+  var isNavigationRunning = false.obs;
 
 
 
@@ -84,7 +85,7 @@ class AllOrdersMapController extends GetxController  {
 
 
   var ordersList = <OrdersData>[].obs;
-  var sortedOrders = <OrdersData>[].obs;
+
   var reasonsList = <CancelReason>[].obs;
   var currentLocationOrders = <OrdersData>[].obs;
   TextEditingController searchEditTextController = TextEditingController();
@@ -125,7 +126,7 @@ class AllOrdersMapController extends GetxController  {
   void onReady() {
     Future.delayed(const Duration(seconds: 5), () {
        getReasons();
-       getFeAllOrders(["ASSIGNED", "RE-ASSIGNED","PICKED","OFD"]);
+       getFeAllOrders(["ASSIGNED", "RE-ASSIGNED","REACHED","PICKED","OFD"]);
     });
 
     signatureController.addListener(signatureListner);
@@ -185,9 +186,6 @@ class AllOrdersMapController extends GetxController  {
   }
 
 
-
-
-
   void checkForLocationUpdate() async {
     if (currentLocation?.longitude != null) {
       remainingTimeOrDistanceChangedSubscription =
@@ -198,11 +196,10 @@ class AllOrdersMapController extends GetxController  {
     }
   }
 
-
-  void filterCurrentLocationOrders(double distanceThresholdInMeters) {
+  filterCurrentLocationOrders(double distanceThresholdInMeters) async {
     currentLocationOrders.clear();
-    if (currentLocation == null || sortedOrders.isEmpty) return;
-    final nearbyOrders = sortedOrders.where((order) {
+    if (currentLocation == null || ordersList.isEmpty) return;
+    final nearbyOrders = ordersList.where((order) {
       final orderLatLng = LatLng(
        latitude:  order.status == "PICKED" || order.status == "OFD"
             ? double.parse(order.dropoffLatitude ?? "0.0")
@@ -220,8 +217,12 @@ class AllOrdersMapController extends GetxController  {
       return distance <= distanceThresholdInMeters;
     }).toList();
     currentLocationOrders.addAll(nearbyOrders);
-    bottomBarListType.value = 1;
-    viewAcceptView.value = true;
+    if(currentLocationOrders.isNotEmpty) {
+      bottomBarListType.value = 1;
+      viewAcceptView.value = true;
+    }else{
+      viewAcceptView.value = false;
+    }
     update();
   }
 
@@ -257,8 +258,18 @@ class AllOrdersMapController extends GetxController  {
   }
 
   Future<void> startGuidedNavigation() async {
-    await googleMapsNavigator.startGuidance();
+    if(!isNavigationRunning.value) {
+      await googleMapsNavigator.startGuidance();
+      await navigationViewController?.followMyLocation(
+          CameraPerspective.tilted);
+      isNavigationRunning.value = true;
+    }
+
+  }
+  Future<void> stopGuidedNavigation() async {
+    googleMapsNavigator.stopGuidance();
     await navigationViewController?.followMyLocation(CameraPerspective.tilted);
+    isNavigationRunning.value = false;
 
   }
 
@@ -343,10 +354,12 @@ class AllOrdersMapController extends GetxController  {
         await Future.forEach(result.data, (json) async {
           ordersList.add(OrdersData.fromJson(json as Map<String, dynamic>));
         });
-        if(ordersList.isNotEmpty) {
-          await sortOrdersByDistanceAndRemainingTime(
-              currentLocation!, ordersList);
-        }
+        // if(ordersList.isNotEmpty) {
+        //   await sortOrdersByDistanceAndRemainingTime(
+        //       currentLocation!, ordersList);
+        // }
+        await filterCurrentLocationOrders(100);
+        await setMarkers();
         isLoading.value = false;
         utils.closeLoadingDialog();
         return true;
@@ -440,16 +453,16 @@ class AllOrdersMapController extends GetxController  {
       var result = BaseApiResponse.fromJson(response);
       if (response['status_code'] == 200) {
         var order = OrdersData.fromJson(result.data);
-        selectedOrder.value.status = order.status;
-        updateExistingOrder(order);
+        // selectedOrder.value.status = order.status;
+        // updateExistingOrder(order);
         isUpdateCardVisibleForUpdate.value =  false;
-        if(status == "OFD"){
-          viewAcceptView.value = false;
-        }
-
-        if(status == "DELIVERED"){
-          await getFeAllOrders(["ASSIGNED", "RE-ASSIGNED","PICKED","OFD"]);
-        }
+        // if(status == "OFD"){
+        //   viewAcceptView.value = false;
+        // }
+        await getFeAllOrders(["ASSIGNED","RE-ASSIGNED","REACHED","PICKED","OFD"]);
+        // if(status == "DELIVERED"){
+        //   await getFeAllOrders(["ASSIGNED", "RE-ASSIGNED","PICKED","OFD"]);
+        // }
 
         utils.closeLoadingDialog();
         update();
@@ -466,9 +479,9 @@ class AllOrdersMapController extends GetxController  {
   }
 
   void updateExistingOrder(OrdersData updatedOrder) {
-    int index = sortedOrders.indexWhere((order) => order.awbNo == updatedOrder.awbNo);
+    int index = ordersList.indexWhere((order) => order.awbNo == updatedOrder.awbNo);
     if (index != -1) {
-      sortedOrders[index] = updatedOrder;
+      ordersList[index] = updatedOrder;
     }
     setMarkers();
   }
@@ -660,9 +673,14 @@ class AllOrdersMapController extends GetxController  {
     markerMap.clear();
     waypoints.clear();
     markerLatLangList.clear();
+    var currentOrdersList = <OrdersData>[].obs;
+    if(currentLocationOrders.isNotEmpty){
+      currentOrdersList =  currentLocationOrders;
+    }else{
+      currentOrdersList =  ordersList;
+    }
 
-
-    for (var order in sortedOrders) {
+    for (var order in currentOrdersList) {
       bool isSelected = selectedOrder.value == order;
 
       final marker = Marker(
@@ -810,95 +828,95 @@ class AllOrdersMapController extends GetxController  {
 
 
 
-  sortOrdersByDistanceAndRemainingTime(LatLng currentLocation, List<OrdersData> ordersList) async {
-    // Step 1: Calculate distance for each order and store it in a list
-    final ordersWithDistance = ordersList.map((order) {
-      final latLng = LatLng(
-        latitude: order.status == "PICKED" || order.status == "OFD"  ? double.parse(order.dropoffLatitude ?? "0.0") : double.parse(order.pickupLatitude ?? "0.0"),
-        longitude: order.status == "PICKED" || order.status == "OFD"   ? double.parse(order.dropoffLongitude ?? "0.0") : double.parse(order.pickupLongitude ?? "0.0"),
-      );
-      final distance = order.status == "PICKED" || order.status == "OFD"  ? order.current_dropoff_distance_value: order.current_pickup_distance_value;
-      return {
-        'order': order,
-        'distance': distance,
-      };
-    }).toList();
-
-    // Step 2: Sort orders by distance
-    ordersWithDistance.sort((a, b) {
-      return (a['distance'] as double).compareTo(b['distance'] as double);
-    });
-
-    // Step 3: Calculate remaining time for each order
-    final now = DateTime.now();
-    final ordersWithRemainingTime = ordersWithDistance.map((entry) {
-      final order = entry['order'] as OrdersData;
-      final createdTime = DateTime.parse(order.createdAt!);
-      final deadline = createdTime.add(Duration(hours: int.tryParse(order.sla_in_hours ?? "0")!));
-      final remainingTime = deadline.difference(now);
-
-      String remainingTimeFormatted;
-      if (remainingTime.inMinutes < 60) {
-        remainingTimeFormatted = '${remainingTime.inMinutes} mins';
-      } else {
-        remainingTimeFormatted = '${remainingTime.inHours} hours ${remainingTime.inMinutes.remainder(60)} mins';
-      }
-
-      return {
-        'order': order,
-        'distance': entry['distance'],
-        'remainingTime': remainingTime,
-        'remainingTimeFormatted': remainingTimeFormatted,
-      };
-    }).toList();
-
-    // Step 4: Apply the custom sorting logic
-    ordersWithRemainingTime.sort((a, b) {
-      final distanceA = a['distance'] as double;
-      final distanceB = b['distance'] as double;
-      final remainingTimeA = a['remainingTime'] as Duration;
-      final remainingTimeB = b['remainingTime'] as Duration;
-      final statusA = (a['order'] as OrdersData).status;
-      final statusB = (b['order'] as OrdersData).status;
-
-      // Check if the orders are nearby (e.g., within 2 km of each other)
-      if ((distanceA - distanceB).abs() <= 2000) {
-        // Check if the 2nd order is within 5 km
-        if (distanceB <= 5000) {
-          // Check if one of the orders is critical (status is "OFD" or "PICKED" || order.status == "OFD")
-          final isACritical = statusA == "OFD" || statusA == "PICKED" ;
-          final isBCritical = statusB == "OFD" || statusB == "PICKED" ;
-
-          // If both are critical, prioritize the one with less remaining time
-          if (isACritical && isBCritical) {
-            return remainingTimeA.compareTo(remainingTimeB);
-          }
-          // If only one is critical, prioritize it
-          else if (isACritical) {
-            return -1;
-          } else if (isBCritical) {
-            return 1;
-          }
-        }
-      }
-
-      // Default sorting by distance
-      return distanceA.compareTo(distanceB);
-    });
-
-    // Step 5: Update the orders with the calculated remaining time
-    sortedOrders.value = ordersWithRemainingTime.map((entry) {
-      final order = entry['order'] as OrdersData;
-      order.distanceInKms = (entry['distance'] as double) < 1000
-          ? '${(entry['distance'] as double).toStringAsFixed(0)} m'
-          : '${((entry['distance'] as double) / 1000).toStringAsFixed(2)} km';
-      order.remainingTime = entry['remainingTimeFormatted'] as String;
-      return order;
-    }).toList();
-
-
-    setMarkers();
-  }
+  // sortOrdersByDistanceAndRemainingTime(LatLng currentLocation, List<OrdersData> ordersList) async {
+  //   // Step 1: Calculate distance for each order and store it in a list
+  //   final ordersWithDistance = ordersList.map((order) {
+  //     final latLng = LatLng(
+  //       latitude: order.status == "PICKED" || order.status == "OFD"  ? double.parse(order.dropoffLatitude ?? "0.0") : double.parse(order.pickupLatitude ?? "0.0"),
+  //       longitude: order.status == "PICKED" || order.status == "OFD"   ? double.parse(order.dropoffLongitude ?? "0.0") : double.parse(order.pickupLongitude ?? "0.0"),
+  //     );
+  //     final distance = order.status == "PICKED" || order.status == "OFD"  ? order.current_dropoff_distance_value: order.current_pickup_distance_value;
+  //     return {
+  //       'order': order,
+  //       'distance': distance,
+  //     };
+  //   }).toList();
+  //
+  //   // Step 2: Sort orders by distance
+  //   ordersWithDistance.sort((a, b) {
+  //     return (a['distance'] as double).compareTo(b['distance'] as double);
+  //   });
+  //
+  //   // Step 3: Calculate remaining time for each order
+  //   final now = DateTime.now();
+  //   final ordersWithRemainingTime = ordersWithDistance.map((entry) {
+  //     final order = entry['order'] as OrdersData;
+  //     final createdTime = DateTime.parse(order.createdAt!);
+  //     final deadline = createdTime.add(Duration(hours: int.tryParse(order.sla_in_hours ?? "0")!));
+  //     final remainingTime = deadline.difference(now);
+  //
+  //     String remainingTimeFormatted;
+  //     if (remainingTime.inMinutes < 60) {
+  //       remainingTimeFormatted = '${remainingTime.inMinutes} mins';
+  //     } else {
+  //       remainingTimeFormatted = '${remainingTime.inHours} hours ${remainingTime.inMinutes.remainder(60)} mins';
+  //     }
+  //
+  //     return {
+  //       'order': order,
+  //       'distance': entry['distance'],
+  //       'remainingTime': remainingTime,
+  //       'remainingTimeFormatted': remainingTimeFormatted,
+  //     };
+  //   }).toList();
+  //
+  //   // Step 4: Apply the custom sorting logic
+  //   ordersWithRemainingTime.sort((a, b) {
+  //     final distanceA = a['distance'] as double;
+  //     final distanceB = b['distance'] as double;
+  //     final remainingTimeA = a['remainingTime'] as Duration;
+  //     final remainingTimeB = b['remainingTime'] as Duration;
+  //     final statusA = (a['order'] as OrdersData).status;
+  //     final statusB = (b['order'] as OrdersData).status;
+  //
+  //     // Check if the orders are nearby (e.g., within 2 km of each other)
+  //     if ((distanceA - distanceB).abs() <= 2000) {
+  //       // Check if the 2nd order is within 5 km
+  //       if (distanceB <= 5000) {
+  //         // Check if one of the orders is critical (status is "OFD" or "PICKED" || order.status == "OFD")
+  //         final isACritical = statusA == "OFD" || statusA == "PICKED" ;
+  //         final isBCritical = statusB == "OFD" || statusB == "PICKED" ;
+  //
+  //         // If both are critical, prioritize the one with less remaining time
+  //         if (isACritical && isBCritical) {
+  //           return remainingTimeA.compareTo(remainingTimeB);
+  //         }
+  //         // If only one is critical, prioritize it
+  //         else if (isACritical) {
+  //           return -1;
+  //         } else if (isBCritical) {
+  //           return 1;
+  //         }
+  //       }
+  //     }
+  //
+  //     // Default sorting by distance
+  //     return distanceA.compareTo(distanceB);
+  //   });
+  //
+  //   // Step 5: Update the orders with the calculated remaining time
+  //   sortedOrders.value = ordersWithRemainingTime.map((entry) {
+  //     final order = entry['order'] as OrdersData;
+  //     order.distanceInKms = (entry['distance'] as double) < 1000
+  //         ? '${(entry['distance'] as double).toStringAsFixed(0)} m'
+  //         : '${((entry['distance'] as double) / 1000).toStringAsFixed(2)} km';
+  //     order.remainingTime = entry['remainingTimeFormatted'] as String;
+  //     return order;
+  //   }).toList();
+  //
+  //
+  //
+  // }
 
 
 

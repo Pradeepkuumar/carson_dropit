@@ -50,7 +50,7 @@ class OrdersData {
   String ? current_dropoff_distance;
   String? current_dropoff_duration;
   double? current_dropoff_distance_value;
-  String? buffer_time_in_minutes;
+  String? pickup_buffer_time_in_minutes;
 
 
   OrdersData(
@@ -104,7 +104,7 @@ class OrdersData {
         this.current_dropoff_distance,
         this.current_dropoff_duration,
         this.current_dropoff_distance_value,
-        this.buffer_time_in_minutes,
+        this.pickup_buffer_time_in_minutes,
       });
 
   OrdersData.fromJson(Map<String, dynamic> json) {
@@ -152,7 +152,7 @@ class OrdersData {
     duration = json['duration'];
     distanceInKms = json['distance_in_kms'];
     remainingTime = json['remainingTimeFormatted'];
-    buffer_time_in_minutes = json['buffer_time_in_minutes'];
+    pickup_buffer_time_in_minutes = json['pickup_buffer_time_in_minutes'];
     current_dropoff_duration = json['current_dropoff_duration'];
     current_dropoff_distance = json['current_dropoff_distance'];
     current_pickup_duration = json['current_pickup_duration'];
@@ -214,7 +214,7 @@ class OrdersData {
     data['current_dropoff_distance'] = current_dropoff_distance ;
     data['current_pickup_duration'] = current_pickup_duration;
     data['current_pickup_distance'] = current_pickup_distance ;
-    data['buffer_time_in_minutes'] = buffer_time_in_minutes ;
+    data['pickup_buffer_time_in_minutes'] = pickup_buffer_time_in_minutes ;
     data['current_pickup_distance_value'] = current_pickup_distance_value ;
     data['current_dropoff_distance_value'] = current_dropoff_distance_value ;
     return data;

@@ -53,7 +53,7 @@ class _SplashScreesState extends State<SplashScreen> {
               fit: BoxFit.fill,
             ),
             Center(
-              child: utils.iosProgressIndicator(AppColors.white),
+              child: utils.iosProgressIndicator(AppColors.white,"Loading data please wait..."),
             ),
           ]),
         ),

@@ -43,7 +43,7 @@ class LoadingWidgetState   extends State<LoadingWidget>{
                         ? const CircularProgressIndicator(
                       color: AppColors.primaryThemeColor,
                     )
-                        : utils.iosProgressIndicator(AppColors.white),
+                        : utils.iosProgressIndicator(AppColors.white,"Loading..."),
                   ),
                 ),
                 utils.tvCustom("Loading...", AppColors.black,

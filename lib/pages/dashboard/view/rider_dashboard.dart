@@ -83,7 +83,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                               child: controller
                                                       .attendancesList.isEmpty
                                                   ? utils.iosProgressIndicator(
-                                                      AppColors.white)
+                                                      AppColors.white,"Fetching...")
                                                   : Column(
                                                       children: [
                                                         utils.tvCustom(
@@ -259,24 +259,71 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                       const SizedBox(
                                         height: 5,
                                       ),
+                                      InkWell(
+                                        onTap: () {
+                                          Get.toNamed(Routes.nearByOrders);
+                                        },
+                                        child: Container(
+                                          margin: const EdgeInsets.symmetric(
+                                              horizontal: 15),
+                                          decoration:
+                                          utils.boxDecorationWhite(),
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(8.0),
+                                            child: Column(
+                                              mainAxisAlignment:
+                                              MainAxisAlignment.spaceEvenly,
+                                              children: [
+                                                Padding(
+                                                  padding:
+                                                  const EdgeInsets.all(8.0),
+                                                  child: Row(
+                                                    children: [
+                                                      utils.imageView(
+                                                          nearByImage,
+                                                          context.isPhone
+                                                              ? 50
+                                                              : 60,
+                                                          context.isPhone
+                                                              ? 50
+                                                              : 50),
+                                                      const SizedBox(
+                                                        width: 10,
+                                                      ),
+                                                      utils.tvCustom(
+                                                          "Nearby Pickup Orders",
+                                                          AppColors
+                                                              .primaryThemeColor,
+                                                          16)
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(
+                                        height: 5,
+                                      ),
                                       Container(
                                         margin: const EdgeInsets.symmetric(
                                             horizontal: 15),
                                         decoration:
-                                            utils.boxDecorationWhite(),
+                                        utils.boxDecorationWhite(),
                                         child: Padding(
                                           padding: const EdgeInsets.all(8.0),
                                           child: Column(
                                             mainAxisAlignment:
-                                                MainAxisAlignment.spaceEvenly,
+                                            MainAxisAlignment.spaceEvenly,
                                             children: [
                                               Padding(
                                                 padding:
-                                                    const EdgeInsets.all(8.0),
+                                                const EdgeInsets.all(8.0),
                                                 child: Row(
                                                   mainAxisAlignment:
-                                                      MainAxisAlignment
-                                                          .spaceEvenly,
+                                                  MainAxisAlignment
+                                                      .spaceEvenly,
                                                   children: [
                                                     // InkWell(
                                                     //   onTap: () {
@@ -324,53 +371,6 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                           ),
                                         ),
                                       ),
-                                      const SizedBox(
-                                        height: 5,
-                                      ),
-                                      InkWell(
-                                        onTap: () {
-                                          Get.toNamed(Routes.nearByOrders);
-                                        },
-                                        child: Container(
-                                          margin: const EdgeInsets.symmetric(
-                                              horizontal: 15),
-                                          decoration:
-                                              utils.boxDecorationWhite(),
-                                          child: Padding(
-                                            padding: const EdgeInsets.all(8.0),
-                                            child: Column(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.spaceEvenly,
-                                              children: [
-                                                Padding(
-                                                  padding:
-                                                      const EdgeInsets.all(8.0),
-                                                  child: Row(
-                                                    children: [
-                                                      utils.imageView(
-                                                          nearByImage,
-                                                          context.isPhone
-                                                              ? 50
-                                                              : 60,
-                                                          context.isPhone
-                                                              ? 50
-                                                              : 50),
-                                                      const SizedBox(
-                                                        width: 10,
-                                                      ),
-                                                      utils.tvCustom(
-                                                          "Nearby Orders",
-                                                          AppColors
-                                                              .primaryThemeColor,
-                                                          20)
-                                                    ],
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      )
                                     ],
                                   ))),
                         ),
@@ -592,7 +592,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
           }),
           Obx(() {
             return !controller.isAttendanceLoaded.value
-                ? Center(child: utils.iosProgressIndicator(AppColors.white))
+                ? Center(child: utils.iosProgressIndicator(AppColors.white,"Fetching Data..."))
                 : Visibility(
                     visible: !controller.isAttendanceMarked.value,
                     child: Container(

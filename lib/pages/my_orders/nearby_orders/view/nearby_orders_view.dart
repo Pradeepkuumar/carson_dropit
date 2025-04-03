@@ -56,42 +56,41 @@ class _MapPageState extends State<NearbyOrdersView> {
         child: Stack(
           children: [
             Obx(() {
-              if(controller.isLoading.value){
-                return Center(child: utils.iosProgressIndicator(AppColors.primaryThemeColor),);
+              if (!controller.isResponseSuccess.value) {
+                return Center(child: utils.iosProgressIndicator(AppColors.primaryThemeColor, ""));
+                } else if (controller.ordersList.isEmpty) {
+                return Center(child: utils.noDataFoundWidget());
+                } else {
+                return GoogleMapsMapView(
+                  gestureRecognizers: Set()
+                    ..add(Factory<PanGestureRecognizer>(
+                            () => PanGestureRecognizer()))..add(
+                        Factory<ScaleGestureRecognizer>(
+                                () => ScaleGestureRecognizer())),
+
+                  onViewCreated: (GoogleMapViewController mapController) {
+                    for (var marker in controller.markers) {
+                      mapController.addMarkers([marker]);
+                    }
+
+                    _mapController.complete(mapController);
+                  },
+                  initialMapType: MapType.normal,
+                  initialCameraPosition: CameraPosition(
+                    target: controller.currentLocation!,
+                    zoom: 18,
+                  ),
+
+                  onMarkerClicked: (value) {
+                    if (value != "current_location") {
+                      controller.selectedLocationId.value = value;
+                      controller.selectedLocationOrders();
+                    } else {
+                      print("Marker not found in map.");
+                    }
+                  },
+                );
               }
-              return controller.ordersList.isNotEmpty ? GoogleMapsMapView(
-                gestureRecognizers: Set()
-                  ..add(Factory<PanGestureRecognizer>(
-                          () => PanGestureRecognizer()))..add(
-                      Factory<ScaleGestureRecognizer>(
-                              () => ScaleGestureRecognizer())),
-
-                onViewCreated: (GoogleMapViewController mapController){
-                  for (var marker in controller.markers) {
-                    mapController.addMarkers([marker]);
-                  }
-
-                  _mapController.complete(mapController);
-
-                },
-                initialMapType: MapType.normal,
-                initialCameraPosition: CameraPosition(
-                  target: controller.currentLocation! ,
-                  zoom: 14,
-                ),
-
-                onMarkerClicked: (value) {
-                  if (value != "current_location") {
-                    controller.selectedLocationId.value = value;
-                    controller.selectedLocationOrders();
-                  } else {
-                    print("Marker not found in map.");
-                  }
-                },
-
-              ): Center(
-                child:  Center(child: utils.noDataFoundWidget()),
-              );
             }),
             buildControls(),
             Obx(() {

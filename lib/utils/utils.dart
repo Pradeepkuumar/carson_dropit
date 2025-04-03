@@ -459,7 +459,7 @@ class Utils extends GetxController {
                            height: 50,
                            width: 50,
                            // child: Lottie.asset(ImageConstants.ANIM_LOADING_DOTS),
-                           child: utils.iosProgressIndicator(AppColors.primaryThemeColor),
+                           child: utils.iosProgressIndicator(AppColors.primaryThemeColor,"Loading..."),
                            // GetPlatform.isAndroid
                            //     ? CircularProgressIndicator(
                            //   color: AppColors.primaryThemeColor,
@@ -747,13 +747,12 @@ class Utils extends GetxController {
 
 
   openDialPad(String phoneNumber) async {
-    final Uri phoneUri = Uri.parse("tel:$phoneNumber");
+    final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
     if (await canLaunchUrl(phoneUri)) {
       await launchUrl(phoneUri);
     } else {
       throw "Could not open dial pad";
     }
-
 
   }
 
@@ -1061,9 +1060,11 @@ class Utils extends GetxController {
   }
 
   //ios circularProgressIndicator
-  iosProgressIndicator(Color? color) {
-    return CupertinoActivityIndicator(
-        radius: 20.0, color: color ?? AppColors.white );
+  iosProgressIndicator(Color? color,String? message) {
+    return
+          CupertinoActivityIndicator(
+              radius: 20.0, color: color ?? AppColors.white );
+
   }
 
   tvMandatoryField(String? text, double fontSize, Color fontColor) {

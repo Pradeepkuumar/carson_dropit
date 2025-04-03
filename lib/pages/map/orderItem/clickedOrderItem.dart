@@ -65,20 +65,54 @@ clickedOrderItem(
                   children: [
                     Column(
                       children: [
-                        customRow("Distance",orderData.distanceInKms ?? ""),
+                        customRow("Item","${orderData.itemName!}(${orderData.quantity})" ?? ""),
+                        customRow("Order Amount",orderData.orderAmount ?? ""),
+                        customRow("Order Weight",orderData.weight ?? ""),
                         customRow("Location", orderData.status == "OFD" ? orderData.contact_person_name ?? "":orderData.pickupLocationName ?? ""),
                       ],
                     ),
-                    const SizedBox(height: 20,),
+                    const SizedBox(height: 10,),
+                    Column(
+                      children: [
+                        const SizedBox(height: 10,),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            utils.clickableImageVertical("Call Pickup", AppColors.black, AppColors.lightBlue, icTelephone, 30, 30, (){
+                              utils.openDialPad(
+                                  orderData.pickupPhoneNo.toString());
+                            }),
+                            const SizedBox(width:5,),
+                            utils.clickableImageVertical("Pickup", AppColors.black, AppColors.green, icWhatsApp,30, 30, (){
+                              utils.openWhtsApp(
+                                  orderData.pickupPhoneNo.toString());
+                            }),
+                            const SizedBox(width:5,),
+                            utils.clickableImageVertical("Call Consignee", AppColors.black, AppColors.blue, icTelephone, 30, 30, (){
+                              utils.openDialPad(
+                                  orderData.consigneeMobileNo.toString());
+                            }),
+                            const SizedBox(width:5,),
+                            utils.clickableImageVertical("Consignee", AppColors.black, AppColors.green, icWhatsApp,30, 30, (){
+                              utils.openWhtsApp(
+                                  orderData.pickupPhoneNo.toString());
+                            }),
 
+                          ],
+                        ),
+                        const SizedBox(height: 10,),
+                      ],
+                    ),
                     Visibility(
                       visible: listType == 1,
-                        child: utils.iconButton(orderData.status == "ASSIGNED"|| orderData.status == "RE-ASSIGNED" ? "PICK" : orderData.status == "PICKED" ? "MARK OFD":orderData.status == "OFD" ? "UPDATE" : "",(){
+                        child: utils.iconButton(orderData.status == "ASSIGNED"|| orderData.status == "RE-ASSIGNED" ? "REACHED" :orderData.status == "REACHED"? "PICK": orderData.status == "PICKED" ? "MARK OFD":orderData.status == "OFD" ? "UPDATE" : "",(){
                           orderData.status == "OFD" ?
-                          onClick(orderData,updateOrder):
+                          onClick(orderData,updateOrder)
+                              :
                       onClick(orderData,updateStatus);
 
-                    }, Icons.update,orderData.status == "ASSIGNED"|| orderData.status == "RE-ASSIGNED"?AppColors.blue :orderData.status == "PICKED" ?
+                    }, Icons.update,orderData.status == "ASSIGNED"|| orderData.status == "RE-ASSIGNED"?AppColors.blue : orderData.status == "REASSIGNED"?AppColors.orange : orderData.status == "PICKED" ?
                         AppColors.primaryThemeColor :AppColors.greenLight, AppColors.white)
                     )
                   ],

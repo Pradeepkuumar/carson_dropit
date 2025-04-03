@@ -155,7 +155,7 @@ class _MapPageState extends State<MapPage> {
       // backgroundColor: AppColors.primaryThemeColor,
       body: controller.currentLocation == null
           ? Center(
-        child: utils.iosProgressIndicator(AppColors.primaryThemeColor),
+        child: utils.iosProgressIndicator(AppColors.primaryThemeColor,"Loading..."),
       )
           : SafeArea(
         child: Stack(children: [
@@ -176,7 +176,7 @@ class _MapPageState extends State<MapPage> {
               zoom: 14,
             ),
           ) : Center(
-            child: utils.iosProgressIndicator(AppColors.primaryThemeColor),),
+            child: utils.iosProgressIndicator(AppColors.primaryThemeColor,"Loading..."),),
           Padding(
             padding: const EdgeInsets.only(top: 100, left: 5),
             child: Column(

@@ -15,7 +15,6 @@ import '../../../../utils/colors.dart';
 import '../../orders/models/orders_model.dart';
 
 class PlacedOrdersController extends GetxController {
-  var isLoading = false.obs;
   TextEditingController searchEditTextController = TextEditingController();
   final riderDashboardController  = Get.put(RiderDashboardController());
   var ordersList = <OrdersData>[].obs;
@@ -35,6 +34,8 @@ class PlacedOrdersController extends GetxController {
   LatLng? currentLocation;
   final Map<String, MarkerOptions> markerMap = {};
   List<Marker> markers = [];
+
+  var isResponseSuccess = false.obs;
 
 
   @override
@@ -100,7 +101,6 @@ class PlacedOrdersController extends GetxController {
   }
 
   Future<bool?> fetchOrders() async {
-    isLoading.value  = true;
     utils.showLoadingDialog("Loading...");
     try {
       Map<String, dynamic> model = {
@@ -120,7 +120,7 @@ class PlacedOrdersController extends GetxController {
         }
         setMarkers();
         utils.closeLoadingDialog();
-        isLoading.value  = false;
+        isResponseSuccess.value  = true;
         return true;
       } else {
         utils.errorSnackBar("Exception", result.message.toString());
@@ -232,6 +232,21 @@ class PlacedOrdersController extends GetxController {
     }
   }
 
+  Future showSelectionMenu() {
+    return Get.defaultDialog(
+      barrierDismissible: true,
+      title: "Select Orders",
+      content: Stack(
+        children: [
+          Column(
+            children: [
+
+            ],
+          )
+        ],
+      ),
+    );
+  }
 
   Future showCustomMarker(OrdersData data, int type) {
     return Get.defaultDialog(
@@ -302,6 +317,8 @@ class PlacedOrdersController extends GetxController {
       ),
     );
   }
+
+
 
   void loadIcon() async {
     icon =   await getOrCreateCustomImageFromAsset(
