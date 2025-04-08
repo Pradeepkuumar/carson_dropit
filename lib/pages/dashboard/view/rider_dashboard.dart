@@ -39,7 +39,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
             width: Get.width,
             decoration: const BoxDecoration(
               image: DecorationImage(
-                  image: AssetImage("assets/images/bg_login.jpg"),
+                  image: AssetImage("assets/images/bg_splash.png"),
                   fit: BoxFit.fill),
             ),
           ),
@@ -55,9 +55,9 @@ class _RiderDashboardState extends State<RiderDashboard> {
                         height: utils.isMobileScreen(context) ? 620 : 920,
                         width: Get.width - 20,
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.white),
+                          border: Border.all(color: AppColors.primaryThemeColor),
                           borderRadius: BorderRadius.circular(10),
-                          color: Colors.black.withOpacity(0.1),
+                          color: AppColors.primaryThemeColor.withOpacity(0.1),
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(10),
@@ -76,19 +76,19 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                           margin: const EdgeInsets.symmetric(
                                               horizontal: 15),
                                           decoration: utils.roundedBorder(
-                                              AppColors.white, 10),
+                                              AppColors.primaryThemeColor, 10),
                                           child: Padding(
                                               padding:
                                                   const EdgeInsets.all(15.0),
                                               child: controller
                                                       .attendancesList.isEmpty
                                                   ? utils.iosProgressIndicator(
-                                                      AppColors.white,"Fetching...")
+                                                      AppColors.primaryThemeColor,"Fetching...")
                                                   : Column(
                                                       children: [
                                                         utils.tvCustom(
                                                             "Working Hours/Day",
-                                                            AppColors.white,
+                                                            AppColors.primaryThemeColor,
                                                             10),
                                                         SizedBox(
                                                           height:
@@ -114,7 +114,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                         ),
                                                         utils.tvCustom(
                                                             "Work Days",
-                                                            AppColors.white,
+                                                            AppColors.primaryThemeColor,
                                                             10),
                                                       ],
                                                     )),
@@ -410,7 +410,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                     visible: !showMenu.value,
                                     child: const Icon(
                                       Icons.menu_sharp,
-                                      color: AppColors.white,
+                                      color: AppColors.primaryThemeColor,
                                     )),
                                 Visibility(
                                     visible: showMenu.value,

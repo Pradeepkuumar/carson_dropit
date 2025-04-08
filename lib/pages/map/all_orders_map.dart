@@ -116,27 +116,37 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
   Widget build(BuildContext context) {
     return Scaffold(
       // backgroundColor: AppColors.primaryThemeColor,
-        body: Obx(
-              () =>
+        body: Obx(() =>
           controller.isLoading.value
-              ? Align(
-            alignment: Alignment.center,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                utils.iosProgressIndicator(AppColors.primaryThemeColor,
-                    "Loading Maps Please wait..."),
-                const SizedBox(
-                  height: 10,
+              ? Stack(
+                alignment: Alignment.center,
+                children:[
+                  Container(
+                    height: Get.height,
+                    width: Get.width,
+                    decoration: const BoxDecoration(
+                      image: DecorationImage(
+                          image: AssetImage("assets/images/bg_bottom.png"),
+                          fit: BoxFit.fill),
+                    ),
+                  ),
+                  Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    utils.iosProgressIndicator(AppColors.primaryThemeColor,
+                        "Loading Maps Please wait..."),
+                    const SizedBox(
+                      height: 20,
+                    ),
+                    Obx(() {
+                      return utils.tvCustom(controller.currentHintText,
+                          AppColors.primaryThemeColor, 15);
+                    }),
+                  ],
                 ),
-                Obx(() {
-                  return utils.tvCustom(controller.currentHintText,
-                      AppColors.primaryThemeColor, 15);
-                }),
-              ],
-            ),
-          )
+              ]
+              )
               : SafeArea(
             child: Stack(children: [
               controller.initializeNavigation.value
@@ -194,8 +204,7 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                   width: 80,
                                   height: 80,
                                   ringColor: Colors.grey[300]!,
-                                  fillColor: AppColors.green
-                                  ,
+                                  fillColor: AppColors.green,
                                   backgroundColor: Colors.white,
                                   isReverseAnimation: true,
                                   isReverse: true,
@@ -228,125 +237,130 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                 );
               }),
               Positioned(
-                  top: 120,
-                  right: 10,
-                  child: Container(
-                    decoration: utils.boxDecorationWhite(),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          utils.tvCustom(
-                              "Selected Order", AppColors.primaryThemeColor,
-                              14),
-                          SizedBox(
-                            height: 10,
-                          ),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                              Column(
-                                children: [
-                                  Text(
-                                    "Order No.",
-                                    style: TextStyle(
-                                      fontSize:
-                                      Get.context!.isPhone ? 12 : 15,
-                                      color: Colors.black,
+                top: 100,
+                right: 10,
+                child: Column(
+                  children: [
+
+                    Container(
+                      decoration: utils.boxDecorationWhite(),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            utils.tvCustom(
+                                "Current Order", AppColors.primaryThemeColor,
+                                14),
+                            SizedBox(
+                              height: 10,
+                            ),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                Column(
+                                  children: [
+                                    Text(
+                                      "Order No.",
+                                      style: TextStyle(
+                                        fontSize:
+                                        Get.context!.isPhone ? 12 : 15,
+                                        color: Colors.black,
+                                      ),
                                     ),
-                                  ),
-                                  Text(
-                                    controller
-                                        .currentLocationOrders.isNotEmpty
-                                        ? controller
-                                        .currentLocationOrders.first.awbNo
+                                    Text(
+                                      controller
+                                          .currentLocationOrders.isNotEmpty
+                                          ? controller
+                                          .currentLocationOrders.first.awbNo
+                                          .toString()
+                                          : controller.ordersList.first.awbNo
+                                          .toString(),
+                                      style: TextStyle(
+                                        fontSize:
+                                        Get.context!.isPhone ? 12 : 15,
+                                        color: AppColors.black,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(
+                                  width: 10,
+                                ),
+                                slaTimer(
+                                    40,
+                                    40,
+                                    controller.currentLocationOrders.isNotEmpty
+                                        ? controller.currentLocationOrders.first
+                                        .createdAt
                                         .toString()
-                                        : controller.ordersList.first.awbNo
+                                        : controller.ordersList.first.createdAt
                                         .toString(),
-                                    style: TextStyle(
-                                      fontSize:
-                                      Get.context!.isPhone ? 12 : 15,
-                                      color: AppColors.black,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(
-                                width: 10,
-                              ),
-                              slaTimer(
-                                  40,
-                                  40,
+                                    int.tryParse(controller
+                                        .currentLocationOrders
+                                        .isNotEmpty
+                                        ? controller.currentLocationOrders
+                                        .first.sla_in_hours
+                                        .toString()
+                                        : controller
+                                        .ordersList.first.sla_in_hours
+                                        .toString()
+                                        .toString()) ??
+                                        0,
+                                    12),
+                              ],
+                            ),
+                            SizedBox(
+                              height: 10,
+                            ),
+                            Visibility(
+                              visible: controller.currentLocationOrders.isNotEmpty
+                                  ? controller.currentLocationOrders.first
+                                  .status == "PICKED" ? true : false : controller
+                                  .ordersList.first.status == "PICKED"
+                                  ? true
+                                  : false,
+                              child: SizedBox(
+                                width: 150,
+                                height: 30,
+                                child: utils.mainButton("Mark OFD", () async {
+                                  controller.selectedOrder.value =
                                   controller.currentLocationOrders.isNotEmpty
                                       ? controller.currentLocationOrders.first
-                                      .createdAt
-                                      .toString()
-                                      : controller.ordersList.first.createdAt
-                                      .toString(),
-                                  int.tryParse(controller
-                                      .currentLocationOrders
-                                      .isNotEmpty
-                                      ? controller.currentLocationOrders
-                                      .first.sla_in_hours
-                                      .toString()
-                                      : controller
-                                      .ordersList.first.sla_in_hours
-                                      .toString()
-                                      .toString()) ??
-                                      0,
-                                  12),
-                            ],
-                          ),
-                          SizedBox(
-                            height: 10,
-                          ),
-                          Visibility(
-                            visible: controller.currentLocationOrders.isNotEmpty
-                                ? controller.currentLocationOrders.first
-                                .status == "PICKED" ? true : false : controller
-                                .ordersList.first.status == "PICKED"
-                                ? true
-                                : false,
-                            child: SizedBox(
-                              width: 150,
-                              height: 30,
-                              child: utils.mainButton("Mark OFD", () async {
-                                controller.selectedOrder.value =
-                                controller.currentLocationOrders.isNotEmpty
-                                    ? controller.currentLocationOrders.first
-                                    : controller.ordersList.first;
-                                bool isUpdated = await controller.updateOrder(
-                                    "OFD");
-                                if (isUpdated) {
-                                  controller.startGuidedNavigation();
-                                }
-                              },
-                                  AppColors.primaryThemeColor),
+                                      : controller.ordersList.first;
+                                  bool isUpdated = await controller.updateOrder(
+                                      "OFD");
+                                  if (isUpdated) {
+                                    controller.startGuidedNavigation();
+                                  }
+                                },
+                                    AppColors.primaryThemeColor),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                  )),
-              Positioned(
-                top: 80,
-                right: 10,
-                child: InkWell(
-                    onTap: () {
-                      controller.bottomBarListType.value = 0;
-                      controller.viewAcceptView.value = true;
-                    },
-                    child: Container(
-                        decoration: utils.boxDecorationWhite(),
-                        child: Padding(
-                          padding: EdgeInsets.all(5),
-                          child: utils.tvCustom(
-                              "Show All Orders", AppColors.primaryThemeColor,
-                              14),
-                        ))),
+                    SizedBox(height: 10,),
+                    InkWell(
+                        onTap: () {
+                          controller.bottomBarListType.value = 0;
+                          controller.viewAcceptView.value = true;
+                        },
+                        child: Container(
+                            decoration: utils.boxDecorationWhite(),
+                            child: Padding(
+                              padding: EdgeInsets.all(5),
+                              child: utils.tvCustom(
+                                  "Show All Orders", AppColors.primaryThemeColor,
+                                  14),
+                            ))),
+                  ],
+                ),
               ),
+
+
               Positioned(
                   bottom: 1,
                   right: 10,
@@ -551,21 +565,20 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                                 controller.selectedOrder.value =
                                                     clickedOrder;
                                                 if (type == updateStatus) {
-                                                  controller.updateOrder(
-                                                      clickedOrder.status ==
-                                                          "REACHED" ? "PICKED" :
-                                                      clickedOrder.status ==
-                                                          "ASSIGNED" ||
-                                                          clickedOrder.status ==
-                                                              "RE-ASSIGNED"
-                                                          ? "REACHED"
-                                                          :
-                                                      clickedOrder.status ==
-                                                          "PICKED"
-                                                          ? "OFD"
-                                                          : "");
-                                                } else
-                                                if (type == updateOrder) {
+                                                  if(clickedOrder.status =="REACHED") {
+                                                    bool isTrue = await controller
+                                                        .calculateBufferTime(
+                                                        DateTime.now(),
+                                                        "PICKED");
+                                                    if (isTrue) {
+                                                      controller.updateOrder("PICKED");
+                                                    }
+                                                  }else if(clickedOrder.status == "ASSIGNED" || clickedOrder.status == "RE-ASSIGNED") {
+                                                    controller.updateOrder("REACHED");
+                                                    controller.startTime = DateTime.now();
+                                                  }
+
+                                                } else if (type == updateOrder) {
                                                   controller.viewAcceptView
                                                       .value = false;
                                                   controller
@@ -1301,9 +1314,11 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                                   child: utils.iconButton(
                                                       "Mark Reached",
                                                           () async {
+                                                        controller.startTime = DateTime.now();
                                                         await controller
                                                             .updateOrder(
                                                             "REACHED");
+
                                                       },
                                                       Icons
                                                           .follow_the_signs_rounded,
@@ -1318,9 +1333,12 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                                       "REACHED",
                                                   child: utils.iconButton(
                                                       "Mark Pick", () async {
-                                                    await controller
-                                                        .updateOrder(
-                                                        "PICKED");
+                                                    bool isTrue =  await controller.calculateBufferTime(DateTime.now(),"PICKED");
+                                                    if(isTrue){
+                                                      await controller.updateOrder("PICKED");
+                                                    }
+
+
                                                   },
                                                       Icons.signpost_rounded,
                                                       AppColors.blue,
@@ -1381,20 +1399,23 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                                       .markDelivered.value,
                                               child: utils.iconButton(
                                                   "Mark Delivered", () async {
-                                                if (controller
-                                                    .deliveredImage !=
-                                                    null) {
-                                                  var isDElivered =
-                                                  await controller
-                                                      .updateOrder(
-                                                      "DELIVERED");
-                                                  if (isDElivered == true) {
-                                                    clearImageSign();
+                                                bool isTrue =  await controller.calculateBufferTime(DateTime.now(),"DELIVERED");
+                                                if(isTrue){
+                                                  if (controller
+                                                      .deliveredImage !=
+                                                      null) {
+                                                    var isDElivered =
+                                                    await controller
+                                                        .updateOrder(
+                                                        "DELIVERED");
+                                                    if (isDElivered == true) {
+                                                      clearImageSign();
+                                                    }
+                                                  } else {
+                                                    utils.errorSnackBar(
+                                                        " Error !",
+                                                        "Delivery Image required");
                                                   }
-                                                } else {
-                                                  utils.errorSnackBar(
-                                                      " Error !",
-                                                      "Delivery Image required");
                                                 }
                                                 // Get.toNamed(Routes.signatureImageScreen);
                                               },

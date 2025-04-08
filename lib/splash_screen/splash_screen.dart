@@ -41,21 +41,23 @@ class _SplashScreesState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     if (showLoadingScreen) {
-      return Container(
-        height: Get.height,
-        decoration: utils.boxDacorationGradient(),
-        child: Center(
-          child: Stack(children: [
-            Image.asset(
-              "assets/images/bg_login.jpg",
-              height: Get.height,
-              width: Get.width,
-              fit: BoxFit.fill,
-            ),
-            Center(
-              child: utils.iosProgressIndicator(AppColors.white,"Loading data please wait..."),
-            ),
-          ]),
+      return SafeArea(
+        child: Container(
+          height: Get.height,
+          decoration: utils.boxDacorationGradient(),
+          child: Center(
+            child: Stack(children: [
+              Image.asset(
+                "assets/images/bg_splash.png",
+                height: Get.height,
+                width: Get.width,
+                fit: BoxFit.fill,
+              ),
+              Center(
+                child: utils.iosProgressIndicator(AppColors.primaryThemeColor,"Loading data please wait..."),
+              ),
+            ]),
+          ),
         ),
       );
     } else {

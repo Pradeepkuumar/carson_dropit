@@ -112,7 +112,7 @@ clickedOrderItem(
                               :
                       onClick(orderData,updateStatus);
 
-                    }, Icons.update,orderData.status == "ASSIGNED"|| orderData.status == "RE-ASSIGNED"?AppColors.blue : orderData.status == "REASSIGNED"?AppColors.orange : orderData.status == "PICKED" ?
+                    }, Icons.update,orderData.status == "ASSIGNED"|| orderData.status == "RE-ASSIGNED"?AppColors.blue : orderData.status == "RE-ASSIGNED"?AppColors.orange : orderData.status == "PICKED" ?
                         AppColors.primaryThemeColor :AppColors.greenLight, AppColors.white)
                     )
                   ],

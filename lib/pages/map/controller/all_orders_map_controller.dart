@@ -109,6 +109,14 @@ class AllOrdersMapController extends GetxController  {
   var bottomBarListType = 0.obs;
   Timer? _hintTextTimer;
   Timer? _nearbyOrdersTimer;
+  DateTime? startTime;
+
+  var bufferMinutes = "".obs;
+
+
+
+
+
 
 
 
@@ -120,6 +128,34 @@ class AllOrdersMapController extends GetxController  {
     getUser();
     initializeNavigationSession();
     super.onInit();
+  }
+
+
+  Future<bool>calculateBufferTime(DateTime now, String status) async{
+    if(startTime != null) {
+      final difference = now.difference(startTime!);
+     bufferMinutes.value  =  formatDurationToMinutes(difference.toString());
+     return true;
+    }
+    return false;
+  }
+
+  String formatDurationToMinutes(String durationStr) {
+
+    final parts = durationStr.split(':');
+
+    if (parts.length != 3) return "Invalid format";
+
+    final hours = int.parse(parts[0]);
+    final minutes = int.parse(parts[1]);
+    final seconds = double.parse(parts[2]);
+
+    final totalSeconds = (hours * 3600) + (minutes * 60) + seconds;
+
+    final totalMinutes = totalSeconds ~/ 60;
+    final remainingSeconds = totalSeconds.toInt() % 60;
+
+    return '${totalMinutes}:${remainingSeconds.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -429,7 +465,6 @@ class AllOrdersMapController extends GetxController  {
   Future<bool> updateOrder(String status) async {
     try {
       utils.showLoadingDialog("Updating...");
-
       List<Map<String, dynamic>> images = [
         if (markDelivered.value)
           {'key': 'delivery_proof', 'file': deliveredImage},
@@ -442,6 +477,8 @@ class AllOrdersMapController extends GetxController  {
       Map<String, dynamic> data = {
         'status': status,
         'fe_code': user.code ?? "",
+        if(status == "PICKED") 'picked_buffer_time': bufferMinutes.value,
+        if(status == "DELIVERED") 'dropoff_buffer_time': bufferMinutes.value,
         'awb_no': selectedOrder.value.awbNo ?? "",
         if (status == "UNDELIVERED") 'reason': selectedReason.value,
       };
@@ -456,9 +493,7 @@ class AllOrdersMapController extends GetxController  {
         // selectedOrder.value.status = order.status;
         // updateExistingOrder(order);
         isUpdateCardVisibleForUpdate.value =  false;
-        // if(status == "OFD"){
-        //   viewAcceptView.value = false;
-        // }
+
         await getFeAllOrders(["ASSIGNED","RE-ASSIGNED","REACHED","PICKED","OFD"]);
         // if(status == "DELIVERED"){
         //   await getFeAllOrders(["ASSIGNED", "RE-ASSIGNED","PICKED","OFD"]);
@@ -477,6 +512,36 @@ class AllOrdersMapController extends GetxController  {
       return false;
     }
   }
+
+
+
+  Future<bool?> updateBuffert() async {
+    utils.showLoadingDialog("Loading...");
+    try {
+      dynamic response = await apiProvider.getRequest(apiEndPoints.getReasons);
+      var result = BaseApiResponse.fromJson(response);
+      if (result.data != null) {
+        reasonsList.clear();
+        for (var json in result.data) {
+          reasonsList.add(CancelReason.fromJson(json));
+        }
+        utils.closeLoadingDialog();
+        update();
+        return true;
+      } else {
+        //  utils.errorSnackBar("Exception", result.message.toString());
+        utils.closeLoadingDialog();
+        update();
+        return false;
+      }
+    } catch (e) {
+      utils.closeLoadingDialog();
+      update();
+      // utils.errorSnackBar("Exception", e.toString());
+    }
+    return null;
+  }
+
 
   void updateExistingOrder(OrdersData updatedOrder) {
     int index = ordersList.indexWhere((order) => order.awbNo == updatedOrder.awbNo);

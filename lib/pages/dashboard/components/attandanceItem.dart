@@ -17,7 +17,7 @@ class AttendanceProgressBar extends StatelessWidget {
         width: context.isPhone?30:60,
         height: context.isPhone?50:60,
         decoration: BoxDecoration(
-          color: AppColors.headerColor,
+          color: AppColors.white,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Stack(
