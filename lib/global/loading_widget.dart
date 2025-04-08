@@ -1,5 +1,4 @@
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -7,6 +6,8 @@ import '../utils/colors.dart';
 import 'global.dart';
 
 class LoadingWidget extends StatefulWidget {
+  const LoadingWidget({super.key});
+
   @override
   State<StatefulWidget> createState()  =>  LoadingWidgetState();
 
@@ -34,15 +35,15 @@ class LoadingWidgetState   extends State<LoadingWidget>{
               children: [
                 Padding(
                   padding: const EdgeInsets.all(10.0),
-                  child: Container(
-                    height: 50,
-                    width: 50,
+                  child: SizedBox(
+                    height: context.isPhone ? 50 :80,
+                    width: context.isPhone ?50 :80,
                     // child: Lottie.asset(ImageConstants.ANIM_LOADING_DOTS),
                     child: GetPlatform.isAndroid
-                        ? CircularProgressIndicator(
+                        ? const CircularProgressIndicator(
                       color: AppColors.primaryThemeColor,
                     )
-                        : utils.iosProgressIndicator(AppColors.white),
+                        : utils.iosProgressIndicator(AppColors.white,"Loading..."),
                   ),
                 ),
                 utils.tvCustom("Loading...", AppColors.black,

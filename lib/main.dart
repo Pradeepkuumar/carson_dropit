@@ -7,8 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_navigation/src/root/get_material_app.dart';
 import 'package:get_storage/get_storage.dart';
 import 'app_pages/app_pages.dart';
 import 'firebase_notifications/firebase_notifiction_controller.dart';
@@ -46,8 +44,8 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     SystemChrome.setSystemUIOverlayStyle(
        const SystemUiOverlayStyle(
-        statusBarColor: AppColors.primaryThemeColor,
-        statusBarIconBrightness: Brightness.light,
+        statusBarColor: AppColors.white,
+        statusBarIconBrightness: Brightness.dark,
       ),
     );
     return ScreenUtilInit(
@@ -56,8 +54,8 @@ class MyApp extends StatelessWidget {
           return GetMaterialApp(
             debugShowCheckedModeBanner: false,
             title: 'Carson Zyppy',
-            home: SplashScreen(),
-            getPages: AppPages.routes,
+            home: const SplashScreen(),
+           getPages: AppPages.routes,
           );
         });
   }

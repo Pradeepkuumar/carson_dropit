@@ -1,8 +1,14 @@
+import 'dart:async';
+import 'dart:ui';
+
+import 'package:carson_zyppy/global/consts.dart';
 import 'package:carson_zyppy/local_db/entity/UserData.dart';
 import 'package:carson_zyppy/pages/dashboard/controller/rider_dashboard_controller.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:google_navigation_flutter/google_navigation_flutter.dart';
+import 'package:location/location.dart';
 import '../../../../apis/base_api_response.dart';
 import '../../../../global/global.dart';
 import '../../../../utils/colors.dart';
@@ -15,27 +21,39 @@ class PlacedOrdersController extends GetxController {
   var selectedMerchantOrdersList = <OrdersData>[].obs;
   var user = UserData();
   var viewAcceptView = false.obs;
+  var orderAcceptWaitView = false.obs;
   var selectedLocationId = "".obs;
+  ImageDescriptor?  icon;
+  final Location _locationController = Location();
 
   final notifications = [
     "Enter Order Number",
     "Scan QR Code for Order",
-    "Enter Order Number",
-    "Scan QR Code for Order",
   ];
 
+  LatLng? currentLocation;
+  final Map<String, MarkerOptions> markerMap = {};
+  List<Marker> markers = [];
+
+  var isResponseSuccess = false.obs;
 
 
   @override
   void onInit() {
     getUser();
+    loadIcon();
     super.onInit();
   }
 
   void getUser() async{
     user = (await userRepository.getUser())!;
     if(user.code != null) {
-      await fetchOrders();
+      await getLocationUpdates().then((updated) async {
+        if (updated == true) {
+          await fetchOrders();
+        }
+      });
+
     }
   }
 
@@ -52,11 +70,43 @@ class PlacedOrdersController extends GetxController {
     viewAcceptView.value = true;
   }
 
+  Future<bool?> getLocationUpdates() async {
+    bool serviceEnabled = await _locationController.serviceEnabled();
+    if (!serviceEnabled) {
+      serviceEnabled = await _locationController.requestService();
+      if (!serviceEnabled) return false;
+    }
+
+    PermissionStatus permissionGranted = await _locationController.hasPermission();
+    if (permissionGranted == PermissionStatus.denied) {
+      permissionGranted = await _locationController.requestPermission();
+      if (permissionGranted != PermissionStatus.granted) return false;
+    }
+
+    Completer<bool> locationUpdated = Completer<bool>();
+
+    StreamSubscription<LocationData>? subscription;
+    subscription = _locationController.onLocationChanged.listen((LocationData locationData) {
+      if (locationData.latitude != null && locationData.longitude != null) {
+        currentLocation = LatLng(latitude: locationData.latitude!, longitude: locationData.longitude!);
+
+        if (!locationUpdated.isCompleted) {
+          locationUpdated.complete(true);
+        }
+        subscription?.cancel();
+      }
+    });
+
+    return locationUpdated.future;
+  }
+
   Future<bool?> fetchOrders() async {
     utils.showLoadingDialog("Loading...");
     try {
       Map<String, dynamic> model = {
         apiKeys.feCode: user.code,
+        apiKeys.latitude: currentLocation?.latitude,
+        apiKeys.longitude: currentLocation?.longitude,
       };
       dynamic response = await apiProvider.postRequest(
           apiEndPoints.fetchPlacedOrders, model);
@@ -68,7 +118,9 @@ class PlacedOrdersController extends GetxController {
           update();
           await Future.delayed(const Duration(milliseconds: 100));
         }
+        setMarkers();
         utils.closeLoadingDialog();
+        isResponseSuccess.value  = true;
         return true;
       } else {
         utils.errorSnackBar("Exception", result.message.toString());
@@ -85,7 +137,7 @@ class PlacedOrdersController extends GetxController {
   }
 
   Future<bool> acceptRejectOrder(String type, String orderNumber) async {
-    utils.showLoadingDialog("Loading...");
+    utils.showLoadingDialog("wait while updating order...");
     try {
       Map<String, dynamic> model = {
         apiKeys.feCode: user.code,
@@ -96,10 +148,18 @@ class PlacedOrdersController extends GetxController {
           apiEndPoints.acceptRejectOrder, model);
       var result = BaseApiResponse.fromJson(response);
       if (result.data != null) {
-         await fetchOrders();
-        riderDashboardController.getDashBoardData();
+        await fetchOrders();
+        await riderDashboardController.getDashBoardData();
         selectedLocationOrders();
+        orderAcceptWaitView.value = false;
         viewAcceptView.value = false;
+        if(type == acceptOrder) {
+          utils.successSnackBar("Order Accepted Successfully",
+              "Please find accepted order in My Orders");
+        }else{
+          utils.errorSnackBar("Order Rejected",
+              "This order no longer belongs to you");
+        }
         utils.closeLoadingDialog();
         return true;
       } else {
@@ -116,6 +176,77 @@ class PlacedOrdersController extends GetxController {
     return false;
   }
 
+
+  Future<ImageDescriptor?> getOrCreateCustomImageFromAsset(
+      String assetPath, double width, double height) async {
+    final AssetImage assetImage = AssetImage(assetPath);
+    final ImageConfiguration configuration =
+    createLocalImageConfiguration(Get.context!);
+    final AssetBundleImageKey assetBundleImageKey =
+    await assetImage.obtainKey(configuration);
+    final double imagePixelRatio = assetBundleImageKey.scale;
+    final ByteData imageBytes = await rootBundle.load(assetBundleImageKey.name);
+
+    return await registerBitmapImage(
+        bitmap: imageBytes, imagePixelRatio: imagePixelRatio, width: width, height: height);
+  }
+
+  Future<void> setMarkers() async {
+    markers.clear();
+    markerMap.clear();
+
+    if (currentLocation != null) {
+      final marker = Marker(
+        markerId: "current_location",
+        options: MarkerOptions(
+          position: LatLng(
+            latitude: currentLocation?.latitude ?? 0.0,
+            longitude: currentLocation?.longitude ?? 0.0,
+          ),
+          icon: ImageDescriptor.defaultImage,
+          infoWindow: const InfoWindow(title: "Current Location", snippet: ""),
+          consumeTapEvents: true,
+        ),
+      );
+
+      markers.add(marker);
+      markerMap[marker.markerId] = marker.options;
+    }
+
+    for (var order in ordersList) {
+      final marker = Marker(
+        markerId: order.locationId.toString(),
+        options: MarkerOptions(
+          position: LatLng(
+            latitude: double.parse(order.pickupLatitude ?? "0.0"),
+            longitude: double.parse(order.pickupLongitude ?? "0.0"),
+          ),
+          icon: icon!,
+          infoWindow: InfoWindow(title: order.pickupLocationName, snippet: ""),
+          consumeTapEvents: true,
+        ),
+      );
+
+      markers.add(marker);
+      markerMap[marker.markerId] = marker.options;
+    }
+  }
+
+  Future showSelectionMenu() {
+    return Get.defaultDialog(
+      barrierDismissible: true,
+      title: "Select Orders",
+      content: Stack(
+        children: [
+          Column(
+            children: [
+
+            ],
+          )
+        ],
+      ),
+    );
+  }
 
   Future showCustomMarker(OrdersData data, int type) {
     return Get.defaultDialog(
@@ -186,5 +317,15 @@ class PlacedOrdersController extends GetxController {
       ),
     );
   }
+
+
+
+  void loadIcon() async {
+    icon =   await getOrCreateCustomImageFromAsset(
+        'assets/icons/ic_scooter.png', 48, 48);
+  }
+
+
+
 
 }

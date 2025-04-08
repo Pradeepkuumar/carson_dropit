@@ -1,3 +1,4 @@
+import 'package:carson_zyppy/utils/colors.dart';
 import 'package:flutter/material.dart';
 class TextUtil extends StatelessWidget {
   String text;
@@ -10,7 +11,7 @@ class TextUtil extends StatelessWidget {
   Widget build(BuildContext context) {
     return  Text(text,
 
-      style: TextStyle(color:color??Colors.white,fontSize:size?? 16,
+      style: TextStyle(color:color??AppColors.primaryThemeColor,fontSize:size?? 16,
           fontWeight:weight==null?FontWeight.w600: FontWeight.w700
       ),);
   }

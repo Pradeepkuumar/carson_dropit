@@ -2,9 +2,11 @@ import 'package:carson_zyppy/pages/auth/auth_binding.dart';
 import 'package:carson_zyppy/pages/auth/login_screen.dart';
 import 'package:carson_zyppy/pages/dashboard/view/rider_dashboard.dart';
 import 'package:carson_zyppy/pages/dashboard/view/rider_dashboard_binding.dart';
+import 'package:carson_zyppy/pages/map/all_orders_map.dart';
 import 'package:carson_zyppy/pages/my_orders/nearby_orders/view/nearby_orders_view.dart';
 import 'package:carson_zyppy/pages/my_orders/placed_orders/view/placed_orders_list_view.dart';
 import 'package:get/get.dart';
+import '../pages/map/all_orders_binding.dart';
 import '../pages/my_orders/orders/orders_binding.dart';
 import '../pages/my_orders/orders/view/orders_tab_container.dart';
 import '../pages/my_orders/placed_orders/binding/placed_orders_binding.dart';
@@ -17,17 +19,17 @@ class AppPages {
   static final routes = [
     GetPage(
       name: _Paths.auth,
-      page: () => LoginScreen(),
+      page: () => const LoginScreen(),
       binding: AuthBinding(),
     ),
     GetPage(
       name: _Paths.riderDashbord,
-      page: () => RiderDashboard(),
+      page: () => const RiderDashboard(),
       binding: RiderDashboardBinding(),
     ),
     GetPage(
       name: _Paths.ordersScreen,
-      page: () => OrdersTabContainer(),
+      page: () =>  OrdersTabContainer(),
       binding: OrdersBinding(),
     ),
     GetPage(
@@ -37,9 +39,15 @@ class AppPages {
     ),
     GetPage(
       name: _Paths.nearByOrders,
-      page: () => NearbyOrdersView(),
+      page: () => const NearbyOrdersView(),
       binding: PlacedOrdersBinding(),
     ),
+    GetPage(
+      name: _Paths.allOrdersMapScreen,
+      page: () => AllOrdersMapPage(),
+      binding: AllOrdersBinding(),
+    ),
+
   ];
 }
 
@@ -52,6 +60,7 @@ abstract class Routes {
   static const signatureImageScreen = _Paths.signatureImageScreen;
   static const placedOrders = _Paths.placedOrders;
   static const nearByOrders = _Paths.nearByOrders;
+  static const allOrdersMapScreen = _Paths.allOrdersMapScreen;
 }
 
 abstract class _Paths {
@@ -62,4 +71,5 @@ abstract class _Paths {
   static const signatureImageScreen = '/signature_image_screen';
   static const placedOrders = '/placed_orders';
   static const nearByOrders = '/nearby_orders';
+  static const allOrdersMapScreen = '/all_orders_map_screen';
 }

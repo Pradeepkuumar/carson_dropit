@@ -1,15 +1,16 @@
+
 import 'data.dart';
 import 'notification.dart';
 
 class NotificationModel {
-  LocalNotification? local_notification;
-  Data? data;
 
-  NotificationModel({this.local_notification, this.data});
+  LocalNotification? localNotification;
+  Data? data;
+  NotificationModel({this.localNotification, this.data});
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     return NotificationModel(
-      local_notification: json['notification'] == null
+      localNotification: json['notification'] == null
           ? null
           : LocalNotification.fromJson(json['notification'] as Map<String, dynamic>),
       data: json['data'] == null
@@ -19,7 +20,7 @@ class NotificationModel {
   }
 
   Map<String, dynamic> toJson() => {
-        'notification': local_notification?.toJson(),
+        'notification': localNotification?.toJson(),
         'data': data?.toJson(),
       };
 }

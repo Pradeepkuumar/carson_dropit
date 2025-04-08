@@ -1,16 +1,15 @@
 import 'package:carson_zyppy/local_db/entity/UserData.dart';
 import 'package:carson_zyppy/pages/auth/login_screen.dart';
 import 'package:carson_zyppy/pages/dashboard/view/rider_dashboard.dart';
-import 'package:carson_zyppy/pages/my_orders/orders/view/orders_tab_container.dart';
 import 'package:carson_zyppy/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../app_pages/app_pages.dart';
 import '../global/global.dart';
-import '../pages/auth/auth_controller.dart';
 
 class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
   @override
   _SplashScreesState createState() => _SplashScreesState();
 }
@@ -42,30 +41,32 @@ class _SplashScreesState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     if (showLoadingScreen) {
-      return Container(
-        height: Get.height,
-        decoration: utils.boxDacorationGradient(),
-        child: Center(
-          child: Stack(children: [
-            Image.asset(
-              "assets/images/bg_login.jpg",
-              height: Get.height,
-              width: Get.width,
-              fit: BoxFit.fill,
-            ),
-            Center(
-              child: utils.iosProgressIndicator(AppColors.white),
-            ),
-          ]),
+      return SafeArea(
+        child: Container(
+          height: Get.height,
+          decoration: utils.boxDacorationGradient(),
+          child: Center(
+            child: Stack(children: [
+              Image.asset(
+                "assets/images/bg_splash.png",
+                height: Get.height,
+                width: Get.width,
+                fit: BoxFit.fill,
+              ),
+              Center(
+                child: utils.iosProgressIndicator(AppColors.primaryThemeColor,"Loading data please wait..."),
+              ),
+            ]),
+          ),
         ),
       );
     } else {
       if (user.code == null) {
-        return LoginScreen();
+        return const LoginScreen();
       } else if (user.code != null) {
-        return RiderDashboard();
+        return const RiderDashboard();
       }else{
-        return SplashScreen();
+        return const SplashScreen();
       }
     }
   }

@@ -11,6 +11,8 @@ class PlacedOrdersListView extends GetView<PlacedOrdersController> {
 
   final Utils utils = Utils();
 
+  PlacedOrdersListView({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -29,7 +31,7 @@ class PlacedOrdersListView extends GetView<PlacedOrdersController> {
                       children: [
                         Padding(
                           padding: const EdgeInsets.all(8.0),
-                          child: Container(
+                          child: SizedBox(
                               height: 40,
                               child:  TextField(
                                   onChanged: (value) {
@@ -38,7 +40,7 @@ class PlacedOrdersListView extends GetView<PlacedOrdersController> {
                                   controller: controller.searchEditTextController,
                                   decoration: InputDecoration(
                                     hintText: "search order by number",
-                                    hintStyle: TextStyle(color: Colors.grey),
+                                    hintStyle: const TextStyle(color: Colors.grey),
                                     prefixIcon: const Icon(Icons.search),
                                     prefixIconColor:
                                         AppColors.primaryThemeColor,

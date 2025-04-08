@@ -2,7 +2,6 @@
 import 'package:carson_zyppy/global/consts.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 import '../../../../global/global.dart';
 import '../../../../utils/colors.dart';
 import '../../../../utils/utils.dart';
@@ -28,18 +27,18 @@ placedOrderItem(OrdersData orderData,void Function(OrdersData,String) onClick) {
                 children: [
                   Column(
                     children: [
-                       const Text(
+                        Text(
                         "Order No.",
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: Get.context!.isPhone ? 12 : 15,
                           color: Colors.black,
                         ),
                       ),
                       Container(
                         child: Text(
                           orderData.awbNo.toString(),
-                          style:  const TextStyle(
-                            fontSize: 10,
+                          style:   TextStyle(
+                            fontSize: Get.context!.isPhone ? 12 : 15,
                             color: AppColors.black,
                           ),
                         ),
@@ -49,10 +48,10 @@ placedOrderItem(OrdersData orderData,void Function(OrdersData,String) onClick) {
                    const Spacer(),
                   Column(
                     children: [
-                       const Text(
+                        Text(
                         "Order Status",
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: Get.context!.isPhone ? 12 : 15,
                           color: Colors.black,
                         ),
                       ),
@@ -66,8 +65,8 @@ placedOrderItem(OrdersData orderData,void Function(OrdersData,String) onClick) {
                           padding:  const EdgeInsets.all(4.0),
                           child: Text(
                             orderData.status.toString().toUpperCase(),
-                            style:  const TextStyle(
-                              fontSize: 10,
+                            style:   TextStyle(
+                              fontSize: Get.context!.isPhone ? 12 : 15,
                               color: Colors.white,
                             ),
                           ),
@@ -78,17 +77,17 @@ placedOrderItem(OrdersData orderData,void Function(OrdersData,String) onClick) {
                    const Spacer(),
                   Column(
                     children: [
-                       const Text(
+                        Text(
                         "Payment Type",
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: Get.context!.isPhone ? 12 : 15,
                           color: Colors.black,
                         ),
                       ),
                       Text(
                         orderData.paymentType.toString(),
-                        style:  const TextStyle(
-                          fontSize: 10,
+                        style:   TextStyle(
+                          fontSize: Get.context!.isPhone ? 12 : 15,
                           color: Colors.black,
                         ),
                       ),
@@ -117,17 +116,20 @@ placedOrderItem(OrdersData orderData,void Function(OrdersData,String) onClick) {
                     ),
                     title: Text(
                       "${orderData.merchantName}\n${orderData.itemName}\n${orderData.itemDescription}(${orderData.quantity})",
-                      style:  const TextStyle(
-                        fontSize: 12,
+                      style:   TextStyle(
+                        fontSize: Get.context!.isPhone ? 12 : 15,
                       ),
                     ),
                   ),
                   Column(
                     children: [
                       customRow("Order SLA", "${orderData.sla_in_hours}(Hrs.)" ?? ""),
+                      customRow("Pickup-Delivery Distance",orderData.distance ?? ""),
+                      customRow("Approx. Time",orderData.duration ?? ""),
                       customRow("Order Amount.",orderData.orderAmount ?? ""),
                       customRow("Weight.",  "${orderData.weight}(kg)" ?? ""),
                       customRow("Consignee Name", orderData.consigneeName ?? ""),
+                      customRow("Order Created Date", utils.formatDate(orderData.createdAt.toString(),"dd MMM yyyy hh:mm a")),
                     ],
                   ),
                   Column(
@@ -146,7 +148,7 @@ placedOrderItem(OrdersData orderData,void Function(OrdersData,String) onClick) {
                         // SizedBox (
                         //   height: 300,
                         //   child: MapPage(orderDetails: orderData,mapView: 0)),
-                        SizedBox(height: 10,),
+                        const SizedBox(height: 10,),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           crossAxisAlignment: CrossAxisAlignment.end,

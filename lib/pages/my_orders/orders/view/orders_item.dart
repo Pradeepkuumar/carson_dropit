@@ -1,16 +1,18 @@
 
 import 'package:carson_zyppy/global/consts.dart';
-import 'package:carson_zyppy/pages/map/map_page.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../global/global.dart';
+import '../../../../utils/calculate_sla.dart';
 import '../../../../utils/colors.dart';
 import '../../../../utils/utils.dart';
+import '../../nearby_orders/view/item_nearby_oredrs/neaby_orders_item.dart';
 import '../models/orders_model.dart';
 
 
 orderItem(OrdersData orderData, void Function(OrdersData,int) onClick) {
   Utils utils = Utils();
+
   return Card(
       elevation: 4,
       shadowColor: Colors.black,
@@ -28,20 +30,18 @@ orderItem(OrdersData orderData, void Function(OrdersData,int) onClick) {
                 children: [
                   Column(
                     children: [
-                       const Text(
+                        Text(
                         "Order No.",
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize:  Get.context!.isPhone ? 12 : 15,
                           color: Colors.black,
                         ),
                       ),
-                      Container(
-                        child: Text(
-                          orderData.awbNo.toString(),
-                          style:  const TextStyle(
-                            fontSize: 10,
-                            color: AppColors.black,
-                          ),
+                      Text(
+                        orderData.awbNo.toString(),
+                        style:   TextStyle(
+                          fontSize: Get.context!.isPhone ?10:15,
+                          color: AppColors.black,
                         ),
                       ),
                     ],
@@ -49,10 +49,10 @@ orderItem(OrdersData orderData, void Function(OrdersData,int) onClick) {
                    const Spacer(),
                   Column(
                     children: [
-                       const Text(
+                        Text(
                         "Order Status",
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: Get.context!.isPhone?12:15,
                           color: Colors.black,
                         ),
                       ),
@@ -66,8 +66,8 @@ orderItem(OrdersData orderData, void Function(OrdersData,int) onClick) {
                           padding:  const EdgeInsets.all(4.0),
                           child: Text(
                             orderData.status.toString().toUpperCase(),
-                            style:  const TextStyle(
-                              fontSize: 10,
+                            style:   TextStyle(
+                              fontSize: Get.context!.isPhone ?10 :15,
                               color: Colors.white,
                             ),
                           ),
@@ -78,17 +78,17 @@ orderItem(OrdersData orderData, void Function(OrdersData,int) onClick) {
                    const Spacer(),
                   Column(
                     children: [
-                       const Text(
+                        Text(
                         "Payment Type",
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: Get.context!.isPhone?12:15,
                           color: Colors.black,
                         ),
                       ),
                       Text(
                         orderData.paymentType.toString(),
-                        style:  const TextStyle(
-                          fontSize: 10,
+                        style:   TextStyle(
+                          fontSize: Get.context!.isPhone?12:15,
                           color: Colors.black,
                         ),
                       ),
@@ -110,34 +110,65 @@ orderItem(OrdersData orderData, void Function(OrdersData,int) onClick) {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.max,
                 children: [
-                  ListTile(
-                    leading:  const Icon(
-                      Icons.shopping_cart,
-                      color: AppColors.primaryThemeColor,
-                    ),
-                    title: Text(
-                      "${orderData.merchantName}\n${orderData.itemName}\n${orderData.itemDescription}(${orderData.quantity})",
-                      style:  const TextStyle(
-                        fontSize: 12,
-                      ),
-                    ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Row(
+                        children: [
+                          Expanded(
+                            flex: 1,
+                            child: ListTile(
+                              leading: const Icon(
+                                Icons.shopping_cart,
+                                color: AppColors.primaryThemeColor,
+                              ),
+                              title: Text(
+                                "${orderData.merchantName}\n${orderData.itemName}\n${orderData.itemDescription}(${orderData.quantity})",
+                                style:  TextStyle(
+                                  fontSize: Get.context!.isPhone?12:20,
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          Visibility(
+                            visible:orderData.status == "DELIVERED" || orderData.status == "UNDELIVERED"  ? false : true ,
+                            child: Expanded(
+                                flex: 1,
+                                child: slaTimer(60, 60,orderData.createdAt ?? "", int.tryParse(orderData.sla_in_hours.toString()) ?? 0 ,12),
+
+                            ),
+                          )
+                        ]),
                   ),
+
                   Column(
                     children: [
+                      customRow("Order SLA","${orderData.sla_in_hours!}(Hrs)"),
+                      customRow("Pickup-Delivery Distance",orderData.distance ?? ""),
+                      customRow("Approx. Time",orderData.duration ?? ""),
                       customRow("Order Amount.",orderData.orderAmount ?? ""),
                       customRow("Weight.",  orderData.weight ?? ""),
                       customRow("Consignee Name", orderData.consigneeName ?? ""),
+                      customRow("Created Date", utils.formatDate(orderData.createdAt.toString(),"dd MMM yyyy hh:mm a")),
 
                     ],
                   ),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      customColumn("Pick-Up Location", orderData.pickupAddress ?? ""),
+                      customColumn("Drop-Off Location", orderData.consigneeAddress ?? ""),
+                    ],
+                  ),
+                  // Visibility(
+                  //   visible: orderData.status == "UNDELIVERED",
+                  //     child: Column( children: [
+                  //         customRow("Undelivered Reason", orderData.reason ?? ""),
+                  //         Image.network(orderData.failed_delivery_proof ?? "",height: 350,width: 300,fit: BoxFit.fill,)
+                  //     ])),
                   Visibility(
-                    visible: orderData.status == "UNDELIVERED",
-                      child: Column( children: [
-                          customRow("Undelivered Reason", orderData.reason ?? ""),
-                          Image.network(orderData.failed_delivery_proof ?? "")
-                      ])),
-                  Visibility(
-                    visible: orderData.status == "ASSIGNED" || orderData.status == "RE-ASSIGNED" ? true : false,
+                    visible: orderData.status == "ASSIGNED" || orderData.status == "RE-ASSIGNED" ||orderData.status == "REACHED" ? true : false,
                     child: Column(
                       children: [
                         const SizedBox(height: 10,),
@@ -149,17 +180,17 @@ orderItem(OrdersData orderData, void Function(OrdersData,int) onClick) {
                                 utils.openDialPad(
                                     orderData.pickupPhoneNo.toString());
                               }),
-                             SizedBox(width:5,),
+                             const SizedBox(width:5,),
                             utils.clickableImageVertical("Pickup", AppColors.black, AppColors.green, icWhatsApp,30, 30, (){
                               utils.openWhtsApp(
                                   orderData.pickupPhoneNo.toString());
                               }),
-                            SizedBox(width:5,),
+                            const SizedBox(width:5,),
                             utils.clickableImageVertical("Call Consignee", AppColors.black, AppColors.blue, icTelephone, 30, 30, (){
                               utils.openDialPad(
                                   orderData.consigneeMobileNo.toString());
                               }),
-                            SizedBox(width:5,),
+                            const SizedBox(width:5,),
                             utils.clickableImageVertical("Consignee", AppColors.black, AppColors.green, icWhatsApp,30, 30, (){
                               utils.openWhtsApp(
                                   orderData.pickupPhoneNo.toString());
@@ -204,8 +235,7 @@ Widget customRow(String name, String data) {
     child: Visibility(
       visible: data.isNotEmpty,
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Expanded(
             flex: 4,
@@ -215,7 +245,7 @@ Widget customRow(String name, String data) {
             flex: 2,
             child: utils.tvRegular(":", AppColors.black),
           ),
-          Expanded(flex: 4, child: utils.tvCustom(data, AppColors.black, 12)),
+          Expanded(flex: 4, child: utils.tvCustom(data, AppColors.black, 10)),
         ],
       ),
     ),

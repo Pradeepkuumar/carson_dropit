@@ -1,6 +1,7 @@
 import 'package:carson_zyppy/global/global.dart';
 import 'package:carson_zyppy/utils/colors.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:get/get.dart';
 import '../models/driver_data.dart';
 
 class AttendanceProgressBar extends StatelessWidget {
@@ -13,17 +14,17 @@ class AttendanceProgressBar extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Container(
-        width: 30,
-        height: 50,
+        width: context.isPhone?30:60,
+        height: context.isPhone?50:60,
         decoration: BoxDecoration(
-          color: AppColors.headerColor,
+          color: AppColors.white,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Stack(
           alignment: Alignment.bottomCenter,
           children: [
             FractionallySizedBox(
-              heightFactor: double.parse(attendance?.workingHours.toString() ?? "0.0").clamp(0.0, 8.0) / 8.0,
+              heightFactor: double.parse(attendance?.workingHours.toString() ?? "0.0").clamp(0.0, 12.0) / 12.0,
               child: Container(
                 decoration: BoxDecoration(
                   color:
