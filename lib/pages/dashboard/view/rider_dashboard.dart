@@ -125,7 +125,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                       ),
                                       InkWell(
                                         onTap: () {
-                                          Get.toNamed(Routes.ordersScreen);
+                                          // Get.toNamed(Routes.ordersScreen);
                                         },
                                         child: Container(
                                           margin: const EdgeInsets.symmetric(
