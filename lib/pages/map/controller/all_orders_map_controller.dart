@@ -74,6 +74,7 @@ class AllOrdersMapController extends GetxController  {
   RxDouble remainingDistance = 0.0.obs;
   StreamSubscription? locationSubscription;
   StreamSubscription? remainingTimeOrDistanceChangedSubscription;
+  StreamSubscription? onArrivalSubscription;
   var isUpdateCardVisibleForUpdate = false.obs;
 
 
@@ -221,6 +222,11 @@ class AllOrdersMapController extends GetxController  {
      }
   }
 
+  void onArrivalEvent(OnArrivalEvent onArrive){
+    NavigationWaypoint arrivedWaypoint = onArrive.waypoint;
+    filterCurrentLocationOrders(100);
+  }
+
 
   void checkForLocationUpdate() async {
     if (currentLocation?.longitude != null) {
@@ -229,6 +235,8 @@ class AllOrdersMapController extends GetxController  {
             _onRemainingTimeOrDistanceChangedEvent,
             remainingDistanceThresholdMeters: 100,
           );
+
+      googleMapsNavigator.setOnArrivalListener(onArrivalEvent);
     }
   }
 
@@ -299,12 +307,12 @@ class AllOrdersMapController extends GetxController  {
       await navigationViewController?.followMyLocation(
           CameraPerspective.tilted);
       isNavigationRunning.value = true;
+      //await navigationViewController?.showRouteOverview();
     }
 
   }
   Future<void> stopGuidedNavigation() async {
     googleMapsNavigator.stopGuidance();
-    await navigationViewController?.followMyLocation(CameraPerspective.tilted);
     isNavigationRunning.value = false;
 
   }
@@ -390,6 +398,17 @@ class AllOrdersMapController extends GetxController  {
         await Future.forEach(result.data, (json) async {
           ordersList.add(OrdersData.fromJson(json as Map<String, dynamic>));
         });
+
+                    ordersList.sort((a, b) {
+          
+              double extractDistance(String distance) {
+                final match = RegExp(r'\d+(\.\d+)?').firstMatch(distance);
+                return match != null ? double.parse(match.group(0)!) : double.infinity;
+              }
+
+              return extractDistance(a.distance!).compareTo(extractDistance(b.distance!));
+            });
+
         // if(ordersList.isNotEmpty) {
         //   await sortOrdersByDistanceAndRemainingTime(
         //       currentLocation!, ordersList);
@@ -495,9 +514,12 @@ class AllOrdersMapController extends GetxController  {
         isUpdateCardVisibleForUpdate.value =  false;
 
         await getFeAllOrders(["ASSIGNED","RE-ASSIGNED","REACHED","PICKED","OFD"]);
-        // if(status == "DELIVERED"){
-        //   await getFeAllOrders(["ASSIGNED", "RE-ASSIGNED","PICKED","OFD"]);
-        // }
+        if(status == "DELIVERED"||status == "UNDELIVERED" ){
+          deliveredImage = null;
+          deliveryProof = null;
+          signatureFile = null;
+        }
+        
 
         utils.closeLoadingDialog();
         update();
@@ -969,7 +991,7 @@ class AllOrdersMapController extends GetxController  {
   //     return distanceA.compareTo(distanceB);
   //   });
   //
-  //   // Step 5: Update the orders with the calculated remaining time
+  //   // Step 5: Update the orders with the caslculated remaining time
   //   sortedOrders.value = ordersWithRemainingTime.map((entry) {
   //     final order = entry['order'] as OrdersData;
   //     order.distanceInKms = (entry['distance'] as double) < 1000
