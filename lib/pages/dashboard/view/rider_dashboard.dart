@@ -19,7 +19,7 @@ class RiderDashboard extends StatefulWidget {
 
 class _RiderDashboardState extends State<RiderDashboard> {
   final RiderDashboardController controller =
-      Get.put(RiderDashboardController());
+  Get.put(RiderDashboardController());
 
   var showMenu = false.obs;
 
@@ -34,15 +34,23 @@ class _RiderDashboardState extends State<RiderDashboard> {
     return Scaffold(
       body: SafeArea(
         child: Stack(children: [
-          Container(
-            height: Get.height,
-            width: Get.width,
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                  image: AssetImage("assets/images/bg_splash.png"),
-                  fit: BoxFit.fill),
-            ),
-          ),
+          Obx(() {
+            return Visibility(
+              visible: !controller.isAttendanceMarked.value,
+              child: Container(
+                height: Get.height,
+                width: Get.width,
+                color: AppColors.white,
+                child: Center(
+                    child: SizedBox(
+                      height: 200,
+                      width: Get.width - 50,
+                      child: Image.asset(appLogo),
+                    )
+                ),
+              ),
+            );
+          }),
           Obx(() {
             return Visibility(
               visible: controller.isAttendanceMarked.value,
@@ -55,7 +63,8 @@ class _RiderDashboardState extends State<RiderDashboard> {
                         height: utils.isMobileScreen(context) ? 620 : 920,
                         width: Get.width - 20,
                         decoration: BoxDecoration(
-                          border: Border.all(color: AppColors.primaryThemeColor),
+                          border: Border.all(
+                              color: AppColors.primaryThemeColor),
                           borderRadius: BorderRadius.circular(10),
                           color: AppColors.primaryThemeColor.withOpacity(0.1),
                         ),
@@ -79,45 +88,49 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                               AppColors.primaryThemeColor, 10),
                                           child: Padding(
                                               padding:
-                                                  const EdgeInsets.all(15.0),
+                                              const EdgeInsets.all(15.0),
                                               child: controller
-                                                      .attendancesList.isEmpty
+                                                  .attendancesList.isEmpty
                                                   ? utils.iosProgressIndicator(
-                                                      AppColors.primaryThemeColor,"Fetching...")
+                                                  AppColors.primaryThemeColor,
+                                                  "Fetching...")
                                                   : Column(
-                                                      children: [
-                                                        utils.tvCustom(
-                                                            "Working Hours/Day",
-                                                            AppColors.primaryThemeColor,
-                                                            10),
-                                                        SizedBox(
-                                                          height:
-                                                              context.isPhone
-                                                                  ? 100
-                                                                  : 160,
-                                                          child:
-                                                              ListView.builder(
-                                                                  scrollDirection:
-                                                                      Axis
-                                                                          .horizontal,
-                                                                  itemCount:
-                                                                      controller
-                                                                          .attendancesList
-                                                                          .length,
-                                                                  itemBuilder:
-                                                                      (context,
-                                                                          position) {
-                                                                    return AttendanceProgressBar(
-                                                                        attendance:
-                                                                            controller.attendancesList[position]);
-                                                                  }),
-                                                        ),
-                                                        utils.tvCustom(
-                                                            "Work Days",
-                                                            AppColors.primaryThemeColor,
-                                                            10),
-                                                      ],
-                                                    )),
+                                                children: [
+                                                  utils.tvCustom(
+                                                      "Working Hours/Day",
+                                                      AppColors
+                                                          .primaryThemeColor,
+                                                      10),
+                                                  SizedBox(
+                                                    height:
+                                                    context.isPhone
+                                                        ? 100
+                                                        : 160,
+                                                    child:
+                                                    ListView.builder(
+                                                        scrollDirection:
+                                                        Axis
+                                                            .horizontal,
+                                                        itemCount:
+                                                        controller
+                                                            .attendancesList
+                                                            .length,
+                                                        itemBuilder:
+                                                            (context,
+                                                            position) {
+                                                          return AttendanceProgressBar(
+                                                              attendance:
+                                                              controller
+                                                                  .attendancesList[position]);
+                                                        }),
+                                                  ),
+                                                  utils.tvCustom(
+                                                      "Work Days",
+                                                      AppColors
+                                                          .primaryThemeColor,
+                                                      10),
+                                                ],
+                                              )),
                                         );
                                       }),
                                       const SizedBox(
@@ -131,7 +144,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                           margin: const EdgeInsets.symmetric(
                                               horizontal: 15),
                                           decoration:
-                                              utils.boxDecorationWhite(),
+                                          utils.boxDecorationWhite(),
                                           child: Padding(
                                             padding: EdgeInsets.all(
                                                 utils.isMobileScreen(context)
@@ -139,21 +152,21 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                     : 20),
                                             child: Column(
                                               mainAxisAlignment:
-                                                  MainAxisAlignment.spaceEvenly,
+                                              MainAxisAlignment.spaceEvenly,
                                               children: [
                                                 Padding(
                                                   padding:
-                                                      const EdgeInsets.all(8.0),
+                                                  const EdgeInsets.all(8.0),
                                                   child: Row(
                                                     children: [
                                                       utils.imageView(
                                                           myOrdersImage,
                                                           utils.isMobileScreen(
-                                                                  context)
+                                                              context)
                                                               ? 35
                                                               : 60,
                                                           utils.isMobileScreen(
-                                                                  context)
+                                                              context)
                                                               ? 35
                                                               : 50),
                                                       const SizedBox(width: 10),
@@ -167,9 +180,9 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                 ),
                                                 Column(
                                                   mainAxisAlignment:
-                                                      MainAxisAlignment.start,
+                                                  MainAxisAlignment.start,
                                                   crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
+                                                  CrossAxisAlignment.start,
                                                   children: [
                                                     utils.tvCustom(
                                                         "Today's Orders",
@@ -178,30 +191,46 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                         14),
                                                     Row(
                                                       mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .spaceBetween,
+                                                      MainAxisAlignment
+                                                          .spaceBetween,
                                                       children: [
                                                         utils.tvCustom(
-                                                            "Assigned : ${controller.dashBoardData.value.todayOrdersCount?.aSSIGNED}",
+                                                            "Assigned : ${controller
+                                                                .dashBoardData
+                                                                .value
+                                                                .todayOrdersCount
+                                                                ?.aSSIGNED}",
                                                             AppColors.black,
                                                             12),
                                                         utils.tvCustom(
-                                                            "Picked : ${controller.dashBoardData.value.todayOrdersCount?.pICKED}",
+                                                            "Picked : ${controller
+                                                                .dashBoardData
+                                                                .value
+                                                                .todayOrdersCount
+                                                                ?.pICKED}",
                                                             AppColors.black,
                                                             12)
                                                       ],
                                                     ),
                                                     Row(
                                                       mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .spaceBetween,
+                                                      MainAxisAlignment
+                                                          .spaceBetween,
                                                       children: [
                                                         utils.tvCustom(
-                                                            "OFD : ${controller.dashBoardData.value.todayOrdersCount?.oFD}",
+                                                            "OFD : ${controller
+                                                                .dashBoardData
+                                                                .value
+                                                                .todayOrdersCount
+                                                                ?.oFD}",
                                                             AppColors.black,
                                                             12),
                                                         utils.tvCustom(
-                                                            "Delivered : ${controller.dashBoardData.value.todayOrdersCount?.dELIVERED}",
+                                                            "Delivered : ${controller
+                                                                .dashBoardData
+                                                                .value
+                                                                .todayOrdersCount
+                                                                ?.dELIVERED}",
                                                             AppColors.black,
                                                             12)
                                                       ],
@@ -210,9 +239,9 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                 ),
                                                 Column(
                                                   mainAxisAlignment:
-                                                      MainAxisAlignment.start,
+                                                  MainAxisAlignment.start,
                                                   crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
+                                                  CrossAxisAlignment.start,
                                                   children: [
                                                     utils.tvCustom(
                                                         "All Orders",
@@ -221,30 +250,46 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                         14),
                                                     Row(
                                                       mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .spaceBetween,
+                                                      MainAxisAlignment
+                                                          .spaceBetween,
                                                       children: [
                                                         utils.tvCustom(
-                                                            "Assigned : ${controller.dashBoardData.value.allOrdersCount?.aSSIGNED}",
+                                                            "Assigned : ${controller
+                                                                .dashBoardData
+                                                                .value
+                                                                .allOrdersCount
+                                                                ?.aSSIGNED}",
                                                             AppColors.black,
                                                             12),
                                                         utils.tvCustom(
-                                                            "Picked : ${controller.dashBoardData.value.allOrdersCount?.pICKED}",
+                                                            "Picked : ${controller
+                                                                .dashBoardData
+                                                                .value
+                                                                .allOrdersCount
+                                                                ?.pICKED}",
                                                             AppColors.black,
                                                             12)
                                                       ],
                                                     ),
                                                     Row(
                                                       mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .spaceBetween,
+                                                      MainAxisAlignment
+                                                          .spaceBetween,
                                                       children: [
                                                         utils.tvCustom(
-                                                            "OFD : ${controller.dashBoardData.value.allOrdersCount?.oFD}",
+                                                            "OFD : ${controller
+                                                                .dashBoardData
+                                                                .value
+                                                                .allOrdersCount
+                                                                ?.oFD}",
                                                             AppColors.black,
                                                             12),
                                                         utils.tvCustom(
-                                                            "Delivered : ${controller.dashBoardData.value.allOrdersCount?.dELIVERED}",
+                                                            "Delivered : ${controller
+                                                                .dashBoardData
+                                                                .value
+                                                                .allOrdersCount
+                                                                ?.dELIVERED}",
                                                             AppColors.black,
                                                             12)
                                                       ],
@@ -306,71 +351,64 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                       const SizedBox(
                                         height: 5,
                                       ),
-                                      Container(
-                                        margin: const EdgeInsets.symmetric(
-                                            horizontal: 15),
-                                        decoration:
-                                        utils.boxDecorationWhite(),
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(8.0),
-                                          child: Column(
-                                            mainAxisAlignment:
-                                            MainAxisAlignment.spaceEvenly,
-                                            children: [
-                                              Padding(
-                                                padding:
-                                                const EdgeInsets.all(8.0),
-                                                child: Row(
-                                                  mainAxisAlignment:
-                                                  MainAxisAlignment
-                                                      .spaceEvenly,
-                                                  children: [
-                                                    // InkWell(
-                                                    //   onTap: () {
-                                                    //     Get.to(AllOrdersMapPage(["ASSIGNED","RE-ASSIGNED"]));
-                                                    //   },
-                                                    //   child: Column(
-                                                    //     children: [
-                                                    //       utils.imageView(
-                                                    //           icPickUpOrders,
-                                                    //           context.isPhone
-                                                    //               ? 50
-                                                    //               : 60,
-                                                    //           context.isPhone
-                                                    //               ? 50
-                                                    //               : 50),
-                                                    //       utils.tvCustom(
-                                                    //           "Start",
-                                                    //           AppColors
-                                                    //               .primaryThemeColor,
-                                                    //           15),
-                                                    //     ],
-                                                    //   ),
-                                                    // ),
-                                                    InkWell(
-                                                        onTap: () {
-                                                          Get.toNamed(Routes.allOrdersMapScreen);
-                                                        },
-                                                        child: Column(
-                                                          children: [
-                                                            utils.imageView(
-                                                                icDropOrders,
-                                                                context.isPhone ? 50 : 60,
-                                                                context.isPhone ? 50 : 50),
-                                                            utils.tvCustom(
-                                                                "Go For Pickup/Delivery",
-                                                                AppColors
-                                                                    .primaryThemeColor,
-                                                                15),
-                                                          ],
-                                                        ))
-                                                  ],
-                                                ),
+                                      Obx(() {
+                                        return Visibility(
+                                          visible: controller.isAnyActiveOrder.value,
+                                          child: Container(
+                                            margin: const EdgeInsets.symmetric(
+                                                horizontal: 15),
+                                            decoration:
+                                            utils.boxDecorationWhite(),
+                                            child: Padding(
+                                              padding: const EdgeInsets.all(
+                                                  8.0),
+                                              child: Column(
+                                                mainAxisAlignment:
+                                                MainAxisAlignment.spaceEvenly,
+                                                children: [
+                                                  Padding(
+                                                    padding:
+                                                    const EdgeInsets.all(8.0),
+                                                    child: InkWell(
+                                                      onTap: () {
+                                                        Get.toNamed(Routes
+                                                            .allOrdersMapScreen);
+                                                      },
+                                                      child: Row(
+                                                        mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .spaceEvenly,
+                                                        children: [
+                                                          Column(
+                                                            children: [
+                                                              utils.imageView(
+                                                                  icDropOrders,
+                                                                  context
+                                                                      .isPhone
+                                                                      ? 50
+                                                                      : 60,
+                                                                  context
+                                                                      .isPhone
+                                                                      ? 50
+                                                                      : 50),
+                                                              utils.tvCustom(
+                                                                  "Go For Pickup/Delivery",
+                                                                  AppColors
+                                                                      .primaryThemeColor,
+                                                                  15),
+                                                            ],
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
-                                            ],
+                                            ),
+
                                           ),
-                                        ),
-                                      ),
+                                        );
+                                      })
                                     ],
                                   ))),
                         ),
@@ -388,13 +426,13 @@ class _RiderDashboardState extends State<RiderDashboard> {
                         child: AnimatedContainer(
                           width: showMenu.value
                               ? context.isPhone
-                                  ? 250
-                                  : 350.0
+                              ? 250
+                              : 350.0
                               : 45.0,
                           height: showMenu.value
                               ? context.isPhone
-                                  ? 450
-                                  : 600
+                              ? 450
+                              : 600
                               : 45.0,
                           decoration: showMenu.value
                               ? utils.boxDecorationWhite()
@@ -418,7 +456,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                       children: [
                                         Row(
                                           mainAxisAlignment:
-                                              MainAxisAlignment.end,
+                                          MainAxisAlignment.end,
                                           children: [
                                             InkWell(
                                                 onTap: () {
@@ -435,7 +473,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                             CircleAvatar(
                                               radius: 25,
                                               backgroundColor:
-                                                  AppColors.primaryThemeColor,
+                                              AppColors.primaryThemeColor,
                                               child: Image.asset(
                                                 "assets/icons/ic_rider.png",
                                                 fit: BoxFit.cover,
@@ -448,9 +486,9 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                             ),
                                             Column(
                                               mainAxisAlignment:
-                                                  MainAxisAlignment.start,
+                                              MainAxisAlignment.start,
                                               crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
+                                              CrossAxisAlignment.start,
                                               children: [
                                                 utils.tvCustom(
                                                     controller.userData.name,
@@ -469,14 +507,14 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                         ),
                                         Row(
                                           mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
+                                          MainAxisAlignment.spaceBetween,
                                           children: [
                                             Obx(() {
                                               return Column(
                                                 mainAxisAlignment:
-                                                    MainAxisAlignment.start,
+                                                MainAxisAlignment.start,
                                                 crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
+                                                CrossAxisAlignment.start,
                                                 children: [
                                                   Row(
                                                     children: [
@@ -489,8 +527,12 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                         width: 5,
                                                       ),
                                                       utils.tvCustom(
-                                                          controller.walletAmount.value.toString(),
-                                                          AppColors.primaryThemeColor, 16)
+                                                          controller
+                                                              .walletAmount
+                                                              .value.toString(),
+                                                          AppColors
+                                                              .primaryThemeColor,
+                                                          16)
                                                     ],
                                                   ),
                                                   const SizedBox(
@@ -506,14 +548,14 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                     child: Switch(
                                                         value: true,
                                                         activeTrackColor:
-                                                            AppColors
-                                                                .greenLight,
+                                                        AppColors
+                                                            .greenLight,
                                                         onChanged:
                                                             (value) async {
                                                           bool isSignIn =
-                                                              await controller
-                                                                  .markAttendance(
-                                                                      false);
+                                                          await controller
+                                                              .markAttendance(
+                                                              false);
                                                           if (isSignIn) {
                                                             controller
                                                                 .isAttendanceMarked
@@ -551,7 +593,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                         ),
                                         utils.iconButton(
                                             "SUPPORT",
-                                            () {},
+                                                () {},
                                             Icons.support_agent_rounded,
                                             AppColors.primaryThemeColor,
                                             AppColors.white),
@@ -560,13 +602,13 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                         ),
                                         utils.iconButton("LOGOUT", () async {
                                           bool isLoggedOut =
-                                              await controller.logout();
+                                          await controller.logout();
                                           if (isLoggedOut) {
                                             utils.simpleDialog(
                                                 "Do you want to Logout from app?",
                                                 "", () async {
                                               var isLoggedOut =
-                                                  await controller.logout();
+                                              await controller.logout();
                                               if (isLoggedOut) {
                                                 userRepository.deleteUser();
                                                 Get.offAllNamed(Routes.auth);
@@ -592,77 +634,81 @@ class _RiderDashboardState extends State<RiderDashboard> {
           }),
           Obx(() {
             return !controller.isAttendanceLoaded.value
-                ? Center(child: utils.iosProgressIndicator(AppColors.white,"Fetching Data..."))
+                ? Center(child: utils.iosProgressIndicator(
+                AppColors.white, "Fetching Data..."))
                 : Visibility(
-                    visible: !controller.isAttendanceMarked.value,
-                    child: Container(
-                      height: Get.height,
-                      width: Get.width,
-                      decoration: utils.boxDacorationVerticalGradient(),
-                      child: Stack(
+              visible: !controller.isAttendanceMarked.value,
+              child: Container(
+                height: Get.height,
+                width: Get.width,
+                decoration: utils.boxDecorationWhite(),
+                child: Stack(
+                  children: [
+                    Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
                               children: [
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      utils.iconButtonWithoutBorderVertical(
-                                          "Logout", () {
-                                        utils.simpleDialog(
-                                            "Do you want to Logout from app?",
-                                            "", () async {
-                                          var isLoggedOut =
-                                              await controller.logout();
-                                          if (isLoggedOut) {
-                                            userRepository.deleteUser();
-                                            Get.offAllNamed(Routes.auth);
-                                          }
-                                        }, () {
-                                          Get.back();
-                                        });
-                                      }, Icons.logout, AppColors.white),
-                                    ],
-                                  ),
-                                ),
-                                const Spacer(),
-                                Obx(
-                                  () => utils.tvCustom(
-                                      "Welcome ${controller.riderName.toString().toUpperCase()} mark your attendance to start working",
-                                      AppColors.white,
-                                      20),
-                                ),
-                                Lottie.asset(ANIM_RIDER),
-                                const SizedBox(
-                                  height: 20,
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 50,
-                                  ),
-                                  child: utils.iconButtonWithRoundedBorder(
-                                      "Sign-In", 45, () async {
-                                    bool isSignIn =
-                                        await controller.markAttendance(true);
-                                    if (isSignIn) {
-                                      controller.isAttendanceMarked.value =
-                                          true;
+                                utils.iconButtonWithoutBorderVertical(
+                                    "Logout", () {
+                                  utils.simpleDialog(
+                                      "Do you want to Logout from app?",
+                                      "", () async {
+                                    var isLoggedOut =
+                                    await controller.logout();
+                                    if (isLoggedOut) {
+                                      userRepository.deleteUser();
+                                      Get.offAllNamed(Routes.auth);
                                     }
-                                  },
-                                      Icons.start,
-                                      AppColors.white,
-                                      Icons.electric_bike,
-                                      2.0,
-                                      AppColors.white),
-                                ),
-                                const Spacer(),
-                              ]),
-                        ],
-                      ),
-                    ),
-                  );
+                                  }, () {
+                                    Get.back();
+                                  });
+                                }, Icons.logout, AppColors.red),
+                              ],
+                            ),
+                          ),
+                          const Spacer(),
+                          Obx(
+                                () =>
+                                utils.tvCustom(
+                                    "Welcome ${controller.riderName.toString()
+                                        .toUpperCase()} mark your attendance to start working",
+                                    AppColors.primaryThemeColor,
+                                    20),
+                          ),
+                          Lottie.asset(ANIM_RIDER),
+                          const SizedBox(
+                            height: 20,
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 50,
+                            ),
+                            child: utils.iconButtonWithRoundedBorder(
+                                "Sign-In",
+                                45, () async {
+                              bool isSignIn =
+                              await controller.markAttendance(true);
+                              if (isSignIn) {
+                                controller.isAttendanceMarked.value =
+                                true;
+                              }
+                            },
+                                Icons.start,
+                                AppColors.primaryThemeColor,
+                                Icons.electric_bike,
+                                2.0,
+                                AppColors.primaryThemeColor),
+                          ),
+                          const Spacer(),
+                        ]),
+                  ],
+                ),
+              ),
+            );
           })
         ]),
       ),

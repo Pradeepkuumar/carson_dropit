@@ -29,7 +29,7 @@ class OrdersListViewState extends State<OrdersListView> {
     controller.getUser();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if(controller.tabController.index == 0) {
-        controller.getFeOrders(["ASSIGNED","RE-ASSIGNED","REACHED"]);
+        controller.getFeOrders(["DELIVERED"]);
       }
     });
     super.initState();
@@ -106,7 +106,7 @@ class OrdersListViewState extends State<OrdersListView> {
                           child: Obx(() => controller.isLoading.value ?
                               Center(child: utils.iosProgressIndicator(AppColors.white,"Loading...")):
                                controller.sortedOrders.isEmpty ?
-                               Center(child: utils.tvRegular("No Data Found !", AppColors.white))
+                               Center(child: utils.tvRegular("No Order Found !", AppColors.white))
                                   : ListView.builder(
                                 itemCount: controller.sortedOrders.length,
                                 itemBuilder: (context, position) {

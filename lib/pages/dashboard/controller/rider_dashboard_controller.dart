@@ -28,6 +28,7 @@ class RiderDashboardController extends GetxController {
   var dashBoardData = DashBoardData().obs;
   var isAttendanceLoaded = false.obs;
   var attendancesList = [].obs;
+  var isAnyActiveOrder = false.obs;
 
 
   @override
@@ -130,6 +131,10 @@ class RiderDashboardController extends GetxController {
       var result = BaseApiResponse.fromJson(response);
       if (result.status_code == 200) {
         dashBoardData.value = DashBoardData.fromJson(result.data);
+        if(dashBoardData.value.allOrdersCount?.aSSIGNED != 0 || dashBoardData.value.allOrdersCount?.pICKED != 0 ||
+        dashBoardData.value.allOrdersCount?.oFD != 0) {
+          isAnyActiveOrder.value = true;
+        }
         utils.closeLoadingDialog();
         update();
         return true;
@@ -145,6 +150,8 @@ class RiderDashboardController extends GetxController {
     }
   }
 
+
+
   Future<bool> fetchWalletAmount() async {
     try {
       Map<String, dynamic> model = {
@@ -154,7 +161,7 @@ class RiderDashboardController extends GetxController {
           apiEndPoints.fetchWalletAmount, model);
       var result = BaseApiResponse.fromJson(response);
       if (result.status_code == 200) {
-        walletAmount.value = result.data.toString();
+        walletAmount.value = result.data;
         utils.closeLoadingDialog();
         update();
         return true;

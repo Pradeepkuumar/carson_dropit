@@ -76,21 +76,22 @@ class OrdersController extends GetxController with GetTickerProviderStateMixin {
     super.onInit();
     getLocationUpdates();
     getOrCreateCustomImageFromAsset();
-    tabController = TabController(initialIndex: 0, length: 5, vsync: this);
+    tabController = TabController(initialIndex: 0, length: 2, vsync: this);
     getUser();
     tabController.addListener(() {
       viewFullMap.value = false;
       if (tabController.index == 0) {
-        getFeOrders(["ASSIGNED", "RE-ASSIGNED"]);
-      } else if (tabController.index == 1) {
-        getFeOrders(["PICKED"]);
-      } else if (tabController.index == 2) {
-        getFeOrders(["OFD"]);
-      } else if (tabController.index == 3) {
         getFeOrders(["DELIVERED"]);
-      } else if (tabController.index == 4) {
+      } else if (tabController.index == 1) {
         getFeOrders(["UNDELIVERED"]);
       }
+      // else if (tabController.index == 2) {
+      //   getFeOrders(["OFD"]);
+      // } else if (tabController.index == 3) {
+      //   getFeOrders(["DELIVERED"]);
+      // } else if (tabController.index == 4) {
+      //   getFeOrders(["UNDELIVERED"]);
+      // }
       signatureController.addListener(signatureListner);
     });
     startHintTextTimer();

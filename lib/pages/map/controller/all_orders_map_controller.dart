@@ -17,6 +17,7 @@ import '../../../../global/consts.dart';
 import '../../../../global/global.dart';
 import 'package:signature/signature.dart';
 import '../../my_orders/orders/models/orders_model.dart';
+import '../marker_generator/dynamic_marker_generator.dart';
 import '../reasonsItem.dart';
 
 
@@ -124,7 +125,7 @@ class AllOrdersMapController extends GetxController  {
   @override
   void onInit() async {
     googleMapsNavigator  = GoogleMapsNavigator() ;
-    loadIcons();
+   // loadIcons();
     await getLocationUpdates();
     getUser();
     initializeNavigationSession();
@@ -187,6 +188,7 @@ class AllOrdersMapController extends GetxController  {
         setMarkers();
       }
     });
+
     super.onReady();
   }
 
@@ -217,6 +219,7 @@ class AllOrdersMapController extends GetxController  {
       if (_lastApiCallTime == null || now.difference(_lastApiCallTime!).inMinutes >= 1) {
         _lastApiCallTime = now;
         if (remainingDistance.value <= 100) {
+
         filterCurrentLocationOrders(100);
        }
      }
@@ -235,7 +238,6 @@ class AllOrdersMapController extends GetxController  {
             _onRemainingTimeOrDistanceChangedEvent,
             remainingDistanceThresholdMeters: 100,
           );
-
       googleMapsNavigator.setOnArrivalListener(onArrivalEvent);
     }
   }
@@ -266,23 +268,24 @@ class AllOrdersMapController extends GetxController  {
       viewAcceptView.value = true;
     }else{
       viewAcceptView.value = false;
+      bottomBarListType.value = 0;
     }
     update();
   }
 
 
-  Future<void> loadIcons() async {
-
-    pickIcon = await getOrCreateCustomImageFromAsset(
-        'assets/icons/ic_scooter.png', 48, 48);
-    dropIcon = await getOrCreateCustomImageFromAsset(
-        'assets/icons/ic_box.png', 48, 48);
-
-    selectedPickIcon = await getOrCreateCustomImageFromAsset(
-        'assets/icons/ic_scooter.png', 80, 80);
-    selectedDropIcon = await getOrCreateCustomImageFromAsset(
-        'assets/icons/ic_box.png', 80, 80);
-  }
+  // Future<void> loadIcons() async {
+  //
+  //   pickIcon = await getOrCreateCustomImageFromAsset(
+  //       'assets/icons/ic_location.png', 48, 48);
+  //   dropIcon = await getOrCreateCustomImageFromAsset(
+  //       'assets/icons/ic_box.png', 48, 48);
+  //
+  //   selectedPickIcon = await getOrCreateCustomImageFromAsset(
+  //       'assets/icons/ic_location.png', 80, 80);
+  //   selectedDropIcon = await getOrCreateCustomImageFromAsset(
+  //       'assets/icons/ic_box.png', 80, 80);
+  // }
 
 
   initializeNavigationSession() async {
@@ -336,14 +339,14 @@ class AllOrdersMapController extends GetxController  {
       if (ordersList[i].awbNo.toString() == selectedOrderAwbId.value) {
         selectedOrder.value = ordersList[i];
         selectedOrderIndex.value = i;
-        updateSelectedMarker(  LatLng(
-          latitude: selectedOrder.value.status == "PICKED" || selectedOrder.value.status == "OFD"
-              ? double.parse(selectedOrder.value.dropoffLatitude ?? "0.0")
-              : double.parse(selectedOrder.value.pickupLatitude ?? "0.0"),
-          longitude: selectedOrder.value.status == "PICKED" || selectedOrder.value.status == "OFD"
-              ? double.parse(selectedOrder.value.dropoffLongitude ?? "0.0")
-              : double.parse(selectedOrder.value.pickupLongitude ?? "0.0"),
-        ));
+        // updateSelectedMarker(  LatLng(
+        //   latitude: selectedOrder.value.status == "PICKED" || selectedOrder.value.status == "OFD"
+        //       ? double.parse(selectedOrder.value.dropoffLatitude ?? "0.0")
+        //       : double.parse(selectedOrder.value.pickupLatitude ?? "0.0"),
+        //   longitude: selectedOrder.value.status == "PICKED" || selectedOrder.value.status == "OFD"
+        //       ? double.parse(selectedOrder.value.dropoffLongitude ?? "0.0")
+        //       : double.parse(selectedOrder.value.pickupLongitude ?? "0.0"),
+        // ));
         break;
       }
     }
@@ -372,7 +375,7 @@ class AllOrdersMapController extends GetxController  {
     googleMapsNavigator.setDestinations(Destinations(
       waypoints: waypoints,
       displayOptions: NavigationDisplayOptions(
-        showDestinationMarkers: true,
+        showDestinationMarkers: false,
         showStopSigns: true,
         showTrafficLights: true,
       ),
@@ -398,21 +401,17 @@ class AllOrdersMapController extends GetxController  {
         await Future.forEach(result.data, (json) async {
           ordersList.add(OrdersData.fromJson(json as Map<String, dynamic>));
         });
+        // ordersList.sort((a, b) {
+        //   double extractDistance(String distance) {
+        //         final match = RegExp(r'\d+(\.\d+)?').firstMatch(distance);
+        //         return match != null ? double.parse(match.group(0)!) : double.infinity;
+        //       }
+        //       return extractDistance(a.distance!).compareTo(extractDistance(b.distance!));
+        // });
 
-                    ordersList.sort((a, b) {
-          
-              double extractDistance(String distance) {
-                final match = RegExp(r'\d+(\.\d+)?').firstMatch(distance);
-                return match != null ? double.parse(match.group(0)!) : double.infinity;
-              }
-
-              return extractDistance(a.distance!).compareTo(extractDistance(b.distance!));
-            });
-
-        // if(ordersList.isNotEmpty) {
-        //   await sortOrdersByDistanceAndRemainingTime(
-        //       currentLocation!, ordersList);
-        // }
+        if(ordersList.isEmpty) {
+         Get.back();
+        }
         await filterCurrentLocationOrders(100);
         await setMarkers();
         isLoading.value = false;
@@ -427,6 +426,10 @@ class AllOrdersMapController extends GetxController  {
     }
     return null;
   }
+
+
+
+
 
 
 
@@ -513,14 +516,14 @@ class AllOrdersMapController extends GetxController  {
         // updateExistingOrder(order);
         isUpdateCardVisibleForUpdate.value =  false;
 
-        await getFeAllOrders(["ASSIGNED","RE-ASSIGNED","REACHED","PICKED","OFD"]);
-        if(status == "DELIVERED"||status == "UNDELIVERED" ){
+        getFeAllOrders(["ASSIGNED","RE-ASSIGNED","REACHED","PICKED","OFD"]);
+        if(status == "DELIVERED" || status == "UNDELIVERED" ){
           deliveredImage = null;
           deliveryProof = null;
+          paymentProof.value = null;
           signatureFile = null;
+          image.value = null;
         }
-        
-
         utils.closeLoadingDialog();
         update();
         return true;
@@ -724,7 +727,7 @@ class AllOrdersMapController extends GetxController  {
       googleMapsNavigator.setDestinations(Destinations(
         waypoints: waypoints,
         displayOptions: NavigationDisplayOptions(
-          showDestinationMarkers: true,
+          showDestinationMarkers: false,
           showStopSigns: true,
           showTrafficLights: true,
         ),
@@ -740,50 +743,70 @@ class AllOrdersMapController extends GetxController  {
 
 
 
-  Future<ImageDescriptor?> getOrCreateCustomImageFromAsset(
-      String assetPath, double width, double height) async {
-    final AssetImage assetImage = AssetImage(assetPath);
-    final ImageConfiguration configuration =
-    createLocalImageConfiguration(Get.context!);
-    final AssetBundleImageKey assetBundleImageKey =
-    await assetImage.obtainKey(configuration);
-    final double imagePixelRatio = assetBundleImageKey.scale;
-    final ByteData imageBytes = await rootBundle.load(assetBundleImageKey.name);
+  // Future<ImageDescriptor?> getOrCreateCustomImageFromAsset(
+  //     String assetPath, double width, double height) async {
+  //   final AssetImage assetImage = AssetImage(assetPath);
+  //   final ImageConfiguration configuration =
+  //   createLocalImageConfiguration(Get.context!);
+  //   final AssetBundleImageKey assetBundleImageKey =
+  //   await assetImage.obtainKey(configuration);
+  //   final double imagePixelRatio = assetBundleImageKey.scale;
+  //   final ByteData imageBytes = await rootBundle.load(assetBundleImageKey.name);
+  //
+  //   return await registerBitmapImage(
+  //       bitmap: imageBytes, imagePixelRatio: imagePixelRatio, width: width, height: height);
+  // }
 
-    return await registerBitmapImage(
-        bitmap: imageBytes, imagePixelRatio: imagePixelRatio, width: width, height: height);
+  Future<ImageDescriptor> registerDynamicMarker(String ordersCount, String locationName) async {
+    final ByteData byteData = await createCustomMarkerByteData(ordersCount, locationName);
+
+    final ImageDescriptor descriptor = await registerBitmapImage(
+      bitmap: byteData,
+      imagePixelRatio: 1,
+      width: 90,
+      height: 70,
+    );
+
+    return descriptor;
   }
 
   Future<bool> setMarkers() async {
-    navigationViewController?.clearMarkers();
+    await navigationViewController?.clearMarkers();
     markers.clear();
     markerMap.clear();
     waypoints.clear();
     markerLatLangList.clear();
-    var currentOrdersList = <OrdersData>[].obs;
-    if(currentLocationOrders.isNotEmpty){
-      currentOrdersList =  currentLocationOrders;
-    }else{
-      currentOrdersList =  ordersList;
-    }
+
+    var currentOrdersList = currentLocationOrders.isNotEmpty
+        ? currentLocationOrders
+        : ordersList;
+
+    final List<Marker> tempMarkers = [];
+    final Map<String, MarkerOptions> tempMarkerMap = {};
+    final List<NavigationWaypoint> tempWaypoints = [];
+    final List<LatLng> tempLatLngList = [];
 
     for (var order in currentOrdersList) {
-      bool isSelected = selectedOrder.value == order;
+      final double latitude = (order.status == "PICKED" || order.status == "OFD")
+          ? double.tryParse(order.dropoffLatitude ?? "0.0") ?? 0.0
+          : double.tryParse(order.pickupLatitude ?? "0.0") ?? 0.0;
+
+      final double longitude = (order.status == "PICKED" || order.status == "OFD")
+          ? double.tryParse(order.dropoffLongitude ?? "0.0") ?? 0.0
+          : double.tryParse(order.pickupLongitude ?? "0.0") ?? 0.0;
+
+      final LatLng position = LatLng(latitude: latitude, longitude: longitude);
+
+      final ImageDescriptor customIcon = await registerDynamicMarker(
+        order.awbNo.toString(),
+        (order.status == "PICKED" || order.status == "OFD") ? "DELIVERY" : "PICKUP",
+      );
 
       final marker = Marker(
         markerId: order.awbNo!,
         options: MarkerOptions(
-          position: LatLng(
-            latitude: order.status == "PICKED" || order.status == "OFD"
-                ? double.parse(order.dropoffLatitude ?? "0.0")
-                : double.parse(order.pickupLatitude ?? "0.0"),
-            longitude: order.status == "PICKED" || order.status == "OFD"
-                ? double.parse(order.dropoffLongitude ?? "0.0")
-                : double.parse(order.pickupLongitude ?? "0.0"),
-          ),
-          icon: isSelected
-              ? (order.status == "PICKED" || order.status == "OFD" ? selectedDropIcon! : selectedPickIcon!)
-              : (order.status == "PICKED" || order.status == "OFD" ? dropIcon! : pickIcon!),
+          position: position,
+          icon: customIcon,
           infoWindow: InfoWindow(
             title: order.pickupLocationName,
             snippet: "location",
@@ -792,47 +815,206 @@ class AllOrdersMapController extends GetxController  {
         ),
       );
 
-      markers.add(marker);
-      markerMap[marker.markerId] = marker.options;
+      tempMarkers.add(marker);
+      tempMarkerMap[marker.markerId] = marker.options;
+      tempWaypoints.add(NavigationWaypoint.withLatLngTarget(
+        title: order.consigneeAddress?.toString() ?? "Destination",
+        target: position,
+      ));
+      tempLatLngList.add(position);
+    }
 
-      waypoints.add(NavigationWaypoint.withLatLngTarget(
-        title: order.consigneeAddress.toString(),
-        target: LatLng(
-          latitude: order.status == "PICKED" || order.status == "OFD"
-              ? double.parse(order.dropoffLatitude ?? "0.0")
-              : double.parse(order.pickupLatitude ?? "0.0"),
-          longitude: order.status == "PICKED" || order.status == "OFD"
-              ? double.parse(order.dropoffLongitude ?? "0.0")
-              : double.parse(order.pickupLongitude ?? "0.0"),
+    // Commit everything to actual shared state
+    markers.addAll(tempMarkers);
+    markerMap.addAll(tempMarkerMap);
+    waypoints.addAll(tempWaypoints);
+    markerLatLangList.addAll(tempLatLngList);
+
+    // Set all waypoints at once
+    googleMapsNavigator.setDestinations(
+      Destinations(
+        waypoints: waypoints,
+        displayOptions: NavigationDisplayOptions(
+          showDestinationMarkers: false,
+          showStopSigns: true,
+          showTrafficLights: true,
         ),
-      ));
-
-      markerLatLangList.add(LatLng(
-        latitude: order.status == "PICKED" || order.status == "OFD"
-            ? double.parse(order.dropoffLatitude ?? "0.0")
-            : double.parse(order.pickupLatitude ?? "0.0"),
-        longitude: order.status == "PICKED" || order.status == "OFD"
-            ? double.parse(order.dropoffLongitude ?? "0.0")
-            : double.parse(order.pickupLongitude ?? "0.0"),
-      ));
-    }
-
-    googleMapsNavigator.setDestinations(Destinations(
-      waypoints: waypoints,
-      displayOptions: NavigationDisplayOptions(
-        showDestinationMarkers: true,
-        showStopSigns: true,
-        showTrafficLights: true,
+        routingOptions: RoutingOptions(
+          travelMode: NavigationTravelMode.driving,
+          alternateRoutesStrategy: NavigationAlternateRoutesStrategy.all,
+        ),
       ),
-      routingOptions: RoutingOptions(
-        travelMode: NavigationTravelMode.driving,
-      ),
-    ));
-    for (var marker in markers) {
-      navigationViewController?.addMarkers([marker]);
-    }
+    );
+
+    // Add all markers in a single batch
+    await navigationViewController?.addMarkers(tempMarkers);
+
     return true;
   }
+
+
+
+  // Future<bool> setMarkers() async {
+  //   await navigationViewController?.clearMarkers();
+  //   markers.clear();
+  //   markerMap.clear();
+  //   waypoints.clear();
+  //   markerLatLangList.clear();
+  //
+  //   var currentOrdersList = <OrdersData>[].obs;
+  //   if (currentLocationOrders.isNotEmpty) {
+  //     currentOrdersList = currentLocationOrders;
+  //   } else {
+  //     currentOrdersList = ordersList;
+  //   }
+  //
+  //   for (var order in currentOrdersList) {
+  //     final double latitude = order.status == "PICKED" || order.status == "OFD"
+  //         ? double.parse(order.dropoffLatitude ?? "0.0")
+  //         : double.parse(order.pickupLatitude ?? "0.0");
+  //
+  //     final double longitude = order.status == "PICKED" || order.status == "OFD"
+  //         ? double.parse(order.dropoffLongitude ?? "0.0")
+  //         : double.parse(order.pickupLongitude ?? "0.0");
+  //
+  //     final LatLng position = LatLng(latitude: latitude, longitude: longitude);
+  //
+  //
+  //     final ImageDescriptor customIcon = await registerDynamicMarker(
+  //       order.awbNo.toString(),
+  //       order.status == "PICKED" || order.status == "OFD"
+  //           ? "DELIVERY":"PICKUP",
+  //     );
+  //
+  //
+  //     final marker = Marker(
+  //       markerId: order.awbNo!,
+  //       options: MarkerOptions(
+  //         position: position,
+  //         icon: customIcon,
+  //         infoWindow: InfoWindow(
+  //           title: order.pickupLocationName,
+  //           snippet: "location",
+  //         ),
+  //         consumeTapEvents: true,
+  //       ),
+  //     );
+  //
+  //     markers.add(marker);
+  //     markerMap[marker.markerId] = marker.options;
+  //
+  //     waypoints.add(NavigationWaypoint.withLatLngTarget(
+  //       title: order.consigneeAddress.toString(),
+  //       target: position,
+  //     ));
+  //
+  //     markerLatLangList.add(position);
+  //   }
+  //
+  //
+  //   googleMapsNavigator.setDestinations(Destinations(
+  //     waypoints: waypoints,
+  //     displayOptions: NavigationDisplayOptions(
+  //       showDestinationMarkers: false,
+  //       showStopSigns: true,
+  //       showTrafficLights: true,
+  //     ),
+  //     routingOptions: RoutingOptions(
+  //       travelMode: NavigationTravelMode.driving,
+  //       alternateRoutesStrategy: NavigationAlternateRoutesStrategy.all,
+  //     ),
+  //   ));
+  //
+  //
+  //   for (var marker in markers) {
+  //     await navigationViewController?.addMarkers([marker]);
+  //   }
+  //
+  //   return true;
+  // }
+
+
+
+  // Future<bool> setMarkers() async {
+  //   navigationViewController?.clearMarkers();
+  //   markers.clear();
+  //   markerMap.clear();
+  //   waypoints.clear();
+  //   markerLatLangList.clear();
+  //   var currentOrdersList = <OrdersData>[].obs;
+  //   if(currentLocationOrders.isNotEmpty){
+  //     currentOrdersList =  currentLocationOrders;
+  //   }else{
+  //     currentOrdersList =  ordersList;
+  //   }
+  //
+  //   for (var order in currentOrdersList) {
+  //     bool isSelected = selectedOrder.value == order;
+  //
+  //     final marker = Marker(
+  //       markerId: order.awbNo!,
+  //       options: MarkerOptions(
+  //         position: LatLng(
+  //           latitude: order.status == "PICKED" || order.status == "OFD"
+  //               ? double.parse(order.dropoffLatitude ?? "0.0")
+  //               : double.parse(order.pickupLatitude ?? "0.0"),
+  //           longitude: order.status == "PICKED" || order.status == "OFD"
+  //               ? double.parse(order.dropoffLongitude ?? "0.0")
+  //               : double.parse(order.pickupLongitude ?? "0.0"),
+  //         ),
+  //         icon: isSelected
+  //             ? (order.status == "PICKED" || order.status == "OFD" ? selectedDropIcon! : selectedPickIcon!)
+  //             : (order.status == "PICKED" || order.status == "OFD" ? dropIcon! : pickIcon!),
+  //         infoWindow: InfoWindow(
+  //           title: order.pickupLocationName,
+  //           snippet: "location",
+  //         ),
+  //         consumeTapEvents: true,
+  //       ),
+  //     );
+  //
+  //     markers.add(marker);
+  //     markerMap[marker.markerId] = marker.options;
+  //
+  //     waypoints.add(NavigationWaypoint.withLatLngTarget(
+  //       title: order.consigneeAddress.toString(),
+  //       target: LatLng(
+  //         latitude: order.status == "PICKED" || order.status == "OFD"
+  //             ? double.parse(order.dropoffLatitude ?? "0.0")
+  //             : double.parse(order.pickupLatitude ?? "0.0"),
+  //         longitude: order.status == "PICKED" || order.status == "OFD"
+  //             ? double.parse(order.dropoffLongitude ?? "0.0")
+  //             : double.parse(order.pickupLongitude ?? "0.0"),
+  //       ),
+  //     ));
+  //
+  //     markerLatLangList.add(LatLng(
+  //       latitude: order.status == "PICKED" || order.status == "OFD"
+  //           ? double.parse(order.dropoffLatitude ?? "0.0")
+  //           : double.parse(order.pickupLatitude ?? "0.0"),
+  //       longitude: order.status == "PICKED" || order.status == "OFD"
+  //           ? double.parse(order.dropoffLongitude ?? "0.0")
+  //           : double.parse(order.pickupLongitude ?? "0.0"),
+  //     ));
+  //   }
+  //
+  //   googleMapsNavigator.setDestinations(Destinations(
+  //     waypoints: waypoints,
+  //     displayOptions: NavigationDisplayOptions(
+  //       showDestinationMarkers: true,
+  //       showStopSigns: true,
+  //       showTrafficLights: true,
+  //     ),
+  //     routingOptions: RoutingOptions(
+  //       travelMode: NavigationTravelMode.driving,
+  //       alternateRoutesStrategy: NavigationAlternateRoutesStrategy.all
+  //     ),
+  //   ));
+  //   for (var marker in markers) {
+  //     navigationViewController?.addMarkers([marker]);
+  //   }
+  //   return true;
+  // }
 
 
 

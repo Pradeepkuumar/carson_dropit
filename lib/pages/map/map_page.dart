@@ -206,9 +206,7 @@ class _MapPageState extends State<MapPage> {
                 InkWell(
                   onTap: () {
                     setState(() {
-                      mapType = (mapType == MapType.normal)
-                          ? MapType.hybrid
-                          : MapType.normal;
+                      mapType = (mapType == MapType.normal) ? MapType.hybrid : MapType.normal;
                       enableMapType.toggle();
                     });
                   },

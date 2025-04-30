@@ -1,4 +1,3 @@
-
 import 'dart:math';
 import 'package:carson_zyppy/pages/my_orders/placed_orders/controller/placed_orders_controller.dart';
 import 'package:flutter/material.dart';
@@ -13,18 +12,7 @@ import 'package:location/location.dart';
 import '../../../../global/consts.dart';
 import 'item_nearby_oredrs/neaby_orders_item.dart';
 
-class NearbyOrdersView extends StatefulWidget {
-  const NearbyOrdersView({super.key});
-
-  @override
-  State<NearbyOrdersView> createState() => _MapPageState();
-}
-
-class _MapPageState extends State<NearbyOrdersView> {
-
-  final controller = Get.put(PlacedOrdersController());
-  late final Completer<GoogleMapViewController> _mapController =
-  Completer<GoogleMapViewController>();
+class NearbyOrdersView extends GetView<PlacedOrdersController> {
 
   var showNotificationView = false.obs;
   var enableMapLiveCamera = false.obs;
@@ -33,63 +21,54 @@ class _MapPageState extends State<NearbyOrdersView> {
 
 
   @override
-  void initState() {
-    super.initState();
-    fetchOrdersAndInitialize();
-    // getLocationUpdates().then((_){
-    //  // updateMarkers();
-    // });
-  }
-
-  Future<void> fetchOrdersAndInitialize() async {
-     controller.getUser();
-    // updateMarkers();
-  }
-
-
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // backgroundColor: AppColors.primaryThemeColor,
       body: SafeArea(
         child: Stack(
           children: [
             Obx(() {
               if (!controller.isResponseSuccess.value) {
-                return Center(child: utils.iosProgressIndicator(AppColors.primaryThemeColor, ""));
-                } else if (controller.ordersList.isEmpty) {
-                return Center(child: utils.noDataFoundWidget());
-                } else {
-                return GoogleMapsMapView(
-                  gestureRecognizers: Set()
-                    ..add(Factory<PanGestureRecognizer>(
-                            () => PanGestureRecognizer()))..add(
-                        Factory<ScaleGestureRecognizer>(
-                                () => ScaleGestureRecognizer())),
+                return Center(child: utils.iosProgressIndicator(
+                    AppColors.primaryThemeColor, ""));
+              } else if (controller.ordersList.isEmpty) {
+                return Center(child: utils.noDataFoundWidget(
+                    "No orders are available near your location \n Please try checking another nearby pickup location."));
+              } else {
+                return Obx(() {
+                  return GoogleMapsMapView(
+                    gestureRecognizers: Set()
+                      ..add(Factory<PanGestureRecognizer>(
+                              () => PanGestureRecognizer()))..add(
+                          Factory<ScaleGestureRecognizer>(
+                                  () => ScaleGestureRecognizer())),
 
-                  onViewCreated: (GoogleMapViewController mapController) {
-                    for (var marker in controller.markers) {
-                      mapController.addMarkers([marker]);
-                    }
+                    onViewCreated: (GoogleMapViewController mapController) {
+                      controller.navigationViewController = mapController;
+                      // mapController.updateMarkers(controller.markers);
+                      for (var marker in controller.markers) {
+                        mapController.addMarkers([marker]);
+                      }
+                      //mapController.addCircles(controller.circle);
+                      // _mapController.complete(mapController);
+                    },
+                    initialMapType: controller.mapType.value,
+                    initialCameraPosition: CameraPosition(
+                      target: controller.currentLocation!,
+                      zoom: 18,
+                    ),
+                    onMarkerClicked: (value) {
+                      if (value != "current_location") {
+                        controller.selectedLocationId.value = value;
+                        controller.selectedLocationOrders();
+                      } else {
+                        print("Marker not found in map.");
+                      }
+                    },
+                    onMarkerInfoWindowClicked: (value) {
 
-                    _mapController.complete(mapController);
-                  },
-                  initialMapType: MapType.normal,
-                  initialCameraPosition: CameraPosition(
-                    target: controller.currentLocation!,
-                    zoom: 18,
-                  ),
-
-                  onMarkerClicked: (value) {
-                    if (value != "current_location") {
-                      controller.selectedLocationId.value = value;
-                      controller.selectedLocationOrders();
-                    } else {
-                      print("Marker not found in map.");
-                    }
-                  },
-                );
+                    },
+                  );
+                });
               }
             }),
             buildControls(),
@@ -139,44 +118,46 @@ class _MapPageState extends State<NearbyOrdersView> {
                               Expanded(
                                 flex: 20,
                                 child: SizedBox(
-                                  height: context.isPhone? 520:800,
-                                  child: PageView.builder(
-                                      scrollDirection: Axis.horizontal,
-                                      controller: PageController(
-                                          viewportFraction: 1),
-                                      itemCount: controller
-                                          .selectedMerchantOrdersList.length,
-                                      itemBuilder: (context, position) {
-                                        return nearByOrderItem(
-                                            controller
-                                                .selectedMerchantOrdersList[position],
-                                                (clickedOrder, type) async {
-                                              if (type == acceptOrder) {
-                                                utils.simpleDialog(
-                                                    "Accept Order",
-                                                    "Do you want to accept this order ?",
-                                                        () async {
-                                                      Get.back();
-                                                      await controller
-                                                          .acceptRejectOrder(
-                                                          acceptOrder,
-                                                          clickedOrder.awbNo ??
-                                                              "");
-                                                    }, () {});
-                                              } else {
-                                                utils.simpleDialog(
-                                                    "Reject Order",
-                                                    "Do you want to reject this order ?",
-                                                        () {
-                                                      controller
-                                                          .acceptRejectOrder(
-                                                          rejectOrder,
-                                                          clickedOrder
-                                                              .awbNo ?? "");
-                                                    }, () {});
-                                              }
-                                            });
-                                      }
+                                  height: context.isPhone ? 520 : 800,
+                                  child: Obx(() => PageView.builder(
+                                        scrollDirection: Axis.horizontal,
+                                        controller: PageController(
+                                            viewportFraction: 1),
+                                        itemCount: controller
+                                            .selectedMerchantOrdersList.length,
+                                        itemBuilder: (context, position) {
+                                          return nearByOrderItem(
+                                              controller
+                                                  .selectedMerchantOrdersList[position],
+                                                  (clickedOrder, type) async {
+                                                if (type == acceptOrder) {
+                                                  utils.simpleDialog(
+                                                      "Accept Order",
+                                                      "Do you want to accept this order ?",
+                                                          () async {
+                                                        Get.back();
+                                                        await controller
+                                                            .acceptRejectOrder(
+                                                            acceptOrder,
+                                                            clickedOrder
+                                                                .awbNo ??
+                                                                "");
+                                                      }, () {});
+                                                } else {
+                                                  utils.simpleDialog(
+                                                      "Reject Order",
+                                                      "Do you want to reject this order ?",
+                                                          () {
+                                                        controller
+                                                            .acceptRejectOrder(
+                                                            rejectOrder,
+                                                            clickedOrder
+                                                                .awbNo ?? "");
+                                                      }, () {});
+                                                }
+                                              });
+                                        }
+                                    )
                                   ),
                                 ),
                               ),
@@ -208,71 +189,32 @@ class _MapPageState extends State<NearbyOrdersView> {
   }
 
 
-
   Widget buildControls() {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Obx(() {
-          //   return AnimatedContainer(
-          //     width: showNotificationView.value ? 250.0 : 50.0,
-          //     height: showNotificationView.value ? 350.0 : 50.0,
-          //     decoration: utils.boxDecorationWhite(),
-          //     alignment: showNotificationView.value
-          //         ? Alignment.center
-          //         : AlignmentDirectional.topCenter,
-          //     duration: const Duration(seconds: 1),
-          //     curve: Curves.fastOutSlowIn,
-          //     child: Padding(
-          //       padding: const EdgeInsets.all(8.0),
-          //       child: showNotificationView.value
-          //           ? Column(
-          //         children: [
-          //           Row(
-          //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          //             children: [
-          //               utils.tvCustom("Order Notifications",
-          //                   AppColors.primaryThemeColor, 13),
-          //               InkWell(
-          //                 onTap: () => showNotificationView.toggle(),
-          //                 child: const Icon(Icons.close,
-          //                     color: AppColors.red),
-          //               )
-          //             ],
-          //           ),
-          //           utils.dividerBlack(),
-          //           Expanded(
-          //             child: ListView.builder(
-          //               itemCount: controller.ordersList.length,
-          //               itemBuilder: (context, pos) =>
-          //                   ItemMapNotifications(
-          //                       controller.notifications[pos]),
-          //             ),
-          //           ),
-          //         ],
-          //       )
-          //           : InkWell(
-          //         onTap: () => showNotificationView.toggle(),
-          //         child: const Center(
-          //           child: Icon(Icons.notifications,
-          //               color: AppColors.primaryThemeColor),
-          //         ),
-          //       ),
-          //     ),
-          //   );
-          // }),
+
           InkWell(
-            onTap: () => {enableMapLiveCamera.toggle(),
-              //fetchNearbyOrders()
+            onTap: () =>
+            {
+              controller.
+              mapType.value =
+              (controller.mapType.value == MapType.hybrid)
+                  ? MapType.normal
+                  : MapType.hybrid,
+              enableMapLiveCamera.toggle(),
+              controller.navigationViewController?.setMapType(
+                  mapType: controller.mapType.value),
+
             },
             child: Obx(() {
               return Container(
                 height: 50,
                 width: 50,
                 decoration: utils.boxDecorationWhite(),
-                child: Icon(Icons.share_location_sharp,
+                child: Icon(Icons.map,
                     size: enableMapLiveCamera.value ? 36 : 30,
                     color: enableMapLiveCamera.value
                         ? AppColors.selectedBlue
@@ -285,72 +227,10 @@ class _MapPageState extends State<NearbyOrdersView> {
     );
   }
 
-  // Future<void> getLocationUpdates() async {
-  //   bool serviceEnabled = await _locationController.serviceEnabled();
-  //   if (!serviceEnabled) {
-  //     serviceEnabled = await _locationController.requestService();
-  //     if (!serviceEnabled) return;
-  //   }
-  //   PermissionStatus permissionGranted =
-  //   await _locationController.hasPermission();
-  //   if (permissionGranted == PermissionStatus.denied) {
-  //     permissionGranted = await _locationController.requestPermission();
-  //     if (permissionGranted != PermissionStatus.granted) return;
-  //   }
-  //
-  //   _locationController.onLocationChanged.listen((LocationData locationData) {
-  //     if (locationData.latitude != null && locationData.longitude != null) {
-  //       setState(() {
-  //         controller.currentLocation =
-  //             LatLng( latitude: locationData.latitude!, longitude : locationData.longitude!);
-  //       });
-  //       if (enableMapLiveCamera.value) {
-  //         _cameraToPosition(controller.currentLocation!);
-  //       }
-  //
-  //     }
-  //   });
-  // }
-
-  // void fetchNearbyOrders() {
-  //   setState(() {
-  //     for (var order in controller.ordersList) {
-  //       double distanceInMeters = calculateDistance(
-  //         currentLocation!.latitude,
-  //         currentLocation!.longitude,
-  //         double.parse(order.pickupLatitude ?? "0.0"),
-  //         double.parse(order.pickupLongitude ?? "0.0"),
-  //       );
-  //       //if (distanceInMeters <= 5000) {
-  //        setMarkers();
-  //      // }
-  //     }
-  //   });
-  // }
-
-  double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-    const R = 6371000;
-    final dLat = _toRadians(lat2 - lat1);
-    final dLon = _toRadians(lon2 - lon1);
-    final a = sin(dLat / 2) * sin(dLat / 2) +
-        cos(_toRadians(lat1)) *
-            cos(_toRadians(lat2)) *
-            sin(dLon / 2) *
-            sin(dLon / 2);
-    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
-    return R * c;
-  }
-
-  double _toRadians(double degree) {
-    return degree * pi / 180;
-  }
 
 
-  Future<void> _cameraToPosition(LatLng position) async {
-    final GoogleMapViewController controller = await _mapController.future;
-    controller.animateCamera(CameraUpdate.newCameraPosition(
-        CameraPosition(target: position, zoom: 20)));
-  }
+
+
 
 }
 

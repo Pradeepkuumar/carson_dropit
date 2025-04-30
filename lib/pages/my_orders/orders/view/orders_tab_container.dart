@@ -26,7 +26,7 @@ class OrdersTabContainer extends GetView<OrdersController> {
               tabExtent: context.isTablet?55:45,
               borderRadius: BorderRadius.circular(1),
               tabBorderRadius: BorderRadius.circular(10),
-              tabMaxLength: context.isTablet ? 200 : 150,
+              tabMaxLength: context.isTablet ? 200 : 200,
               childPadding: const EdgeInsets.all(3.0),
               selectedTextStyle:  TextStyle(
                 color: Colors.white,
@@ -37,19 +37,19 @@ class OrdersTabContainer extends GetView<OrdersController> {
                 fontSize: context.isPhone?10:20,
               ),
               colors: const [
-                AppColors.primaryLight,
-                AppColors.lightBlue,
-                AppColors.primaryThemeColor,
+                // AppColors.primaryLight,
+                // AppColors.lightBlue,
+                // AppColors.primaryThemeColor,
                 AppColors.lightGreen,
                 AppColors.red
               ],
               tabs: [
-                Text("Assigned(${riderDashboardController.dashBoardData.value.allOrdersCount
-                    ?.aSSIGNED})",style: TextStyle(fontSize: context.isPhone?10:20),),
-                Text("Picked(${riderDashboardController.dashBoardData.value.allOrdersCount
-                    ?.pICKED})",style: TextStyle(fontSize: context.isPhone?10:20),),
-                Text(
-                    "Ofd(${riderDashboardController.dashBoardData.value.allOrdersCount?.oFD})",style: TextStyle(fontSize: context.isPhone?10:20),),
+                // Text("Assigned(${riderDashboardController.dashBoardData.value.allOrdersCount
+                //     ?.aSSIGNED})",style: TextStyle(fontSize: context.isPhone?10:20),),
+                // Text("Picked(${riderDashboardController.dashBoardData.value.allOrdersCount
+                //     ?.pICKED})",style: TextStyle(fontSize: context.isPhone?10:20),),
+                // Text(
+                //     "Ofd(${riderDashboardController.dashBoardData.value.allOrdersCount?.oFD})",style: TextStyle(fontSize: context.isPhone?10:20),),
                 Text("Delivered(${riderDashboardController.dashBoardData.value.allOrdersCount
                     ?.dELIVERED})",style: TextStyle(fontSize: context.isPhone?10:20),),
                 Text("UnDelivered(${riderDashboardController.dashBoardData.value.allOrdersCount
@@ -57,9 +57,9 @@ class OrdersTabContainer extends GetView<OrdersController> {
 
               ],
               children: [
-                OrdersListView(orderStatus: 'ASSIGNED'),
-                OrdersListView(orderStatus: 'PICKED'),
-                OrdersListView(orderStatus: 'OFD'),
+                // OrdersListView(orderStatus: 'ASSIGNED'),
+                // OrdersListView(orderStatus: 'PICKED'),
+                // OrdersListView(orderStatus: 'OFD'),
                 OrdersListView(orderStatus: 'DELIVERED'),
                 OrdersListView(orderStatus: 'UNDELIVERED'),
               ],

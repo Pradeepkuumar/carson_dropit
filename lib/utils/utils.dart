@@ -399,12 +399,10 @@ class Utils extends GetxController {
    );
   }
 
-  noDataFoundWidget() {
+  noDataFoundWidget(String msg) {
     return Padding(
       padding: const EdgeInsets.all(8.0),
-      child: SizedBox(
-        height: 250,
-        width: 250,
+      child: IntrinsicHeight(
         child: Card(
           elevation: 2,
           color: AppColors.white,
@@ -417,13 +415,15 @@ class Utils extends GetxController {
                 SizedBox(
                   height: 100,
                   width: 100,
-                  child: Lottie.asset(ANIM_ERROR),
+                  child: Image.asset(appLogo)
                 ),
-                utils.tvCustom("No Data Found !", AppColors.red, 15),
+                utils.tvCustom(msg, AppColors.red, 15),
                 const SizedBox(height: 25,),
-                utils.iconButton("Go Back", (){
-                  Get.back();
-                }, Icons.arrow_back_ios_new_outlined, AppColors.primaryThemeColor, AppColors.white)
+                IntrinsicWidth(
+                  child: utils.iconButton("Go Back", (){
+                    Get.back();
+                  }, Icons.arrow_back_ios_new_outlined, AppColors.primaryThemeColor, AppColors.white),
+                )
               ],
             ),
           ),
@@ -918,19 +918,70 @@ class Utils extends GetxController {
     );
   }
 
+  // void showCustomDialog({
+  //   required String title,
+  //   required String middleText,
+  //   required List<Widget> buttons,
+  // }) {
+  //   Get.defaultDialog(
+  //     title: title,
+  //     middleText: middleText,
+  //     barrierDismissible: false,
+  //     contentPadding: const EdgeInsets.all(16),
+  //     actions: buttons,
+  //   );
+  // }
   void showCustomDialog({
     required String title,
     required String middleText,
     required List<Widget> buttons,
   }) {
     Get.defaultDialog(
-      title: title,
-      middleText: middleText,
+      title: "",
+      titlePadding: EdgeInsets.zero,
+      contentPadding: EdgeInsets.zero,
+      radius: 8,
       barrierDismissible: false,
-      contentPadding: const EdgeInsets.all(16),
-      actions: buttons,
+      content: Stack(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 16),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  middleText,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                ...buttons,
+              ],
+            ),
+          ),
+          Positioned(
+            right: 8,
+            top: 2,
+            child: GestureDetector(
+              onTap: () => Get.back(),
+              child: const Icon(Icons.close, color: Colors.red),
+            ),
+          ),
+        ],
+      ),
     );
   }
+
+
 
   //Radio Button
   simpleRadioButtonHorizontal(String title,
