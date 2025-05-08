@@ -138,7 +138,7 @@ class OrdersListViewState extends State<OrdersListView> {
                                         } else if (clickType == orderUpdateToDeliver ||
                                             clickType == fullMapViewCLick) {
                                           controller.selectedOrder.value = clickedOrder;
-                                          Get.to(() => MapPage(orderDetails:controller.selectedOrder.value,mapView: 1));
+                                         // Get.to(() => MapPage(orderDetails:controller.selectedOrder.value,mapView: 1));
 
                                         }
                                       },

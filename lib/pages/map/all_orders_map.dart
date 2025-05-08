@@ -11,6 +11,7 @@ import 'package:get/get.dart';
 import 'package:google_navigation_flutter/google_navigation_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:signature/signature.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import '../../global/consts.dart';
 import '../../utils/calculate_sla.dart';
 import 'orderItem/clickedOrderItem.dart';
@@ -19,7 +20,7 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
   StreamSubscription<RemainingTimeOrDistanceChangedEvent>?
   remainingTimeOrDistanceChangedSubscription;
 
-  @override
+
   final controller = Get.put(AllOrdersMapController());
 
   var enableMapLiveCamera = false.obs;
@@ -34,15 +35,11 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
 
   AllOrdersMapPage({super.key});
 
-  // @override
-  // void initState() {
-  //   // WidgetsBinding.instance.addPostFrameCallback((_) {
-  //     controller.getLocationUpdates();
-  //   // });
-  //   super.initState();
-  // }
+
 
   void _onViewCreated(GoogleNavigationViewController mapController) async {
+    WidgetsFlutterBinding.ensureInitialized();
+    WakelockPlus.enable();
     controller.navigationViewController = mapController;
     await mapController.setMyLocationEnabled(true);
     for (var marker in controller.markers) {
@@ -201,6 +198,7 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                               children: [
                                 CircularCountDownTimer(
                                   duration: 300,
+                                  //duration: int.tryParse(controller.selectedOrder.value.pickup_buffer_time_in_minutes  ?? "0") ?? 0 * 60,
                                   initialDuration: 0,
                                   controller: CountDownController(),
                                   width: 80,
@@ -625,7 +623,7 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                 Expanded(
                                   flex: 10,
                                   child: SizedBox(
-                                    height: 300,
+                                    height: 350,
                                     child: PageView.builder(
                                         scrollDirection: Axis.horizontal,
                                         controller: controller.pageController,
@@ -646,35 +644,21 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                                   .currentLocationOrders[
                                               position],
                                                   (clickedOrder, type) async {
-                                                controller.selectedOrder.value =
-                                                    clickedOrder;
+                                                controller.selectedOrder.value = clickedOrder;
+                                                await controller.setMarkers();
                                                 if (type == updateStatus) {
-                                                  if (clickedOrder.status ==
-                                                      "REACHED") {
-                                                    bool isTrue = await controller
-                                                        .calculateBufferTime(
-                                                        DateTime.now(),
-                                                        "PICKED");
-                                                    if (isTrue) {
-                                                      controller.updateOrder(
-                                                          "PICKED");
-                                                    }
+                                                  if (clickedOrder.status == "REACHED") {
+                                                    bool isTrue = await controller.calculateBufferTime(DateTime.now(), "PICKED");
+                                                    if (isTrue) {controller.updateOrder("PICKED");}
                                                   } else
-                                                  if (clickedOrder.status ==
-                                                      "ASSIGNED" ||
-                                                      clickedOrder.status ==
-                                                          "RE-ASSIGNED") {
-                                                    controller.updateOrder(
-                                                        "REACHED");
+                                                  if (clickedOrder.status == "ASSIGNED" || clickedOrder.status == "RE-ASSIGNED") {controller.updateOrder("REACHED");
                                                     controller.startTime =
                                                         DateTime.now();
-                                                  }else if(clickedOrder.status ==
-                                                      "PICKED"){
+                                                  }else if(clickedOrder.status == "PICKED"){
                                                     controller.updateOrder(
                                                         "OFD");
                                                   }
-                                                } else
-                                                if (type == updateOrder) {
+                                                } else if (type == updateOrder) {
                                                   controller.viewAcceptView
                                                       .value = false;
                                                   controller

@@ -5,6 +5,7 @@ import 'package:carson_zyppy/utils/colors.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:google_navigation_flutter/google_navigation_flutter.dart';
@@ -188,12 +189,12 @@ class _MapPageState extends State<MapPage> {
 
                     },
                     child: Container(
-                      height: context.isPhone ?60:100,
-                      width: context.isPhone ?60:100,
+                      height: context.isPhone ?60.sp:100.sp,
+                      width: context.isPhone ?60.sp:100.sp,
                       decoration: utils.boxDecorationWhite(),
                       child: Padding(
                         padding: const EdgeInsets.all(5),
-                        child: slaTimer(context.isPhone ?30:60, context.isPhone ?30:60,
+                        child: slaTimer(context.isPhone ?30.sp:60.sp, context.isPhone ?30.sp:60.sp,
                             widget.orderDetails.createdAt ?? "", int.tryParse(
                                 widget.orderDetails.sla_in_hours.toString()) ??
                                 0, 7
@@ -206,14 +207,16 @@ class _MapPageState extends State<MapPage> {
                 InkWell(
                   onTap: () {
                     setState(() {
-                      mapType = (mapType == MapType.normal) ? MapType.hybrid : MapType.normal;
+                      mapType = (mapType == MapType.normal)
+                          ? MapType.hybrid
+                          : MapType.normal;
                       enableMapType.toggle();
                     });
                   },
                   child: Obx(() {
                     return Container(
-                        height: context.isPhone ?60:100,
-                        width: context.isPhone ?60:100,
+                        height: context.isPhone ?60.sp:100.sp,
+                        width: context.isPhone ?60.sp:100.sp,
                         decoration: utils.boxDecorationWhite(),
                         child: Padding(
                           padding: const EdgeInsets.all(5),
@@ -221,7 +224,7 @@ class _MapPageState extends State<MapPage> {
                             children: [
                               Icon(Icons.map,
                                   size:
-                                  enableMapType.value ? 30 : 35,
+                                  enableMapType.value ? 30.sp : 35.sp,
                                   color: enableMapType.value
                                       ? AppColors.greyColor4
                                       : AppColors.selectedBlue),
@@ -230,7 +233,7 @@ class _MapPageState extends State<MapPage> {
                                 child: Text(
                                   enableMapType.value ? "Normal" : "Satellite",
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(fontSize: context.isPhone ?10:20),),
+                                  style: TextStyle(fontSize: context.isPhone ?10.sp:20.sp),),
                               )
 
                             ],
@@ -384,7 +387,7 @@ class _MapPageState extends State<MapPage> {
                           left: 20,
                           right: 20,
                           bottom:
-                          controller.markDelivered.value ? 10 : 100),
+                          controller.markDelivered.value ? 10.sp : 100.sp),
                       child: Container(
                         decoration: utils.boxDecorationWhite(),
                         child: SingleChildScrollView(

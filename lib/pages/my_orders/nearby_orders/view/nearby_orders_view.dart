@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:carson_zyppy/pages/my_orders/placed_orders/controller/placed_orders_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'dart:async';
 import 'package:carson_zyppy/global/global.dart';
@@ -12,16 +13,37 @@ import 'package:location/location.dart';
 import '../../../../global/consts.dart';
 import 'item_nearby_oredrs/neaby_orders_item.dart';
 
-class NearbyOrdersView extends GetView<PlacedOrdersController> {
+class NearbyOrdersView extends StatefulWidget {
+  const NearbyOrdersView({super.key});
 
+  @override
+  State<NearbyOrdersView> createState() => _MapPageState();
+}
+
+class _MapPageState extends State<NearbyOrdersView> {
   var showNotificationView = false.obs;
   var enableMapLiveCamera = false.obs;
   var enableOrdersSearch = false.obs;
   var acceptView = false.obs;
+final controller = Get.put(PlacedOrdersController());
 
+@override
+void initState() {
+  super.initState();
+  fetchOrdersAndInitialize();
+  // getLocationUpdates().then((_){
+  //  // updateMarkers();
+  // });
+}
+
+Future<void> fetchOrdersAndInitialize() async {
+    controller.getUser();
+  // updateMarkers();
+}
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       body: SafeArea(
         child: Stack(
@@ -118,8 +140,11 @@ class NearbyOrdersView extends GetView<PlacedOrdersController> {
                               Expanded(
                                 flex: 20,
                                 child: SizedBox(
-                                  height: context.isPhone ? 520 : 800,
-                                  child: Obx(() => PageView.builder(
+                                  height: context.isPhone ? 670.sp : 800.sp,
+                                  child: Obx(() => controller
+                                      .selectedMerchantOrdersList.isEmpty ?
+                                      utils.noDataFoundWidget("There is no order for this location \n Please check another pickup location"):
+                                      PageView.builder(
                                         scrollDirection: Axis.horizontal,
                                         controller: PageController(
                                             viewportFraction: 1),

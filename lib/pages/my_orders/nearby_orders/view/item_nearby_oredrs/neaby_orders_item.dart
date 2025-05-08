@@ -126,7 +126,7 @@ nearByOrderItem(
                             color: AppColors.primaryThemeColor,
                           ),
                           title: Text(
-                            "${orderData.merchantName}\n${orderData.itemName}\n${orderData.itemDescription}(${orderData.quantity})",
+                            "${orderData.itemName}\n${orderData.itemDescription}(${orderData.quantity})",
                             style:  TextStyle(
                               fontSize: Get.context!.isPhone ? 12 : 15,
                             ),
@@ -150,6 +150,9 @@ nearByOrderItem(
                         customRow(
                             "Consignee Name", orderData.consigneeName ?? ""),
                         customRow("Order Created Date", utils.formatDate(orderData.createdAt.toString(),"dd MMM yyyy hh:mm a")),
+                        customRow("Zone", orderData.consigneeZone ?? ""),
+                        customRow("Street", orderData.consigneeStreetNumber ?? ""),
+                        customRow("Building", orderData.consigneeBuildingNo ?? ""),
                       ],
                     ),
                     Column(
@@ -202,7 +205,7 @@ Widget customRow(String name, String data) {
       visible: data.isNotEmpty,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Expanded(
             flex: 4,

@@ -9,6 +9,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'app_pages/app_pages.dart';
+import 'app_theme/AppTheme.dart';
 import 'firebase_notifications/firebase_notifiction_controller.dart';
 import 'firebase_options.dart';
 import 'local_db/dataBase/database.dart';
@@ -55,6 +56,9 @@ class MyApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             title: 'Carson Zyppy',
             home: const SplashScreen(),
+            // theme: AppThemes.light,
+            // darkTheme: AppThemes.dark,
+            // themeMode: ThemeMode.system,
            getPages: AppPages.routes,
           );
         });

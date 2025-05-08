@@ -5,13 +5,13 @@ import 'package:carson_zyppy/local_db/entity/UserData.dart';
 import 'package:carson_zyppy/pages/my_orders/orders/models/reason_data.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:google_navigation_flutter/google_navigation_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:location/location.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import '../../../../apis/base_api_response.dart';
 import '../../../../global/consts.dart';
 import '../../../../global/global.dart';
@@ -114,6 +114,7 @@ class AllOrdersMapController extends GetxController  {
   DateTime? startTime;
 
   var bufferMinutes = "".obs;
+
 
 
 
@@ -401,13 +402,13 @@ class AllOrdersMapController extends GetxController  {
         await Future.forEach(result.data, (json) async {
           ordersList.add(OrdersData.fromJson(json as Map<String, dynamic>));
         });
-        // ordersList.sort((a, b) {
-        //   double extractDistance(String distance) {
-        //         final match = RegExp(r'\d+(\.\d+)?').firstMatch(distance);
-        //         return match != null ? double.parse(match.group(0)!) : double.infinity;
-        //       }
-        //       return extractDistance(a.distance!).compareTo(extractDistance(b.distance!));
-        // });
+        ordersList.sort((a, b) {
+          double extractDistance(String distance) {
+                final match = RegExp(r'\d+(\.\d+)?').firstMatch(distance);
+                return match != null ? double.parse(match.group(0)!) : double.infinity;
+              }
+              return extractDistance(a.distance!).compareTo(extractDistance(b.distance!));
+        });
 
         if(ordersList.isEmpty) {
          Get.back();
@@ -1200,6 +1201,7 @@ class AllOrdersMapController extends GetxController  {
     navigationViewController?.clear();
     _hintTextTimer?.cancel();
     _nearbyOrdersTimer?.cancel();
+    WakelockPlus.disable();
     super.onClose();
   }
 

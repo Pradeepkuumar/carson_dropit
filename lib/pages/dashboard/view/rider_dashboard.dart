@@ -33,7 +33,8 @@ class _RiderDashboardState extends State<RiderDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Stack(children: [
+        child: Stack(
+            children: [
           Obx(() {
             return Visibility(
               visible: !controller.isAttendanceMarked.value,

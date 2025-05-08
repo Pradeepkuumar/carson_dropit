@@ -25,7 +25,7 @@ if (flutterVersionName == null) {
 }
 
 android {
-    namespace "com.carson.zyppy"
+    namespace "com.dropit.carson"
     compileSdkVersion flutter.compileSdkVersion
     ndkVersion flutter.ndkVersion
 
@@ -44,16 +44,31 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.carson.zyppy"
+        applicationId "com.dropit.carson"
         minSdkVersion 23
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
+    signingConfigs {
+        release {
+            keyAlias = "drop-it"
+            keyPassword = "dropit1234"
+            storeFile = file("/Users/macbook/Documents/carson_zyppy/android/ketstore/carson_drop_it.jks")
+            storePassword = "dropit1234"
+            }
+    }
 
     buildTypes {
         release {
-            signingConfig signingConfigs.debug
+            debuggable false
+            signingConfig signingConfigs.release
+            minifyEnabled = true
+            shrinkResources = true
+            proguardFiles(getDefaultProguardFile('proguard-android.txt'), "proguard-rules.pro")
+        }
+        debug {
+            debuggable true
         }
     }
 }

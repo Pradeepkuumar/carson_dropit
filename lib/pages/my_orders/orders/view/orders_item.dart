@@ -150,7 +150,9 @@ orderItem(OrdersData orderData, void Function(OrdersData,int) onClick) {
                       customRow("Weight.",  orderData.weight ?? ""),
                       customRow("Consignee Name", orderData.consigneeName ?? ""),
                       customRow("Created Date", utils.formatDate(orderData.createdAt.toString(),"dd MMM yyyy hh:mm a")),
-
+                      customRow("Zone", orderData.consigneeZone ?? ""),
+                      customRow("Street", orderData.consigneeStreetNumber ?? ""),
+                      customRow("Building", orderData.consigneeBuildingNo ?? ""),
                     ],
                   ),
                   Column(
