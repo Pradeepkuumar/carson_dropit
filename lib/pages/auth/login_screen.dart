@@ -30,10 +30,10 @@ class _LoginScreenState extends State<LoginScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
              SizedBox(
-               height: 70,
-               width: 140,
+               height: 100,
+               width: 180,
                child: Image.asset(appLogo,
-                  fit: BoxFit.fill),
+                  fit: BoxFit.fill,color: Get.isDarkMode? AppColors.primaryThemeColor :null),
              ),
           const SizedBox(height: 30,),
           Container(
@@ -64,7 +64,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             )),
                         const Spacer(),
                         TextUtil(
-                          text: "Email / User ID",
+                          text: "User ID",
                         ),
                         Container(
                           height: 35,
@@ -75,6 +75,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             controller: controller.feCode,
                             style: const TextStyle(color:AppColors.primaryThemeColor),
                             textCapitalization: TextCapitalization.characters,
+                            cursorColor: AppColors.primaryThemeColor,
+                            textInputAction: TextInputAction.next,
                             decoration: const InputDecoration(
                               suffixIcon: Icon(
                                 Icons.mail,
@@ -97,6 +99,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: TextFormField(
                             controller: controller.password,
                             style: const TextStyle(color: AppColors.primaryThemeColor),
+                            cursorColor: AppColors.primaryThemeColor,
+                            textInputAction: TextInputAction.done,
                             decoration: const InputDecoration(
                               suffixIcon: Icon(
                                 Icons.lock,
@@ -104,6 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               fillColor: AppColors.primaryThemeColor,
                               border: InputBorder.none,
+
                             ),
                           ),
                         ),
@@ -131,7 +136,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               alignment: Alignment.center,
                               child: TextUtil(
                                 text: "Log In",
-                                color: AppColors.white,
+                                color: Get.isDarkMode ? AppColors.black : AppColors.white,
                               ),
                             )),
                         const Spacer(),

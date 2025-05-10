@@ -3,6 +3,7 @@ import 'package:carson_zyppy/splash_screen/splash_screen.dart';
 import 'package:carson_zyppy/utils/colors.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -16,12 +17,16 @@ import 'local_db/dataBase/database.dart';
 import 'local_db/userRepository/db/floor_database.dart';
 import 'local_db/user_repo.dart';
 
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  print("🔥 Background/Killed Notification: ${message.data}");
+}
 void main() async {
   await GetStorage.init();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
   Get.put(FirebaseMessagingController());
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   FlutterError.onError = (errorDetails) {
     FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
   };
@@ -43,22 +48,25 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setSystemUIOverlayStyle(
-       const SystemUiOverlayStyle(
-        statusBarColor: AppColors.white,
-        statusBarIconBrightness: Brightness.dark,
-      ),
-    );
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+      statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+    ));
+
     return ScreenUtilInit(
+
         designSize: const Size(375, 812),
         builder: (context, child) {
           return GetMaterialApp(
             debugShowCheckedModeBanner: false,
             title: 'Carson Zyppy',
             home: const SplashScreen(),
-            // theme: AppThemes.light,
-            // darkTheme: AppThemes.dark,
-            // themeMode: ThemeMode.system,
+            theme: AppThemes.light,
+            darkTheme: AppThemes.dark,
+            themeMode: ThemeMode.system,
            getPages: AppPages.routes,
           );
         });

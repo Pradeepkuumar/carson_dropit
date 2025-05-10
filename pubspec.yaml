@@ -71,6 +71,7 @@ flutter:
     - assets/animations/
     - assets/images/
     - assets/icons/
+    - assets/map_theme/
 
   uses-material-design: true
 

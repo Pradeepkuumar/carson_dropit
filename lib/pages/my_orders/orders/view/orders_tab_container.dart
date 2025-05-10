@@ -1,5 +1,6 @@
 import 'package:carson_zyppy/pages/dashboard/controller/rider_dashboard_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:tab_container/tab_container.dart';
 
@@ -23,18 +24,18 @@ class OrdersTabContainer extends GetView<OrdersController> {
             return TabContainer(
               controller: controller.tabController,
               tabEdge: TabEdge.bottom,
-              tabExtent: context.isTablet?55:45,
+              tabExtent: context.isTablet?55.sp:45.sp,
               borderRadius: BorderRadius.circular(1),
               tabBorderRadius: BorderRadius.circular(10),
-              tabMaxLength: context.isTablet ? 200 : 200,
+              tabMaxLength: context.isTablet ? 200.sp : 200.sp,
               childPadding: const EdgeInsets.all(3.0),
               selectedTextStyle:  TextStyle(
                 color: Colors.white,
-                fontSize: context.isPhone?10:20,
+                fontSize: context.isPhone ? 10.sp:20.sp,
               ),
               unselectedTextStyle:  TextStyle(
-                color: Colors.black,
-                fontSize: context.isPhone?10:20,
+                color: Get.isDarkMode ? AppColors.white : Colors.black,
+                fontSize: context.isPhone?10.sp:20.sp,
               ),
               colors: const [
                 // AppColors.primaryLight,

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:carson_zyppy/global/global.dart';
 import 'package:carson_zyppy/pages/map/controller/all_orders_map_controller.dart';
@@ -7,6 +8,8 @@ import 'package:circular_countdown_timer/circular_countdown_timer.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:google_navigation_flutter/google_navigation_flutter.dart';
 import 'package:image_picker/image_picker.dart';
@@ -56,44 +59,47 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
     ));
     await controller.navigationViewController?.setNavigationUIEnabled(true);
     await controller.navigationViewController?.setSpeedometerEnabled(true);
-    await controller.navigationViewController?.setMapStyle('''
-   [{
-    "featureType": "administrative",
-    "elementType": "geometry",
-    "stylers": [
-      {
-        "visibility": "off"
-      }
-    ]
-  },
-  {
-    "featureType": "poi",
-    "stylers": [
-      {
-        "visibility": "off"
-      }
-    ]
-  },
-  {
-    "featureType": "road",
-    "elementType": "labels.icon",
-    "stylers": [
-      {
-        "visibility": "off"
-      }
-    ]
-  },
-  {
-    "featureType": "transit",
-    "stylers": [
-      {
-        "visibility": "off"
-      }
-    ]
-  }
-]
-    ''');
-    await controller.navigationViewController?.settings.setTrafficEnabled(true);
+
+    final darkMapStyle = await rootBundle.loadString('assets/map_theme/map_theme_dark.json');
+    await mapController.setMapStyle(Get.isDarkMode?darkMapStyle:null);
+//     await controller.navigationViewController?.setMapStyle('''
+//    [{
+//     "featureType": "administrative",
+//     "elementType": "geometry",
+//     "stylers": [
+//       {
+//         "visibility": "off"
+//       }
+//     ]
+//   },
+//   {
+//     "featureType": "poi",
+//     "stylers": [
+//       {
+//         "visibility": "off"
+//       }
+//     ]
+//   },
+//   {
+//     "featureType": "road",
+//     "elementType": "labels.icon",
+//     "stylers": [
+//       {
+//         "visibility": "off"
+//       }
+//     ]
+//   },
+//   {
+//     "featureType": "transit",
+//     "stylers": [
+//       {
+//         "visibility": "off"
+//       }
+//     ]
+//   }
+// ]
+//     ''');
+   // await controller.navigationViewController?.settings.setTrafficEnabled(true);
   }
 
   // void _onRemainingTimeOrDistanceChangedEvent(
@@ -124,7 +130,7 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                 SizedBox(
                     height: 150,
                     width: Get.width - 50,
-                    child: Image.asset(appLogo)),
+                    child: Image.asset(appLogo,color: Get.isDarkMode ? AppColors.primaryThemeColor:null,)),
                 utils.iosProgressIndicator(AppColors.primaryThemeColor,
                     "Loading Maps Please wait..."),
                 const SizedBox(
@@ -203,16 +209,16 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                   controller: CountDownController(),
                                   width: 80,
                                   height: 80,
-                                  ringColor: Colors.grey[300]!,
+                                  ringColor: Get.isDarkMode ? AppColors.white : Colors.grey[300]!,
                                   fillColor: AppColors.green,
-                                  backgroundColor: Colors.white,
+                                  backgroundColor:Get.isDarkMode ? AppColors.greyColor10 : Colors.white,
                                   isReverseAnimation: true,
                                   isReverse: true,
                                   autoStart: true,
                                   strokeWidth: 5.0,
                                   textAlign: TextAlign.center,
                                   textStyle: TextStyle(
-                                      fontSize: 15, color: Colors.black),
+                                      fontSize: 15, color: Get.isDarkMode ? AppColors.white :Colors.black),
                                   timeFormatterFunction: (
                                       defaultFormatterFunction, duration) {
                                     if (duration.inSeconds == 0) {
@@ -225,7 +231,7 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                 ),
                                 const SizedBox(height: 5,),
                                 Text("Buffer Time", style: TextStyle(
-                                    color: Colors.black,
+                                    color: Get.isDarkMode ? AppColors.white :Colors.black,
                                     fontSize: Get.context!.isPhone ? 10 : 13
                                 ),
                                   textAlign: TextAlign.center,)
@@ -247,19 +253,19 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                         height: controller.currentLocationOrders
                             .isNotEmpty
                             ? controller.currentLocationOrders.first
-                            .status == "PICKED" ? 550 : 150
+                            .status == "PICKED" ? 550.sp : 185.sp
                             : controller
                             .ordersList.first.status == "PICKED"
-                            ? 550
-                            : 150,
+                            ? 550.sp
+                            : 185.sp,
                         width: controller.currentLocationOrders
                             .isNotEmpty
                             ? controller.currentLocationOrders.first
-                            .status == "PICKED" ? 330 : 150
+                            .status == "PICKED" ? 330.sp : 150.sp
                             : controller
                             .ordersList.first.status == "PICKED"
-                            ? 330
-                            : 150,
+                            ? 330.sp
+                            : 150.sp,
                         child: Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: Column(
@@ -283,7 +289,7 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                         style: TextStyle(
                                           fontSize:
                                           Get.context!.isPhone ? 12 : 15,
-                                          color: Colors.black,
+                                          color: Get.isDarkMode ? AppColors.white : Colors.black,
                                         ),
                                       ),
                                       Text(
@@ -297,7 +303,7 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                         style: TextStyle(
                                           fontSize:
                                           Get.context!.isPhone ? 12 : 15,
-                                          color: AppColors.black,
+                                          color: Get.isDarkMode ? AppColors.white :AppColors.black,
                                         ),
                                       ),
                                     ],
@@ -306,8 +312,8 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                     width: 10,
                                   ),
                                   slaTimer(
-                                      40,
-                                      40,
+                                      40.sp,
+                                      40.sp,
                                       controller.currentLocationOrders
                                           .isNotEmpty
                                           ? controller.currentLocationOrders
@@ -331,6 +337,19 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                       12),
                                 ],
                               ),
+                              Column(
+                                     children: [
+                                       customRow("Zone", controller.currentLocationOrders.isNotEmpty
+                                           ? controller.currentLocationOrders.first.consigneeZone!:controller
+                                           .ordersList.first.consigneeZone!),
+                                       customRow("Street", controller.currentLocationOrders.isNotEmpty
+                                           ? controller.currentLocationOrders.first.consigneeStreetNumber!:controller
+                                           .ordersList.first.consigneeStreetNumber!),
+                                       customRow("Building", controller.currentLocationOrders.isNotEmpty
+                                           ? controller.currentLocationOrders.first.consigneeBuildingNo!:controller
+                                           .ordersList.first.consigneeBuildingNo!),
+                                     ],
+                                                            ),
                               Visibility(
                                 visible: controller.currentLocationOrders
                                   .isNotEmpty
@@ -364,7 +383,6 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                         customRow("Consignee Name", controller.currentLocationOrders.isNotEmpty
                                             ? controller.currentLocationOrders.first.consigneeAddress!:controller
                                             .ordersList.first.consigneeAddress!),
-
                                       ],
                                     ),
                                     SizedBox(height: 20,),
@@ -397,8 +415,8 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                     ? true
                                     : false,
                                 child: SizedBox(
-                                  width: 150,
-                                  height: 30,
+                                  width: 150.sp,
+                                  height: 30.sp,
                                   child: utils.mainButton("Mark OFD", () async {
                                     controller.selectedOrder.value =
                                     controller.currentLocationOrders.isNotEmpty
@@ -623,7 +641,7 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                 Expanded(
                                   flex: 10,
                                   child: SizedBox(
-                                    height: 350,
+                                    height: min(350.sp,400.sp),
                                     child: PageView.builder(
                                         scrollDirection: Axis.horizontal,
                                         controller: controller.pageController,
