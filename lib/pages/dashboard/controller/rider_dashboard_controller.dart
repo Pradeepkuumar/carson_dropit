@@ -4,6 +4,7 @@ import 'package:carson_zyppy/local_db/entity/UserData.dart';
 import 'package:carson_zyppy/pages/dashboard/models/dashboard_data.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:location/location.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../apis/base_api_response.dart';
@@ -29,14 +30,24 @@ class RiderDashboardController extends GetxController {
   var isAttendanceLoaded = false.obs;
   var attendancesList = [].obs;
   var isAnyActiveOrder = false.obs;
+  var checkBoxValue = false.obs;
+  RxBool isConsentGiven = RxBool(false);
 
 
   @override
   void onInit() {
-    requestBackgroundPermission();
     getUser();
-    updateLocation();
     super.onInit();
+  }
+
+  @override
+  void onReady() {
+    isConsentGiven.value = box.read("isConsentGiven");
+    if(isConsentGiven.value){
+      updateLocation();
+      requestBackgroundPermission();
+    }
+    super.onReady();
   }
 
   // final listener = InternetConnection().onStatusChange.listen((InternetStatus status) {
@@ -84,8 +95,11 @@ class RiderDashboardController extends GetxController {
     }
   }
 
+
+
   getUser() async {
     try {
+
       var value = await userRepository.getUser();
       if (value != null) {
         userData = value;
@@ -96,6 +110,8 @@ class RiderDashboardController extends GetxController {
       //  utils.errorSnackBar("Exception", e.toString());
     }
   }
+
+
 
   Future<bool> logout() async {
     utils.showLoadingDialog("Logging out...");

@@ -712,7 +712,84 @@ class _RiderDashboardState extends State<RiderDashboard> {
                 ),
               ),
             );
-          })
+          }),
+              Obx(()=> controller.isConsentGiven.value ? const SizedBox.shrink():
+                  Container(
+                    decoration: utils.boxDecorationWhite(),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                       children: [
+                         SizedBox(
+                             height: 100,
+                             width: Get.width - 70,
+                             child: Image.asset(appLogo, color: Get.isDarkMode? AppColors.primaryThemeColor:null,),
+                                        ),
+                        SizedBox(height: 20.sp,),
+                        utils.tvCustom("Location Permission Required", AppColors.primaryThemeColor, 20.sp),
+                                        SizedBox(height: 20.sp,),
+                                        utils.tvCustom("Background Location Permission", AppColors.primaryThemeColor, 17.sp),
+                                        SizedBox(height: 10.sp,),
+                        utils.tvCustom("This app collects location data to enable order assignment and rider notifications even when the app is closed or not in use (background).",
+                            AppColors.black, 15.sp),
+                                        SizedBox(height: 14.sp,),
+                                        utils.tvCustom("Foreground Location Permission", AppColors.primaryThemeColor, 17.sp),
+                                        SizedBox(height: 10.sp,),
+                        utils.tvCustom("Foreground location is used to provide navigation directions for delivering orders to customer addresses. Your location data will only be used to enhance delivery operations and ensure timely updates. We do not share your location data with any third parties.",
+                            AppColors.black, 15.sp),
+                                        SizedBox(height: 14.sp,),
+                                        Row(
+                                          children: [
+                                            Checkbox(
+                                              value: controller.checkBoxValue.value,
+                                              activeColor: AppColors.greenLight,
+                                              onChanged: (bool? value) {
+                                             controller.checkBoxValue.toggle();
+                                            },),
+                                            utils.tvCustom("I agree to share my location data as described above.", AppColors.blue, 10.sp),
+
+                                          ],
+                                        ),
+                                        SizedBox(height: 24.sp,),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                          children: [
+                                            utils.iconButton("Agree ", () async {
+                                              if(controller.checkBoxValue.value){
+                                               await  box.write("isConsentGiven", true);
+                                               controller.isConsentGiven.value = true;
+                                               controller.updateLocation();
+                                               controller.requestBackgroundPermission();
+                                              }else{
+                                                utils.errorSnackBar("Error !", "Pls accept terms & conditions before proceed");
+                                              }
+                                            }, Icons.done, AppColors.greenLight, AppColors.white),
+                                            utils.iconButton("Disagree", () async{
+                                              bool isLoggedOut =
+                                                  await controller.logout();
+                                              if (isLoggedOut) {
+                                                utils.simpleDialog(
+                                                    "Action",
+                                                    "If you disagree with our location policy, you will be logged out of the app.", () async {
+                                                  var isLoggedOut =
+                                                  await controller.logout();
+                                                  if (isLoggedOut) {
+                                                    userRepository.deleteUser();
+                                                    Get.offAllNamed(Routes.auth);
+                                                  }
+                                                }, () {
+                                                  Get.back();
+                                                });
+                                              }
+                                            }, Icons.cancel_presentation_outlined, AppColors.red, AppColors.white)
+                                          ],
+                                        )
+                                      ],
+                                    ),
+                    ),
+                  ))
         ]),
       ),
     );

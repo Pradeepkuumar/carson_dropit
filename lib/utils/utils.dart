@@ -913,6 +913,18 @@ class Utils extends GetxController {
       barrierDismissible: false,
     );
   }
+  simpleDialogContent(String title, String middleText, void Function() clickListener,
+      void Function() clickListenerCancelButton,Widget content) {
+    return Get.defaultDialog(
+      title: title,
+      middleText: middleText,
+      buttonColor: AppColors.primaryThemeColor,
+      onConfirm: clickListener,
+      onCancel: clickListenerCancelButton,
+      barrierDismissible: false,
+      content: content
+    );
+  }
 
   // void showCustomDialog({
   //   required String title,
