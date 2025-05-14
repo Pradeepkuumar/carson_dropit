@@ -40,6 +40,7 @@ void main() async {
   });
 
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+
   runApp(const MyApp());
 }
 
@@ -48,12 +49,10 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
-      statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+      statusBarColor: Get.isDarkMode ? AppColors.black : AppColors.white,
+      statusBarIconBrightness: Get.isDarkMode ? Brightness.light : Brightness.dark,
+      statusBarBrightness: Get.isDarkMode ? Brightness.dark : Brightness.light,
     ));
 
     return ScreenUtilInit(

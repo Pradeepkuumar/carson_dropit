@@ -11,7 +11,7 @@ class AppThemes {
     secondaryHeaderColor: AppColors.secondryThemeColor,
     appBarTheme: const AppBarTheme(
       backgroundColor: Colors.white,
-      foregroundColor: Colors.black,
+      foregroundColor: Colors.white,
       elevation: 0,
     ),
     colorScheme: ColorScheme.fromSwatch().copyWith(secondary: AppColors.secondryThemeColor),
@@ -23,8 +23,8 @@ class AppThemes {
     primaryColor: AppColors.primaryThemeColor,
     cardColor: AppColors.greyColor10,
     appBarTheme: const AppBarTheme(
-      backgroundColor: Colors.white,
-      foregroundColor: Colors.black,
+      backgroundColor: Colors.black,
+      foregroundColor: Colors.white,
       elevation: 0,
     ),
     colorScheme: ColorScheme.fromSwatch(
