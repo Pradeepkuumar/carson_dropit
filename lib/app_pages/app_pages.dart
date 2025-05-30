@@ -39,7 +39,7 @@ class AppPages {
     ),
     GetPage(
       name: _Paths.nearByOrders,
-      page: () => const NearbyOrdersView(),
+      page: () =>  NearbyOrdersView(),
       binding: PlacedOrdersBinding(),
     ),
     GetPage(

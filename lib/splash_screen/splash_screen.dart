@@ -4,7 +4,9 @@ import 'package:carson_zyppy/pages/dashboard/view/rider_dashboard.dart';
 import 'package:carson_zyppy/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:lottie/lottie.dart';
 
+import '../global/consts.dart';
 import '../global/global.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -22,7 +24,7 @@ class _SplashScreesState extends State<SplashScreen> {
   void initState() {
     super.initState();
     getUser();
-    Future.delayed(const Duration(seconds: 3), () {
+    Future.delayed(const Duration(seconds: 6), () {
       setState(() {
         showLoadingScreen = false;
       });
@@ -41,22 +43,18 @@ class _SplashScreesState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     if (showLoadingScreen) {
-      return SafeArea(
-        child: Container(
-          height: Get.height,
-          decoration: utils.boxDacorationGradient(),
-          child: Center(
-            child: Stack(children: [
-              Image.asset(
-                "assets/images/bg_splash.png",
-                height: Get.height,
-                width: Get.width,
-                fit: BoxFit.fill,
+      return Scaffold(
+        body: SafeArea(
+          child: SizedBox(
+            height: Get.height,
+           width: Get.width,
+            child: Center(
+              child: SizedBox(
+                height: 200,
+                width: Get.width - 50,
+                child: Lottie.asset(ANIM_LOGO),
               ),
-              Center(
-                child: utils.iosProgressIndicator(AppColors.primaryThemeColor,"Loading data please wait..."),
-              ),
-            ]),
+            ),
           ),
         ),
       );

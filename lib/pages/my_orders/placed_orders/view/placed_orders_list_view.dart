@@ -1,7 +1,7 @@
 import 'package:carson_zyppy/global/consts.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:simple_barcode_scanner/simple_barcode_scanner.dart';
+import '../../../../global/qr_scanner.dart';
 import '../../../../utils/colors.dart';
 import '../../../../utils/utils.dart';
 import '../controller/placed_orders_controller.dart';
@@ -47,11 +47,17 @@ class PlacedOrdersListView extends GetView<PlacedOrdersController> {
                                     suffixIcon: IconButton(
                                       icon: const Icon(Icons.qr_code_scanner),
                                       onPressed: () async {
-                                        var res = await Get.to(
-                                            const SimpleBarcodeScannerPage());
-                                        if (res is String) {
-                                          searchResult(res, 2);
+
+                                        final result = await Navigator.push(
+                                          context,
+                                          MaterialPageRoute(builder: (context) => const QRScannerPage()),
+                                        );
+
+                                        if (result != null) {
+                                          searchResult(result, 2);
                                         }
+
+
                                       },
                                     ),
                                     suffixIconColor: AppColors.primaryThemeColor,

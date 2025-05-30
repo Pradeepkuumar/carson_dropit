@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:signature/signature.dart';
 
 import '../../../../app_pages/app_pages.dart';
+import '../../../../global/consts.dart';
 import '../../../../global/global.dart';
 import '../../../../utils/colors.dart';
 
@@ -135,7 +136,7 @@ class ImageSignatureView extends GetView<OrdersController> {
                           padding: const EdgeInsets.all(5),
                           child: utils.mainButton("DELIVER", () async{
                             if (controller.deliveredImage != null) {
-                                 var isDelivered = await controller.updateOrder("DELIVERED");
+                                 var isDelivered = await controller.updateOrder(DELIVERED);
                                  if(isDelivered){
                                    Get.offNamed(Routes.ordersScreen);
                                  }

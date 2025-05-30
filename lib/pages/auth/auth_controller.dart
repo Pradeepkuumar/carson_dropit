@@ -29,7 +29,7 @@ class AuthController extends GetxController {
     try {
        userId.value = box.read(USER_ID_KEY) ;
     } catch (e){
-      utils.errorSnackBar("Exception", e.toString());
+     // utils.errorSnackBar("Exception", e.toString());
     }
 
   }

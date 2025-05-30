@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:carson_zyppy/global/consts.dart';
 import 'package:carson_zyppy/global/global.dart';
 import 'package:carson_zyppy/pages/auth/auth_controller.dart';
 import 'package:carson_zyppy/utils/colors.dart';
@@ -25,23 +26,24 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Container(
-          height: Get.height,
-          width: Get.width,
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-                image: AssetImage("assets/images/bg_login.png"),
-                fit: BoxFit.fill),
-          ),
-          alignment: Alignment.center,
-          child: Container(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+             SizedBox(
+               height: 100,
+               width: 180,
+               child: Image.asset(appLogo,
+                  fit: BoxFit.fill,color: Get.isDarkMode? AppColors.primaryThemeColor :null),
+             ),
+          const SizedBox(height: 30,),
+          Container(
             height: utils.isMobileScreen(context) ? 350 : 550,
             width: double.infinity,
             margin: const EdgeInsets.symmetric(horizontal: 30),
             decoration: BoxDecoration(
               border: Border.all(color: AppColors.primaryThemeColor),
               borderRadius: BorderRadius.circular(15),
-              color: AppColors.primaryThemeColor.withOpacity(0.1),
+              color: AppColors.primaryThemeColor.withOpacity(0.2),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(15),
@@ -62,7 +64,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             )),
                         const Spacer(),
                         TextUtil(
-                          text: "Email / User ID",
+                          text: "User ID",
                         ),
                         Container(
                           height: 35,
@@ -73,6 +75,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             controller: controller.feCode,
                             style: const TextStyle(color:AppColors.primaryThemeColor),
                             textCapitalization: TextCapitalization.characters,
+                            cursorColor: AppColors.primaryThemeColor,
+                            textInputAction: TextInputAction.next,
                             decoration: const InputDecoration(
                               suffixIcon: Icon(
                                 Icons.mail,
@@ -95,6 +99,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: TextFormField(
                             controller: controller.password,
                             style: const TextStyle(color: AppColors.primaryThemeColor),
+                            cursorColor: AppColors.primaryThemeColor,
+                            textInputAction: TextInputAction.done,
                             decoration: const InputDecoration(
                               suffixIcon: Icon(
                                 Icons.lock,
@@ -102,6 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               fillColor: AppColors.primaryThemeColor,
                               border: InputBorder.none,
+
                             ),
                           ),
                         ),
@@ -118,7 +125,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               }else{
                                 utils.errorDialog("Pls Enter Credentials");
                               }
-        
+
                             },
                             child: Container(
                               height: utils.isMobileScreen(context)?40:60,
@@ -129,17 +136,18 @@ class _LoginScreenState extends State<LoginScreen> {
                               alignment: Alignment.center,
                               child: TextUtil(
                                 text: "Log In",
-                                color: AppColors.white,
+                                color: Get.isDarkMode ? AppColors.black : AppColors.white,
                               ),
                             )),
                         const Spacer(),
-        
+
                       ],
                     ),
                   )),
             ),
           ),
-        ),
+        ]
+        )
       ),
     );
   }

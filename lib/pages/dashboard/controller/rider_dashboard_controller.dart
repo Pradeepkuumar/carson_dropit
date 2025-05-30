@@ -28,14 +28,25 @@ class RiderDashboardController extends GetxController {
   var dashBoardData = DashBoardData().obs;
   var isAttendanceLoaded = false.obs;
   var attendancesList = [].obs;
+  var isAnyActiveOrder = false.obs;
+  var checkBoxValue = false.obs;
+  RxBool isConsentGiven = RxBool(false);
 
 
   @override
   void onInit() {
-    requestBackgroundPermission();
     getUser();
-    updateLocation();
     super.onInit();
+  }
+
+  @override
+  void onReady() {
+    isConsentGiven.value = box.read("isConsentGiven");
+    if(isConsentGiven.value){
+      updateLocation();
+      requestBackgroundPermission();
+    }
+    super.onReady();
   }
 
   // final listener = InternetConnection().onStatusChange.listen((InternetStatus status) {
@@ -83,8 +94,11 @@ class RiderDashboardController extends GetxController {
     }
   }
 
+
+
   getUser() async {
     try {
+
       var value = await userRepository.getUser();
       if (value != null) {
         userData = value;
@@ -95,6 +109,8 @@ class RiderDashboardController extends GetxController {
       //  utils.errorSnackBar("Exception", e.toString());
     }
   }
+
+
 
   Future<bool> logout() async {
     utils.showLoadingDialog("Logging out...");
@@ -130,6 +146,10 @@ class RiderDashboardController extends GetxController {
       var result = BaseApiResponse.fromJson(response);
       if (result.status_code == 200) {
         dashBoardData.value = DashBoardData.fromJson(result.data);
+        if(dashBoardData.value.allOrdersCount?.aSSIGNED != 0 || dashBoardData.value.allOrdersCount?.pICKED != 0 ||
+        dashBoardData.value.allOrdersCount?.oFD != 0) {
+          isAnyActiveOrder.value = true;
+        }
         utils.closeLoadingDialog();
         update();
         return true;
@@ -145,6 +165,8 @@ class RiderDashboardController extends GetxController {
     }
   }
 
+
+
   Future<bool> fetchWalletAmount() async {
     try {
       Map<String, dynamic> model = {
@@ -154,7 +176,7 @@ class RiderDashboardController extends GetxController {
           apiEndPoints.fetchWalletAmount, model);
       var result = BaseApiResponse.fromJson(response);
       if (result.status_code == 200) {
-        walletAmount.value = result.data.toString();
+        walletAmount.value = result.data;
         utils.closeLoadingDialog();
         update();
         return true;

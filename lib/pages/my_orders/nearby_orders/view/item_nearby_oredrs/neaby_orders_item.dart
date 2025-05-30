@@ -56,13 +56,13 @@ nearByOrderItem(
                       ),
                       Container(
                         decoration: BoxDecoration(
-                            color: orderData.status == "ASSIGNED"
+                            color: orderData.status == ASSIGNED
                                 ? AppColors.linkColor
-                                : orderData.status == "REACHED"
+                                : orderData.status == REACHED
                                     ? AppColors.primaryThemeColor
-                                    : orderData.status == "PICKED"
+                                    : orderData.status == PICKED
                                         ? AppColors.blue
-                                        : orderData.status == "DELIVERED"
+                                        : orderData.status == DELIVERED
                                             ? AppColors.greenLight
                                             : AppColors.primaryThemeColor,
                             borderRadius: BorderRadius.circular(8)),
@@ -126,7 +126,7 @@ nearByOrderItem(
                             color: AppColors.primaryThemeColor,
                           ),
                           title: Text(
-                            "${orderData.merchantName}\n${orderData.itemName}\n${orderData.itemDescription}(${orderData.quantity})",
+                            "${orderData.itemName}\n${orderData.itemDescription}(${orderData.quantity})",
                             style:  TextStyle(
                               fontSize: Get.context!.isPhone ? 12 : 15,
                             ),
@@ -150,6 +150,9 @@ nearByOrderItem(
                         customRow(
                             "Consignee Name", orderData.consigneeName ?? ""),
                         customRow("Order Created Date", utils.formatDate(orderData.createdAt.toString(),"dd MMM yyyy hh:mm a")),
+                        customRow("Zone", orderData.consigneeZone ?? ""),
+                        customRow("Street", orderData.consigneeStreetNumber ?? ""),
+                        customRow("Building", orderData.consigneeBuildingNo ?? ""),
                       ],
                     ),
                     Column(
@@ -157,13 +160,13 @@ nearByOrderItem(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         customColumn(
-                            "Pick-Up Location", orderData.pickupAddress ?? ""),
-                        customColumn("Drop-Off Location",
+                            "Pick-Up Address", orderData.pickupAddress ?? ""),
+                        customColumn("Drop-Off Address",
                             orderData.consigneeAddress ?? ""),
                       ],
                     ),
                     Visibility(
-                      visible: orderData.status == "PLACED" ? true : false,
+                      visible: orderData.status == PLACED ? true : false,
                       child: Column(
                         children: [
                           const SizedBox(height: 10,),
@@ -202,7 +205,7 @@ Widget customRow(String name, String data) {
       visible: data.isNotEmpty,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Expanded(
             flex: 4,
@@ -228,7 +231,7 @@ Widget customColumn(String name, String data) {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
-           Icon(Icons.location_on_sharp,color: name == "Drop-Off Location" ?AppColors.green : AppColors.blue),
+           Icon(Icons.location_on_sharp,color: name == "Drop-Off Address" ?AppColors.green : AppColors.blue),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

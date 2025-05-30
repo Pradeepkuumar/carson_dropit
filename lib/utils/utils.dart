@@ -101,17 +101,17 @@ class Utils extends GetxController {
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
-          textStyle: const TextStyle(
+          textStyle:  TextStyle(
               fontSize: 15,
               fontStyle: FontStyle.normal,
-              color: AppColors.white),
+              color: Get.isDarkMode ?  AppColors.black:AppColors.white),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
         ),
         onPressed: onClick,
         child: Text(
-          title!, style: const TextStyle(color: AppColors.white, fontSize: 18,),),
+          title!, style:  TextStyle(color: Get.isDarkMode ?  AppColors.black:AppColors.white, fontSize: 18,),),
       ),
     );
   }
@@ -327,25 +327,23 @@ class Utils extends GetxController {
     return Get.defaultDialog(
       title: "Error !",
       titleStyle: const TextStyle(color: AppColors.red),
-      backgroundColor: AppColors.white,
-      content: Container(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            SizedBox(
-              height: 80,
-              width: 80,
-              child: Lottie.asset(ANIM_ERROR),
+      backgroundColor: Get.isDarkMode? AppColors.greyColor10: AppColors.white,
+      content: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            height: 80,
+            width: 80,
+            child: Lottie.asset(ANIM_ERROR),
+          ),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(5),
+              child: utils.tvCustom(title, AppColors.red, 15),
             ),
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(5),
-                child: utils.tvCustom(title, AppColors.red, 15),
-              ),
-            )
-          ],
-        ),
+          )
+        ],
       ),
       buttonColor: AppColors.primaryThemeColor,
     );
@@ -399,15 +397,12 @@ class Utils extends GetxController {
    );
   }
 
-  noDataFoundWidget() {
+  noDataFoundWidget(String msg) {
     return Padding(
       padding: const EdgeInsets.all(8.0),
-      child: SizedBox(
-        height: 250,
-        width: 250,
+      child: IntrinsicHeight(
         child: Card(
           elevation: 2,
-          color: AppColors.white,
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: Column(
@@ -417,13 +412,15 @@ class Utils extends GetxController {
                 SizedBox(
                   height: 100,
                   width: 100,
-                  child: Lottie.asset(ANIM_ERROR),
+                  child: Image.asset(appLogo,color: Get.isDarkMode ?  AppColors.primaryThemeColor: null,)
                 ),
-                utils.tvCustom("No Data Found !", AppColors.red, 15),
+                utils.tvCustom(msg, AppColors.red, 15),
                 const SizedBox(height: 25,),
-                utils.iconButton("Go Back", (){
-                  Get.back();
-                }, Icons.arrow_back_ios_new_outlined, AppColors.primaryThemeColor, AppColors.white)
+                IntrinsicWidth(
+                  child: utils.iconButton("Go Back", (){
+                    Get.back();
+                  }, Icons.arrow_back_ios_new_outlined, AppColors.primaryThemeColor, AppColors.white),
+                )
               ],
             ),
           ),
@@ -580,8 +577,7 @@ class Utils extends GetxController {
   boxDecorationWhite() {
     return BoxDecoration(
       borderRadius: BorderRadius.circular(10),
-      color: Colors.white,
-      backgroundBlendMode: BlendMode.screen,
+      color: Get.isDarkMode ? AppColors.greyColor10 : Colors.white,
       boxShadow: const [
         BoxShadow(
           color: Color.fromARGB(103, 0, 0, 0),
@@ -917,20 +913,83 @@ class Utils extends GetxController {
       barrierDismissible: false,
     );
   }
+  simpleDialogContent(String title, String middleText, void Function() clickListener,
+      void Function() clickListenerCancelButton,Widget content) {
+    return Get.defaultDialog(
+      title: title,
+      middleText: middleText,
+      buttonColor: AppColors.primaryThemeColor,
+      onConfirm: clickListener,
+      onCancel: clickListenerCancelButton,
+      barrierDismissible: false,
+      content: content
+    );
+  }
 
+  // void showCustomDialog({
+  //   required String title,
+  //   required String middleText,
+  //   required List<Widget> buttons,
+  // }) {
+  //   Get.defaultDialog(
+  //     title: title,
+  //     middleText: middleText,
+  //     barrierDismissible: false,
+  //     contentPadding: const EdgeInsets.all(16),
+  //     actions: buttons,
+  //   );
+  // }
   void showCustomDialog({
     required String title,
     required String middleText,
     required List<Widget> buttons,
   }) {
     Get.defaultDialog(
-      title: title,
-      middleText: middleText,
+      title: "",
+      titlePadding: EdgeInsets.zero,
+      contentPadding: EdgeInsets.zero,
+      radius: 8,
       barrierDismissible: false,
-      contentPadding: const EdgeInsets.all(16),
-      actions: buttons,
+      content: Stack(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 16),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  middleText,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                ...buttons,
+              ],
+            ),
+          ),
+          Positioned(
+            right: 8,
+            top: 2,
+            child: GestureDetector(
+              onTap: () => Get.back(),
+              child: const Icon(Icons.close, color: Colors.red),
+            ),
+          ),
+        ],
+      ),
     );
   }
+
+
 
   //Radio Button
   simpleRadioButtonHorizontal(String title,
@@ -1119,7 +1178,7 @@ class Utils extends GetxController {
     return Text(
       text!.tr,
       softWrap: true,
-      style: AppTextStyle.tsRegular(textColor),
+      style: AppTextStyle.tsRegular(Get.isDarkMode? AppColors.white : textColor),
     );
   }
 
@@ -1127,7 +1186,7 @@ class Utils extends GetxController {
     return Text(
       text ?? "",
       softWrap: true,
-      style: AppTextStyle.tsCustom(textColor, context!.isTablet ? 20:fontSize),
+      style: AppTextStyle.tsCustom(Get.isDarkMode? AppColors.white : textColor, context!.isTablet ? 20:fontSize),
       textAlign: TextAlign.center,
     );
   }
@@ -1136,7 +1195,7 @@ class Utils extends GetxController {
     return Text(text!.tr,
         softWrap: true,
         style: TextStyle(
-          color: Colors.black,
+          color: Get.isDarkMode? AppColors.white : Colors.black,
           fontSize: context!.isPhone ?10:20,
         ));
   }
@@ -1147,7 +1206,7 @@ class Utils extends GetxController {
       child: Text(
         text!.tr,
         softWrap: true,
-        style: AppTextStyle.tsBoldLarge(color),
+        style: AppTextStyle.tsBoldLarge(Get.isDarkMode? AppColors.white : color),
       ),
     );
   }

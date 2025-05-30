@@ -13,8 +13,7 @@ clickedOrderItem(
   return Card(
       elevation: 4,
       shadowColor: Colors.black,
-      color: AppColors.white,
-      child: SizedBox(
+      child: IntrinsicHeight(
         child: Padding(
           padding: const EdgeInsets.all(10.0),
           child: Column(
@@ -30,14 +29,14 @@ clickedOrderItem(
                         "Order No.",
                         style: TextStyle(
                           fontSize: Get.context!.isPhone ? 12 : 15,
-                          color: Colors.black,
+                          color:Get.isDarkMode ? AppColors.white : Colors.black,
                         ),
                       ),
                       Text(
                         orderData.awbNo.toString(),
                         style:  TextStyle(
                           fontSize: Get.context!.isPhone ? 12 : 15,
-                          color: AppColors.black,
+                          color:Get.isDarkMode ? AppColors.white : AppColors.black,
                         ),
                       ),
 
@@ -68,7 +67,10 @@ clickedOrderItem(
                         customRow("Item","${orderData.itemName!}(${orderData.quantity})" ?? ""),
                         customRow("Order Amount",orderData.orderAmount ?? ""),
                         customRow("Order Weight",orderData.weight ?? ""),
-                        customRow("Location", orderData.status == "OFD" ? orderData.contact_person_name ?? "":orderData.pickupLocationName ?? ""),
+                        customRow("Location", orderData.status == OFD ? orderData.contact_person_name ?? "":orderData.pickupLocationName ?? ""),
+                        customRow("Zone", orderData.consigneeZone ?? ""),
+                        customRow("Street", orderData.consigneeStreetNumber ?? ""),
+                        customRow("Building", orderData.consigneeBuildingNo ?? ""),
                       ],
                     ),
                     const SizedBox(height: 10,),
@@ -79,22 +81,22 @@ clickedOrderItem(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            utils.clickableImageVertical("Call Pickup", AppColors.black, AppColors.lightBlue, icTelephone, 30, 30, (){
+                            utils.clickableImageVertical("Call Pickup", Get.isDarkMode ? AppColors.white :AppColors.black, AppColors.lightBlue, icTelephone, 30, 30, (){
                               utils.openDialPad(
                                   orderData.pickupPhoneNo.toString());
                             }),
                             const SizedBox(width:5,),
-                            utils.clickableImageVertical("Pickup", AppColors.black, AppColors.green, icWhatsApp,30, 30, (){
+                            utils.clickableImageVertical("Pickup", Get.isDarkMode ? AppColors.white :AppColors.black, AppColors.green, icWhatsApp,30, 30, (){
                               utils.openWhtsApp(
                                   orderData.pickupPhoneNo.toString());
                             }),
                             const SizedBox(width:5,),
-                            utils.clickableImageVertical("Call Consignee", AppColors.black, AppColors.blue, icTelephone, 30, 30, (){
+                            utils.clickableImageVertical("Call Consignee", Get.isDarkMode ? AppColors.white :AppColors.black, AppColors.blue, icTelephone, 30, 30, (){
                               utils.openDialPad(
                                   orderData.consigneeMobileNo.toString());
                             }),
                             const SizedBox(width:5,),
-                            utils.clickableImageVertical("Consignee", AppColors.black, AppColors.green, icWhatsApp,30, 30, (){
+                            utils.clickableImageVertical("Consignee", Get.isDarkMode ? AppColors.white :AppColors.black, AppColors.green, icWhatsApp,30, 30, (){
                               utils.openWhtsApp(
                                   orderData.pickupPhoneNo.toString());
                             }),
@@ -106,13 +108,13 @@ clickedOrderItem(
                     ),
                     Visibility(
                       visible: listType == 1,
-                        child: utils.iconButton(orderData.status == "ASSIGNED"|| orderData.status == "RE-ASSIGNED" ? "REACHED" :orderData.status == "REACHED"? "PICK": orderData.status == "PICKED" ? "MARK OFD":orderData.status == "OFD" ? "UPDATE" : "",(){
-                          orderData.status == "OFD" ?
+                        child: utils.iconButton(orderData.status == ASSIGNED|| orderData.status == RE_ASSIGNED ? REACHED :orderData.status == REACHED? "PICK": orderData.status == PICKED ? "MARK OFD":orderData.status == OFD ? "UPDATE" : "",(){
+                          orderData.status == OFD ?
                           onClick(orderData,updateOrder)
                               :
                       onClick(orderData,updateStatus);
 
-                    }, Icons.update,orderData.status == "ASSIGNED"|| orderData.status == "RE-ASSIGNED"?AppColors.blue : orderData.status == "RE-ASSIGNED"?AppColors.orange : orderData.status == "PICKED" ?
+                    }, Icons.update,orderData.status == ASSIGNED|| orderData.status == RE_ASSIGNED?AppColors.blue : orderData.status == RE_ASSIGNED?AppColors.orange : orderData.status == PICKED ?
                         AppColors.primaryThemeColor :AppColors.greenLight, AppColors.white)
                     )
                   ],
@@ -139,13 +141,13 @@ Widget customRow(String name, String data) {
         children: [
           Expanded(
             flex: 4,
-            child: utils.tvCustom(name, AppColors.black, 10),
+            child: utils.tvCustom(name, Get.isDarkMode ? AppColors.white :AppColors.black, 10),
           ),
           Expanded(
             flex: 2,
-            child: utils.tvRegular(":", AppColors.black),
+            child: utils.tvRegular(":", Get.isDarkMode ? AppColors.white :AppColors.black),
           ),
-          Expanded(flex: 4, child: utils.tvCustom(data, AppColors.black, 10)),
+          Expanded(flex: 4, child: utils.tvCustom(data, Get.isDarkMode ? AppColors.white :AppColors.black, 10)),
         ],
       ),
     ),
@@ -167,10 +169,10 @@ Widget customColumn(String name, String data) {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                utils.tvCustom(name, AppColors.black, 13),
+                utils.tvCustom(name, Get.isDarkMode ? AppColors.white :AppColors.black, 13),
                 utils.tvRegular(
                   data,
-                  AppColors.black,
+                  Get.isDarkMode ? AppColors.white :AppColors.black,
                 ),
               ],
             ),

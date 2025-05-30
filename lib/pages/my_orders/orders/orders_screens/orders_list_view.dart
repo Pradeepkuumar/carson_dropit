@@ -1,9 +1,7 @@
 import 'package:carson_zyppy/global/consts.dart';
-import 'package:carson_zyppy/pages/map/map_page.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:simple_barcode_scanner/simple_barcode_scanner.dart';
-
+import '../../../../global/qr_scanner.dart';
 import '../../../../utils/colors.dart';
 import '../../../../utils/utils.dart';
 import '../controller/orders_controller.dart';
@@ -29,7 +27,7 @@ class OrdersListViewState extends State<OrdersListView> {
     controller.getUser();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if(controller.tabController.index == 0) {
-        controller.getFeOrders(["ASSIGNED","RE-ASSIGNED","REACHED"]);
+        controller.getFeOrders([DELIVERED]);
       }
     });
     super.initState();
@@ -75,12 +73,17 @@ class OrdersListViewState extends State<OrdersListView> {
                                     suffixIcon: IconButton(
                                       icon: const Icon(Icons.qr_code_scanner),
                                       onPressed: () async {
-                                        var res = await Get.to(
-                                            const SimpleBarcodeScannerPage());
-                                        if (res is String) {
-                                          searchResult(res, 2);
+
+                                        final result = await Navigator.push(
+                                          context,
+                                          MaterialPageRoute(builder: (context) => const QRScannerPage()),
+                                        );
+
+                                        if (result != null) {
+                                          searchResult(result, 2);
                                         }
-                                      },
+
+                                                                            },
                                     ),
                                     suffixIconColor:
                                         AppColors.primaryThemeColor,
@@ -106,7 +109,7 @@ class OrdersListViewState extends State<OrdersListView> {
                           child: Obx(() => controller.isLoading.value ?
                               Center(child: utils.iosProgressIndicator(AppColors.white,"Loading...")):
                                controller.sortedOrders.isEmpty ?
-                               Center(child: utils.tvRegular("No Data Found !", AppColors.white))
+                               Center(child: utils.tvRegular("No Order Found !", AppColors.white))
                                   : ListView.builder(
                                 itemCount: controller.sortedOrders.length,
                                 itemBuilder: (context, position) {
@@ -116,29 +119,29 @@ class OrdersListViewState extends State<OrdersListView> {
                                       controller.sortedOrders[position],
                                           (clickedOrder, clickType) async {
                                         if (clickType == orderScanCLick) {
-                                          var res = await Get.to(
-                                            SimpleBarcodeScannerPage(
-                                              appBarTitle: clickedOrder.awbNo,
-                                            ),
-                                          );
-                                          if (res is String && res != "-1") {
-                                            var result = res;
-                                            if (clickedOrder.awbNo == result) {
-
-                                            } else {
-                                              utils.errorSnackBar(
-                                                "Error !",
-                                                "Wrong Order Scanned",
-                                              );
-                                            }
-                                          }
+                                          // var res = await Get.to(
+                                          //   SimpleBarcodeScannerPage(
+                                          //     appBarTitle: clickedOrder.awbNo,
+                                          //   ),
+                                          // );
+                                          // if (res is String && res != "-1") {
+                                          //   var result = res;
+                                          //   if (clickedOrder.awbNo == result) {
+                                          //
+                                          //   } else {
+                                          //     utils.errorSnackBar(
+                                          //       "Error !",
+                                          //       "Wrong Order Scanned",
+                                          //     );
+                                          //   }
+                                          // }
                                         } else if (clickType == orderUpdateToOFD) {
                                           controller.selectedOrder.value = clickedOrder;
-                                          controller.updateOrder("OFD");
+                                          controller.updateOrder(OFD);
                                         } else if (clickType == orderUpdateToDeliver ||
                                             clickType == fullMapViewCLick) {
                                           controller.selectedOrder.value = clickedOrder;
-                                          Get.to(() => MapPage(orderDetails:controller.selectedOrder.value,mapView: 1));
+                                         // Get.to(() => MapPage(orderDetails:controller.selectedOrder.value,mapView: 1));
 
                                         }
                                       },

@@ -5,6 +5,7 @@ const String USER_ID_KEY = "user_id";
  const String directionJson = 'assets/animations/directionsJson.json';
  const String ANIM_ERROR = 'assets/animations/anim_error.json';
  const String ANIM_RIDER = 'assets/animations/delivery_rider.json';
+ const String ANIM_LOGO = 'assets/animations/anim_logo.json';
  const String myOrdersImage = 'assets/images/ic_my_orders.png';
  const String placedOrdersImage = 'assets/images/ic_placed_orders.png';
  const String nearByImage = 'assets/images/ic_nearby_location.png';
@@ -12,6 +13,7 @@ const String USER_ID_KEY = "user_id";
  const String icWhatsApp = 'assets/icons/ic_whtasapp.png';
  const String icPickUpOrders = 'assets/images/pick_orders.png';
  const String icDropOrders = 'assets/images/ic_ofd_orders.png';
+ const String appLogo = 'assets/images/app_logo.png';
 
 
  //App CONSTANTS
@@ -29,6 +31,16 @@ const String imageTwo =  "1";
 
 const String updateOrder =  "UPDATE_ORDER";
 const String updateStatus =  "UPDATE_STATUS";
+
+//order Status
+const String PLACED = "PLACED";
+const String ASSIGNED = "ASSIGNED";
+const String RE_ASSIGNED = "RE-ASSIGNED";
+const String REACHED = "REACHED";
+const String PICKED = "PICKED";
+const String OFD = "OFD";
+const String DELIVERED = "DELIVERED";
+const String UNDELIVERED = "UNDELIVERED";
 
 
 

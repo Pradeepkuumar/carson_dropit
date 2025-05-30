@@ -5,6 +5,7 @@ import 'package:carson_zyppy/utils/colors.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:google_navigation_flutter/google_navigation_flutter.dart';
@@ -70,7 +71,7 @@ class _MapPageState extends State<MapPage> {
     //     longitude: double.parse(widget.orderDetails.pickupLongitude ?? "0.0"),
     //   );
     //
-    //   if (widget.orderDetails.status == "OFD") {
+    //   if (widget.orderDetails.status == OFD) {
     //     _waypoints.add(NavigationWaypoint.withLatLngTarget(
     //         title: "Delivery Location",
     //         target: deliveryLocation
@@ -188,12 +189,12 @@ class _MapPageState extends State<MapPage> {
 
                     },
                     child: Container(
-                      height: context.isPhone ?60:100,
-                      width: context.isPhone ?60:100,
+                      height: context.isPhone ?60.sp:100.sp,
+                      width: context.isPhone ?60.sp:100.sp,
                       decoration: utils.boxDecorationWhite(),
                       child: Padding(
                         padding: const EdgeInsets.all(5),
-                        child: slaTimer(context.isPhone ?30:60, context.isPhone ?30:60,
+                        child: slaTimer(context.isPhone ?30.sp:60.sp, context.isPhone ?30.sp:60.sp,
                             widget.orderDetails.createdAt ?? "", int.tryParse(
                                 widget.orderDetails.sla_in_hours.toString()) ??
                                 0, 7
@@ -214,8 +215,8 @@ class _MapPageState extends State<MapPage> {
                   },
                   child: Obx(() {
                     return Container(
-                        height: context.isPhone ?60:100,
-                        width: context.isPhone ?60:100,
+                        height: context.isPhone ?60.sp:100.sp,
+                        width: context.isPhone ?60.sp:100.sp,
                         decoration: utils.boxDecorationWhite(),
                         child: Padding(
                           padding: const EdgeInsets.all(5),
@@ -223,7 +224,7 @@ class _MapPageState extends State<MapPage> {
                             children: [
                               Icon(Icons.map,
                                   size:
-                                  enableMapType.value ? 30 : 35,
+                                  enableMapType.value ? 30.sp : 35.sp,
                                   color: enableMapType.value
                                       ? AppColors.greyColor4
                                       : AppColors.selectedBlue),
@@ -232,7 +233,7 @@ class _MapPageState extends State<MapPage> {
                                 child: Text(
                                   enableMapType.value ? "Normal" : "Satellite",
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(fontSize: context.isPhone ?10:20),),
+                                  style: TextStyle(fontSize: context.isPhone ?10.sp:20.sp),),
                               )
 
                             ],
@@ -386,7 +387,7 @@ class _MapPageState extends State<MapPage> {
                           left: 20,
                           right: 20,
                           bottom:
-                          controller.markDelivered.value ? 10 : 100),
+                          controller.markDelivered.value ? 10.sp : 100.sp),
                       child: Container(
                         decoration: utils.boxDecorationWhite(),
                         child: SingleChildScrollView(
@@ -948,16 +949,16 @@ class _MapPageState extends State<MapPage> {
                                                     .selectedOrder
                                                     .value
                                                     .status ==
-                                                    "ASSIGNED" ||
+                                                    ASSIGNED ||
                                                     controller.selectedOrder
                                                         .value.status ==
-                                                        "RE-ASSIGNED"),
+                                                        RE_ASSIGNED),
                                                 child: utils.iconButton(
                                                     "Mark Reached",
                                                         () async {
                                                       await controller
                                                           .updateOrder(
-                                                          "REACHED");
+                                                          REACHED);
                                                     },
                                                     Icons
                                                         .follow_the_signs_rounded,
@@ -969,11 +970,11 @@ class _MapPageState extends State<MapPage> {
                                                     .selectedOrder
                                                     .value
                                                     .status ==
-                                                    "REACHED",
+                                                    REACHED,
                                                 child: utils.iconButton(
                                                     "Mark Pick", () async {
                                                   await controller.updateOrder(
-                                                      "PICKED");
+                                                      PICKED);
                                                 },
                                                     Icons.signpost_rounded,
                                                     AppColors.blue,
@@ -991,7 +992,7 @@ class _MapPageState extends State<MapPage> {
                                                               .selectedOrder
                                                               .value
                                                               .status ==
-                                                              "OFD",
+                                                              OFD,
                                                       child: Row(children: [
                                                         utils.iconButton(
                                                             "UnDeliver", () {
@@ -1029,7 +1030,7 @@ class _MapPageState extends State<MapPage> {
                                                 .selectedOrder
                                                 .value
                                                 .status ==
-                                                "OFD" &&
+                                                OFD &&
                                                 controller
                                                     .markDelivered.value,
                                             child: utils.iconButton(
@@ -1040,7 +1041,7 @@ class _MapPageState extends State<MapPage> {
                                                 var isDElivered =
                                                 await controller
                                                     .updateOrder(
-                                                    "DELIVERED");
+                                                    DELIVERED);
                                                 if (isDElivered == true) {
                                                   clearImageSign();
                                                 }
@@ -1061,7 +1062,7 @@ class _MapPageState extends State<MapPage> {
                                         alignment: Alignment.bottomCenter,
                                         child: Visibility(
                                             visible: controller.selectedOrder
-                                                .value.status == "OFD" &&
+                                                .value.status == OFD &&
                                                 controller.markUnDelivered
                                                     .value,
                                             child: utils.iconButton(
@@ -1070,7 +1071,7 @@ class _MapPageState extends State<MapPage> {
                                                   var isUpdated =
                                                   await controller
                                                       .updateOrder(
-                                                      "UNDELIVERED");
+                                                      UNDELIVERED);
                                                   if (isUpdated == true) {
                                                     clearImageSign();
                                                   }
@@ -1150,7 +1151,7 @@ class _MapPageState extends State<MapPage> {
   //         //
   //         // LatLng matchingLocation;
   //         //
-  //         // if(widget.orderDetails.status == "OFD"){
+  //         // if(widget.orderDetails.status == OFD){
   //         //   matchingLocation =  LatLng(latitude: deliveryLocation.latitude, longitude: deliveryLocation.longitude);
   //         // }else{
   //         //   matchingLocation =  LatLng(latitude: pickUpLocation.latitude, longitude: pickUpLocation.longitude);

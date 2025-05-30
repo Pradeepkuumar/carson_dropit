@@ -20,7 +20,9 @@ class BaseApiResponse {
         data = jsonData;
       } else if (jsonData is List<dynamic>) {
         data = jsonData;
-      } else {
+      } else if(jsonData is String) {
+        data = jsonData;
+      }else{
         data = null;
       }
     } else {

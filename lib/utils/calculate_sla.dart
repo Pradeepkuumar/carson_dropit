@@ -1,5 +1,6 @@
 import 'package:circular_countdown_timer/circular_countdown_timer.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import 'colors.dart';
@@ -29,16 +30,16 @@ Column slaTimer(double height,double width,String createdAt, int slaHours,double
         controller: CountDownController(),
         width: width,
         height: height,
-        ringColor:isOrderTimeOver? AppColors.red:Colors.grey[300]!,
+        ringColor:isOrderTimeOver? AppColors.red :Colors.grey[300]!,
         fillColor:AppColors.green
         ,
-        backgroundColor: Colors.white,
+        backgroundColor: Get.isDarkMode ? AppColors.greyColor10 :Colors.white,
         isReverseAnimation: true,
         isReverse: true,
         autoStart: true,
         strokeWidth: 5.0,
         textAlign: TextAlign.center,
-        textStyle:  TextStyle(fontSize: textSize, color: Colors.black),
+        textStyle:  TextStyle(fontSize: textSize, color:Get.isDarkMode ? AppColors.white : Colors.black),
         timeFormatterFunction: (defaultFormatterFunction, duration) {
           if (duration.inSeconds == 0) {
             return "00:00";
@@ -49,7 +50,7 @@ Column slaTimer(double height,double width,String createdAt, int slaHours,double
       ),
       const SizedBox(height: 2,),
       Text("Remaining Time",style: TextStyle(
-        color: Colors.black,fontSize: Get.context!.isPhone ?7:13
+        color: Get.isDarkMode ? AppColors.white : Colors.black,fontSize: Get.context!.isPhone ? 6.sp:13.sp
       ),
       textAlign: TextAlign.center,)
     ],
