@@ -57,9 +57,9 @@ placedOrderItem(OrdersData orderData,void Function(OrdersData,String) onClick) {
                       ),
                       Container(
                         decoration: BoxDecoration(
-                            color: orderData.status == "ASSIGNED" ? AppColors.linkColor :
-                            orderData.status == "REACHED"? AppColors.primaryThemeColor:orderData.status == "PICKED"?
-                            AppColors.blue : orderData.status == "DELIVERED" ? AppColors.greenLight : AppColors.primaryThemeColor,
+                            color: orderData.status == ASSIGNED ? AppColors.linkColor :
+                            orderData.status == REACHED? AppColors.primaryThemeColor:orderData.status == PICKED?
+                            AppColors.blue : orderData.status == DELIVERED ? AppColors.greenLight : AppColors.primaryThemeColor,
                             borderRadius: BorderRadius.circular(8)),
                         child: Padding(
                           padding:  const EdgeInsets.all(4.0),
@@ -142,7 +142,7 @@ placedOrderItem(OrdersData orderData,void Function(OrdersData,String) onClick) {
                   ),
 
                   Visibility(
-                    visible: orderData.status == "PLACED" ? true : false,
+                    visible: orderData.status == PLACED ? true : false,
                     child: Column(
                       children: [
                         // SizedBox (

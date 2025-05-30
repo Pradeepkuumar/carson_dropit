@@ -81,16 +81,16 @@ class OrdersController extends GetxController with GetTickerProviderStateMixin {
     tabController.addListener(() {
       viewFullMap.value = false;
       if (tabController.index == 0) {
-        getFeOrders(["DELIVERED"]);
+        getFeOrders([DELIVERED]);
       } else if (tabController.index == 1) {
-        getFeOrders(["UNDELIVERED"]);
+        getFeOrders([UNDELIVERED]);
       }
       // else if (tabController.index == 2) {
-      //   getFeOrders(["OFD"]);
+      //   getFeOrders([OFD]);
       // } else if (tabController.index == 3) {
-      //   getFeOrders(["DELIVERED"]);
+      //   getFeOrders([DELIVERED]);
       // } else if (tabController.index == 4) {
-      //   getFeOrders(["UNDELIVERED"]);
+      //   getFeOrders([UNDELIVERED]);
       // }
       signatureController.addListener(signatureListner);
     });
@@ -225,7 +225,7 @@ class OrdersController extends GetxController with GetTickerProviderStateMixin {
         'status': status,
         'fe_code': user.code ?? "",
         'awb_no': selectedOrder.value.awbNo ?? "",
-        if (status == "UNDELIVERED") 'reason': selectedReason.value,
+        if (status == UNDELIVERED) 'reason': selectedReason.value,
       };
       if (kDebugMode) {
         print(data);
@@ -238,17 +238,17 @@ class OrdersController extends GetxController with GetTickerProviderStateMixin {
         selectedOrder.value.status = order.status;
         utils.closeLoadingDialog();
         update();
-        if (status == "PICKED") {
+        if (status == PICKED) {
           await riderDashboardController.getDashBoardData();
-          await getFeOrders(["ASSIGNED", "RE-ASSIGNED"]);
+          await getFeOrders([ASSIGNED, RE_ASSIGNED]);
         }
-        if (status == "OFD") {
+        if (status == OFD) {
           await riderDashboardController.getDashBoardData();
-          await getFeOrders(["PICKED"]);
+          await getFeOrders([PICKED]);
         }
-        if (status == "DELIVERED" || status == "UNDELIVERED") {
+        if (status == DELIVERED || status == UNDELIVERED) {
           await riderDashboardController.getDashBoardData();
-          await getFeOrders(["OFD"]);
+          await getFeOrders([OFD]);
         }
         return true;
       } else {
@@ -340,7 +340,7 @@ class OrdersController extends GetxController with GetTickerProviderStateMixin {
   }
 
   Future<ImageDescriptor?> getOrCreateCustomImageFromAsset() async {
-    const AssetImage assetImage = AssetImage('assets/icons/icon_pickup.png');
+    const AssetImage assetImage = AssetImage('assets/icons/ic_scooter.png');
     final ImageConfiguration configuration =
     createLocalImageConfiguration(Get.context!);
     final AssetBundleImageKey assetBundleImageKey =

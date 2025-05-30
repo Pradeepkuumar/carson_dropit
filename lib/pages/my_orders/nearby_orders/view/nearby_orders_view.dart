@@ -140,7 +140,7 @@ Future<void> fetchOrdersAndInitialize() async {
                               Expanded(
                                 flex: 20,
                                 child: SizedBox(
-                                  height: context.isPhone ? 670.sp : 800.sp,
+                                  height: context.isPhone ? 580.sp : 800.sp,
                                   child: Obx(() => controller
                                       .selectedMerchantOrdersList.isEmpty ?
                                       utils.noDataFoundWidget("There is no order for this location \n Please check another pickup location"):

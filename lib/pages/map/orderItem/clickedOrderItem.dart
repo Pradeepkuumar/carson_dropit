@@ -67,7 +67,7 @@ clickedOrderItem(
                         customRow("Item","${orderData.itemName!}(${orderData.quantity})" ?? ""),
                         customRow("Order Amount",orderData.orderAmount ?? ""),
                         customRow("Order Weight",orderData.weight ?? ""),
-                        customRow("Location", orderData.status == "OFD" ? orderData.contact_person_name ?? "":orderData.pickupLocationName ?? ""),
+                        customRow("Location", orderData.status == OFD ? orderData.contact_person_name ?? "":orderData.pickupLocationName ?? ""),
                         customRow("Zone", orderData.consigneeZone ?? ""),
                         customRow("Street", orderData.consigneeStreetNumber ?? ""),
                         customRow("Building", orderData.consigneeBuildingNo ?? ""),
@@ -108,13 +108,13 @@ clickedOrderItem(
                     ),
                     Visibility(
                       visible: listType == 1,
-                        child: utils.iconButton(orderData.status == "ASSIGNED"|| orderData.status == "RE-ASSIGNED" ? "REACHED" :orderData.status == "REACHED"? "PICK": orderData.status == "PICKED" ? "MARK OFD":orderData.status == "OFD" ? "UPDATE" : "",(){
-                          orderData.status == "OFD" ?
+                        child: utils.iconButton(orderData.status == ASSIGNED|| orderData.status == RE_ASSIGNED ? REACHED :orderData.status == REACHED? "PICK": orderData.status == PICKED ? "MARK OFD":orderData.status == OFD ? "UPDATE" : "",(){
+                          orderData.status == OFD ?
                           onClick(orderData,updateOrder)
                               :
                       onClick(orderData,updateStatus);
 
-                    }, Icons.update,orderData.status == "ASSIGNED"|| orderData.status == "RE-ASSIGNED"?AppColors.blue : orderData.status == "RE-ASSIGNED"?AppColors.orange : orderData.status == "PICKED" ?
+                    }, Icons.update,orderData.status == ASSIGNED|| orderData.status == RE_ASSIGNED?AppColors.blue : orderData.status == RE_ASSIGNED?AppColors.orange : orderData.status == PICKED ?
                         AppColors.primaryThemeColor :AppColors.greenLight, AppColors.white)
                     )
                   ],

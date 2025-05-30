@@ -4,7 +4,6 @@ import 'package:carson_zyppy/local_db/entity/UserData.dart';
 import 'package:carson_zyppy/pages/dashboard/models/dashboard_data.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
-import 'package:get_storage/get_storage.dart';
 import 'package:location/location.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../apis/base_api_response.dart';

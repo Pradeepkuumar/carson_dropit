@@ -39,7 +39,6 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
   AllOrdersMapPage({super.key});
 
 
-
   void _onViewCreated(GoogleNavigationViewController mapController) async {
     WidgetsFlutterBinding.ensureInitialized();
     WakelockPlus.enable();
@@ -60,8 +59,9 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
     await controller.navigationViewController?.setNavigationUIEnabled(true);
     await controller.navigationViewController?.setSpeedometerEnabled(true);
 
-    final darkMapStyle = await rootBundle.loadString('assets/map_theme/map_theme_dark.json');
-    await mapController.setMapStyle(Get.isDarkMode?darkMapStyle:null);
+    final darkMapStyle = await rootBundle.loadString(
+        'assets/map_theme/map_theme_dark.json');
+    await mapController.setMapStyle(Get.isDarkMode ? darkMapStyle : null);
 //     await controller.navigationViewController?.setMapStyle('''
 //    [{
 //     "featureType": "administrative",
@@ -99,7 +99,7 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
 //   }
 // ]
 //     ''');
-   // await controller.navigationViewController?.settings.setTrafficEnabled(true);
+    // await controller.navigationViewController?.settings.setTrafficEnabled(true);
   }
 
   // void _onRemainingTimeOrDistanceChangedEvent(
@@ -130,7 +130,9 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                 SizedBox(
                     height: 150,
                     width: Get.width - 50,
-                    child: Image.asset(appLogo,color: Get.isDarkMode ? AppColors.primaryThemeColor:null,)),
+                    child: Image.asset(appLogo, color: Get.isDarkMode
+                        ? AppColors.primaryThemeColor
+                        : null,)),
                 utils.iosProgressIndicator(AppColors.primaryThemeColor,
                     "Loading Maps Please wait..."),
                 const SizedBox(
@@ -187,10 +189,10 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                 return Visibility(
                   visible: controller.currentLocationOrders.isNotEmpty
                       ? controller.currentLocationOrders.first.status ==
-                      "REACHED" || controller
+                      REACHED || controller
                       .markUnDelivered.value || controller
                       .markDelivered.value : controller.ordersList.first
-                      .status == "REACHED" || controller
+                      .status == REACHED || controller
                       .markUnDelivered.value || controller
                       .markDelivered.value,
                   child: Positioned(
@@ -202,36 +204,50 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                             padding: const EdgeInsets.all(8.0),
                             child: Column(
                               children: [
-                                CircularCountDownTimer(
-                                  duration: 300,
-                                  //duration: int.tryParse(controller.selectedOrder.value.pickup_buffer_time_in_minutes  ?? "0") ?? 0 * 60,
-                                  initialDuration: 0,
-                                  controller: CountDownController(),
-                                  width: 80,
-                                  height: 80,
-                                  ringColor: Get.isDarkMode ? AppColors.white : Colors.grey[300]!,
-                                  fillColor: AppColors.green,
-                                  backgroundColor:Get.isDarkMode ? AppColors.greyColor10 : Colors.white,
-                                  isReverseAnimation: true,
-                                  isReverse: true,
-                                  autoStart: true,
-                                  strokeWidth: 5.0,
-                                  textAlign: TextAlign.center,
-                                  textStyle: TextStyle(
-                                      fontSize: 15, color: Get.isDarkMode ? AppColors.white :Colors.black),
-                                  timeFormatterFunction: (
-                                      defaultFormatterFunction, duration) {
-                                    if (duration.inSeconds == 0) {
-                                      return "00:00";
-                                    } else {
-                                      return Function.apply(
-                                          defaultFormatterFunction, [duration]);
-                                    }
-                                  },
-                                ),
+                                Obx(() {
+                                  return CircularCountDownTimer(
+                                    duration: int.tryParse(
+                                        controller.currentLocationOrders.isNotEmpty ? controller.currentLocationOrders.first.status == REACHED ? controller.currentLocationOrders.first.pickup_buffer_time_in_minutes! : controller.currentLocationOrders.first.dropoff_buffer_time_in_minutes!
+                                            : controller.ordersList.first.status == REACHED ? controller.ordersList.first.pickup_buffer_time_in_minutes! :
+                                        controller.ordersList.first.dropoff_buffer_time_in_minutes!)! *
+                                        60,
+                                    initialDuration: 0,
+                                    controller: CountDownController(),
+                                    width: 80,
+                                    height: 80,
+                                    ringColor: Get.isDarkMode
+                                        ? AppColors.white
+                                        : Colors.grey[300]!,
+                                    fillColor: AppColors.green,
+                                    backgroundColor: Get.isDarkMode ? AppColors
+                                        .greyColor10 : Colors.white,
+                                    isReverseAnimation: true,
+                                    isReverse: true,
+                                    autoStart: true,
+                                    strokeWidth: 5.0,
+                                    textAlign: TextAlign.center,
+                                    textStyle: TextStyle(
+                                        fontSize: 15,
+                                        color: Get.isDarkMode
+                                            ? AppColors.white
+                                            : Colors.black),
+                                    timeFormatterFunction: (
+                                        defaultFormatterFunction, duration) {
+                                      if (duration.inSeconds == 0) {
+                                        return "00:00";
+                                      } else {
+                                        return Function.apply(
+                                            defaultFormatterFunction,
+                                            [duration]);
+                                      }
+                                    },
+                                  );
+                                }),
                                 const SizedBox(height: 5,),
                                 Text("Buffer Time", style: TextStyle(
-                                    color: Get.isDarkMode ? AppColors.white :Colors.black,
+                                    color: Get.isDarkMode
+                                        ? AppColors.white
+                                        : Colors.black,
                                     fontSize: Get.context!.isPhone ? 10 : 13
                                 ),
                                   textAlign: TextAlign.center,)
@@ -253,17 +269,17 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                         height: controller.currentLocationOrders
                             .isNotEmpty
                             ? controller.currentLocationOrders.first
-                            .status == "PICKED" ? 550.sp : 185.sp
+                            .status == PICKED ? 550.sp : 185.sp
                             : controller
-                            .ordersList.first.status == "PICKED"
+                            .ordersList.first.status == PICKED
                             ? 550.sp
                             : 185.sp,
                         width: controller.currentLocationOrders
                             .isNotEmpty
                             ? controller.currentLocationOrders.first
-                            .status == "PICKED" ? 330.sp : 150.sp
+                            .status == PICKED ? 330.sp : 150.sp
                             : controller
-                            .ordersList.first.status == "PICKED"
+                            .ordersList.first.status == PICKED
                             ? 330.sp
                             : 150.sp,
                         child: Padding(
@@ -289,7 +305,8 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                         style: TextStyle(
                                           fontSize:
                                           Get.context!.isPhone ? 12 : 15,
-                                          color: Get.isDarkMode ? AppColors.white : Colors.black,
+                                          color: Get.isDarkMode ? AppColors
+                                              .white : Colors.black,
                                         ),
                                       ),
                                       Text(
@@ -303,7 +320,8 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                         style: TextStyle(
                                           fontSize:
                                           Get.context!.isPhone ? 12 : 15,
-                                          color: Get.isDarkMode ? AppColors.white :AppColors.black,
+                                          color: Get.isDarkMode ? AppColors
+                                              .white : AppColors.black,
                                         ),
                                       ),
                                     ],
@@ -314,9 +332,7 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                   slaTimer(
                                       40.sp,
                                       40.sp,
-                                      controller.currentLocationOrders
-                                          .isNotEmpty
-                                          ? controller.currentLocationOrders
+                                      controller.currentLocationOrders.isNotEmpty ? controller.currentLocationOrders
                                           .first
                                           .createdAt
                                           .toString()
@@ -338,69 +354,121 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                 ],
                               ),
                               Column(
-                                     children: [
-                                       customRow("Zone", controller.currentLocationOrders.isNotEmpty
-                                           ? controller.currentLocationOrders.first.consigneeZone!:controller
-                                           .ordersList.first.consigneeZone!),
-                                       customRow("Street", controller.currentLocationOrders.isNotEmpty
-                                           ? controller.currentLocationOrders.first.consigneeStreetNumber!:controller
-                                           .ordersList.first.consigneeStreetNumber!),
-                                       customRow("Building", controller.currentLocationOrders.isNotEmpty
-                                           ? controller.currentLocationOrders.first.consigneeBuildingNo!:controller
-                                           .ordersList.first.consigneeBuildingNo!),
-                                     ],
-                                                            ),
+                                children: [
+                                  customRow("Zone",
+                                      controller.currentLocationOrders
+                                          .isNotEmpty
+                                          ? controller.currentLocationOrders
+                                          .first.consigneeZone! : controller
+                                          .ordersList.first.consigneeZone!),
+                                  customRow("Street",
+                                      controller.currentLocationOrders
+                                          .isNotEmpty
+                                          ? controller.currentLocationOrders
+                                          .first.consigneeStreetNumber!
+                                          : controller
+                                          .ordersList.first
+                                          .consigneeStreetNumber!),
+                                  customRow("Building",
+                                      controller.currentLocationOrders
+                                          .isNotEmpty
+                                          ? controller.currentLocationOrders
+                                          .first.consigneeBuildingNo!
+                                          : controller
+                                          .ordersList.first
+                                          .consigneeBuildingNo!),
+                                ],
+                              ),
                               Visibility(
-                                visible: controller.currentLocationOrders
-                                  .isNotEmpty
-                               ? controller.currentLocationOrders.first
-                                  .status == "PICKED" ? true : false
-                                  : controller
-                                  .ordersList.first.status == "PICKED"
-                                  ? true
-                                  : false,
+                                  visible: controller.currentLocationOrders
+                                      .isNotEmpty
+                                      ? controller.currentLocationOrders.first
+                                      .status == PICKED ? true : false
+                                      : controller
+                                      .ordersList.first.status == PICKED
+                                      ? true
+                                      : false,
                                   child:
-                                Column(
+                                  Column(
 
-                                  children: [
-                                    Column(
-                                      children: [
-                                        customRow("Order SLA","${controller.currentLocationOrders.isNotEmpty
-                                            ? controller.currentLocationOrders.first.sla_in_hours:controller
-                                            .ordersList.first.sla_in_hours}(Hrs)"),
-                                        customRow("Pickup-Delivery Distance",controller.currentLocationOrders.isNotEmpty
-                                            ? controller.currentLocationOrders.first.distance! :controller
-                                            .ordersList.first.distance!),
-                                        customRow("Approx. Time",controller.currentLocationOrders.isNotEmpty
-                                            ? controller.currentLocationOrders.first.duration! :controller
-                                            .ordersList.first.duration! ),
-                                        customRow("Order Amount.",controller.currentLocationOrders.isNotEmpty
-                                            ? controller.currentLocationOrders.first.orderAmount !:controller
-                                            .ordersList.first.orderAmount!),
-                                        customRow("Weight.",  controller.currentLocationOrders.isNotEmpty
-                                            ? controller.currentLocationOrders.first.weight! :controller
-                                            .ordersList.first.weight!),
-                                        customRow("Consignee Name", controller.currentLocationOrders.isNotEmpty
-                                            ? controller.currentLocationOrders.first.consigneeAddress!:controller
-                                            .ordersList.first.consigneeAddress!),
-                                      ],
-                                    ),
-                                    SizedBox(height: 20,),
-                                    Column(
-                                      mainAxisAlignment: MainAxisAlignment.start,
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        customColumn("Pick-Up Location", controller.currentLocationOrders.isNotEmpty
-                                            ? controller.currentLocationOrders.first.pickupAddress! :controller
-                                            .ordersList.first.pickupAddress!),
-                                        customColumn("Drop-Off Location", controller.currentLocationOrders.isNotEmpty
-                                            ? controller.currentLocationOrders.first.consigneeAddress! :controller
-                                            .ordersList.first.consigneeAddress!),
-                                      ],
-                                    ),
-                                  ],
+                                    children: [
+                                      Column(
+                                        children: [
+                                          customRow("Order SLA", "${controller
+                                              .currentLocationOrders.isNotEmpty
+                                              ? controller.currentLocationOrders
+                                              .first.sla_in_hours : controller
+                                              .ordersList.first
+                                              .sla_in_hours}(Hrs)"),
+                                          customRow("Pickup-Delivery Distance",
+                                              controller.currentLocationOrders
+                                                  .isNotEmpty
+                                                  ? controller
+                                                  .currentLocationOrders.first
+                                                  .distance! : controller
+                                                  .ordersList.first.distance!),
+                                          customRow("Approx. Time",
+                                              controller.currentLocationOrders
+                                                  .isNotEmpty
+                                                  ? controller
+                                                  .currentLocationOrders.first
+                                                  .duration! : controller
+                                                  .ordersList.first.duration!),
+                                          customRow("Order Amount.",
+                                              controller.currentLocationOrders
+                                                  .isNotEmpty
+                                                  ? controller
+                                                  .currentLocationOrders.first
+                                                  .orderAmount ! : controller
+                                                  .ordersList.first
+                                                  .orderAmount!),
+                                          customRow("Weight.",
+                                              controller.currentLocationOrders
+                                                  .isNotEmpty
+                                                  ? controller
+                                                  .currentLocationOrders.first
+                                                  .weight! : controller
+                                                  .ordersList.first.weight!),
+                                          customRow("Consignee Name",
+                                              controller.currentLocationOrders
+                                                  .isNotEmpty
+                                                  ? controller
+                                                  .currentLocationOrders.first
+                                                  .consigneeAddress!
+                                                  : controller
+                                                  .ordersList.first
+                                                  .consigneeAddress!),
+                                        ],
+                                      ),
+                                      SizedBox(height: 20,),
+                                      Column(
+                                        mainAxisAlignment: MainAxisAlignment
+                                            .start,
+                                        crossAxisAlignment: CrossAxisAlignment
+                                            .start,
+                                        children: [
+                                          customColumn("Pick-Up Location",
+                                              controller.currentLocationOrders
+                                                  .isNotEmpty
+                                                  ? controller
+                                                  .currentLocationOrders.first
+                                                  .pickupAddress! : controller
+                                                  .ordersList.first
+                                                  .pickupAddress!),
+                                          customColumn("Drop-Off Location",
+                                              controller.currentLocationOrders
+                                                  .isNotEmpty
+                                                  ? controller
+                                                  .currentLocationOrders.first
+                                                  .consigneeAddress!
+                                                  : controller
+                                                  .ordersList.first
+                                                  .consigneeAddress!),
+                                        ],
+                                      ),
+                                    ],
 
-                                )
+                                  )
                               ),
                               SizedBox(
                                 height: 10,
@@ -409,9 +477,9 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                 visible: controller.currentLocationOrders
                                     .isNotEmpty
                                     ? controller.currentLocationOrders.first
-                                    .status == "PICKED" ? true : false
+                                    .status == PICKED ? true : false
                                     : controller
-                                    .ordersList.first.status == "PICKED"
+                                    .ordersList.first.status == PICKED
                                     ? true
                                     : false,
                                 child: SizedBox(
@@ -424,7 +492,7 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                         : controller.ordersList.first;
                                     bool isUpdated = await controller
                                         .updateOrder(
-                                        "OFD");
+                                        OFD);
                                     if (isUpdated) {
                                       controller.startGuidedNavigation();
                                     }
@@ -641,7 +709,7 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                 Expanded(
                                   flex: 10,
                                   child: SizedBox(
-                                    height: min(350.sp,400.sp),
+                                    height: min(350.sp, 400.sp),
                                     child: PageView.builder(
                                         scrollDirection: Axis.horizontal,
                                         controller: controller.pageController,
@@ -662,21 +730,37 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                                   .currentLocationOrders[
                                               position],
                                                   (clickedOrder, type) async {
-                                                controller.selectedOrder.value = clickedOrder;
+                                                controller.selectedOrder.value =
+                                                    clickedOrder;
                                                 await controller.setMarkers();
                                                 if (type == updateStatus) {
-                                                  if (clickedOrder.status == "REACHED") {
-                                                    bool isTrue = await controller.calculateBufferTime(DateTime.now(), "PICKED");
-                                                    if (isTrue) {controller.updateOrder("PICKED");}
+                                                  if (clickedOrder.status ==
+                                                      REACHED) {
+                                                    bool isTrue = await controller
+                                                        .calculateBufferTime(
+                                                        DateTime.now(),
+                                                        PICKED);
+                                                    if (isTrue) {
+                                                      controller.updateOrder(
+                                                          PICKED);
+                                                    }
                                                   } else
-                                                  if (clickedOrder.status == "ASSIGNED" || clickedOrder.status == "RE-ASSIGNED") {controller.updateOrder("REACHED");
+                                                  if (clickedOrder.status ==
+                                                      ASSIGNED ||
+                                                      clickedOrder.status ==
+                                                          RE_ASSIGNED) {
+                                                    controller.updateOrder(
+                                                        REACHED);
                                                     controller.startTime =
                                                         DateTime.now();
-                                                  }else if(clickedOrder.status == "PICKED"){
+                                                  } else
+                                                  if (clickedOrder.status ==
+                                                      PICKED) {
                                                     controller.updateOrder(
-                                                        "OFD");
+                                                        OFD);
                                                   }
-                                                } else if (type == updateOrder) {
+                                                } else
+                                                if (type == updateOrder) {
                                                   controller.viewAcceptView
                                                       .value = false;
                                                   controller
@@ -1413,7 +1497,7 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                                 !controller.markDelivered.value
                                                 &&
                                                 controller.selectedOrder.value
-                                                    .status == "OFD",
+                                                    .status == OFD,
                                             child: Row(
                                               mainAxisAlignment:
                                               MainAxisAlignment.center,
@@ -1462,7 +1546,7 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                                   .selectedOrder
                                                   .value
                                                   .status ==
-                                                  "OFD" &&
+                                                  OFD &&
                                                   controller
                                                       .markDelivered.value,
                                               child: utils.iconButton(
@@ -1470,7 +1554,7 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                                 bool isTrue = await controller
                                                     .calculateBufferTime(
                                                     DateTime.now(),
-                                                    "DELIVERED");
+                                                    DELIVERED);
                                                 if (isTrue) {
                                                   if (controller
                                                       .deliveredImage !=
@@ -1478,7 +1562,7 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                                     var isDElivered =
                                                     await controller
                                                         .updateOrder(
-                                                        "DELIVERED");
+                                                        DELIVERED);
                                                     if (isDElivered == true) {
                                                       clearImageSign();
                                                     }
@@ -1503,7 +1587,7 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                                   .selectedOrder
                                                   .value
                                                   .status ==
-                                                  "OFD" &&
+                                                  OFD &&
                                                   controller
                                                       .markUnDelivered.value,
                                               child: utils.iconButton(
@@ -1512,12 +1596,12 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                                     bool isTrue = await controller
                                                         .calculateBufferTime(
                                                         DateTime.now(),
-                                                        "DELIVERED");
+                                                        DELIVERED);
                                                     if (isTrue) {
                                                       var isUpdated =
                                                       await controller
                                                           .updateOrder(
-                                                          "UNDELIVERED");
+                                                          UNDELIVERED);
                                                       if (isUpdated ==
                                                           true) {
                                                         clearImageSign();

@@ -8,6 +8,7 @@ class FirebaseMessagingController extends GetxController {
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
   String? fcm_token;
+
   @override
   void onInit() {
     super.onInit();
@@ -81,7 +82,7 @@ class FirebaseMessagingController extends GetxController {
 
   void initializeLocalNotifications() async {
     final initializationSettingsAndroid =
-    AndroidInitializationSettings('@mipmap/ic_launcher');
+    AndroidInitializationSettings('ic_launcher');
     // final initializationSettingsIOS = IOSInitializationSettings(
     //    requestSoundPermission: false,
     //     requestBadgePermission: false,
@@ -139,10 +140,13 @@ class FirebaseMessagingController extends GetxController {
   }) async {
     final androidPlatformChannelSpecifics = AndroidNotificationDetails(
       channelId,
-      'Drop-IT Notifications channel',
+      channelId == 'nearby_orders_channel'
+      ? 'Nearby Orders'
+      : 'Assigned Orders',
+      channelDescription: 'Channel for $channelId',
       importance: Importance.high,
       priority: Priority.high,
-      styleInformation: BigTextStyleInformation(''),
+      styleInformation: BigTextStyleInformation(""),
       playSound: true,
       sound: RawResourceAndroidNotificationSound(soundName),
     );

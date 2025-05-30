@@ -43,7 +43,7 @@ class _LoginScreenState extends State<LoginScreen> {
             decoration: BoxDecoration(
               border: Border.all(color: AppColors.primaryThemeColor),
               borderRadius: BorderRadius.circular(15),
-              color: AppColors.primaryThemeColor.withOpacity(0.1),
+              color: AppColors.primaryThemeColor.withOpacity(0.2),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(15),

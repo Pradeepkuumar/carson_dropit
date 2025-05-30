@@ -32,6 +32,16 @@ const String imageTwo =  "1";
 const String updateOrder =  "UPDATE_ORDER";
 const String updateStatus =  "UPDATE_STATUS";
 
+//order Status
+const String PLACED = "PLACED";
+const String ASSIGNED = "ASSIGNED";
+const String RE_ASSIGNED = "RE-ASSIGNED";
+const String REACHED = "REACHED";
+const String PICKED = "PICKED";
+const String OFD = "OFD";
+const String DELIVERED = "DELIVERED";
+const String UNDELIVERED = "UNDELIVERED";
+
 
 
 

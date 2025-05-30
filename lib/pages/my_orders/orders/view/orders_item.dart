@@ -58,9 +58,9 @@ orderItem(OrdersData orderData, void Function(OrdersData,int) onClick) {
                       ),
                       Container(
                         decoration: BoxDecoration(
-                            color: orderData.status == "ASSIGNED" ? AppColors.linkColor :
-                            orderData.status == "REACHED"? AppColors.primaryThemeColor : orderData.status == "PICKED" ?
-                            AppColors.blue : orderData.status == "DELIVERED" ? AppColors.greenLight : orderData.status == "UNDELIVERED" ? AppColors.red : AppColors.primaryThemeColor,
+                            color: orderData.status == ASSIGNED ? AppColors.linkColor :
+                            orderData.status == REACHED? AppColors.primaryThemeColor : orderData.status == PICKED ?
+                            AppColors.blue : orderData.status == DELIVERED ? AppColors.greenLight : orderData.status == UNDELIVERED ? AppColors.red : AppColors.primaryThemeColor,
                             borderRadius: BorderRadius.circular(8)),
                         child: Padding(
                           padding:  const EdgeInsets.all(4.0),
@@ -131,7 +131,7 @@ orderItem(OrdersData orderData, void Function(OrdersData,int) onClick) {
                           ),
 
                           Visibility(
-                            visible:orderData.status == "DELIVERED" || orderData.status == "UNDELIVERED"  ? false : true ,
+                            visible:orderData.status == DELIVERED || orderData.status == UNDELIVERED  ? false : true ,
                             child: Expanded(
                                 flex: 1,
                                 child: slaTimer(60, 60,orderData.createdAt ?? "", int.tryParse(orderData.sla_in_hours.toString()) ?? 0 ,12),
@@ -143,7 +143,7 @@ orderItem(OrdersData orderData, void Function(OrdersData,int) onClick) {
 
                   Column(
                     children: [
-                      customRow("Order SLA","${orderData.sla_in_hours!}(Hrs)"),
+                      customRow("Order SLA","${orderData.sla_in_hours}(Hrs)"),
                       customRow("Pickup-Delivery Distance",orderData.distance ?? ""),
                       customRow("Approx. Time",orderData.duration ?? ""),
                       customRow("Order Amount.",orderData.orderAmount ?? ""),
@@ -164,13 +164,13 @@ orderItem(OrdersData orderData, void Function(OrdersData,int) onClick) {
                     ],
                   ),
                   // Visibility(
-                  //   visible: orderData.status == "UNDELIVERED",
+                  //   visible: orderData.status == UNDELIVERED,
                   //     child: Column( children: [
                   //         customRow("Undelivered Reason", orderData.reason ?? ""),
                   //         Image.network(orderData.failed_delivery_proof ?? "",height: 350,width: 300,fit: BoxFit.fill,)
                   //     ])),
                   Visibility(
-                    visible: orderData.status == "ASSIGNED" || orderData.status == "RE-ASSIGNED" ||orderData.status == "REACHED" ? true : false,
+                    visible: orderData.status == ASSIGNED || orderData.status == RE_ASSIGNED ||orderData.status == REACHED ? true : false,
                     child: Column(
                       children: [
                         const SizedBox(height: 10,),
@@ -212,12 +212,12 @@ orderItem(OrdersData orderData, void Function(OrdersData,int) onClick) {
                   ),
 
                   Visibility(
-                      visible: orderData.status == "PICKED" ? true : false,
+                      visible: orderData.status == PICKED ? true : false,
                       child: utils.iconButton("Out For Delivery", () {
                         onClick(orderData,orderUpdateToOFD);
                       }, Icons.add_road, AppColors.blue, AppColors.white)),
                   Visibility(
-                      visible: orderData.status == "OFD" ? true : false,
+                      visible: orderData.status == OFD ? true : false,
                       child: utils.iconButton("Update", () {
                         onClick(orderData,orderUpdateToDeliver);
                       }, Icons.update, AppColors.primaryThemeColor, AppColors.white))

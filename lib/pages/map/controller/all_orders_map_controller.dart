@@ -165,7 +165,7 @@ class AllOrdersMapController extends GetxController  {
   void onReady() {
     Future.delayed(const Duration(seconds: 5), () {
        getReasons();
-       getFeAllOrders(["ASSIGNED", "RE-ASSIGNED","REACHED","PICKED","OFD"]);
+       getFeAllOrders([ASSIGNED, RE_ASSIGNED,REACHED,PICKED,OFD]);
     });
 
     signatureController.addListener(signatureListner);
@@ -177,10 +177,10 @@ class AllOrdersMapController extends GetxController  {
         selectedOrder.value = ordersList[newPageIndex];
         navigationViewController!.animateCamera(CameraUpdate.newLatLngZoom(
           LatLng(
-            latitude: selectedOrder.value.status == "PICKED" || selectedOrder.value.status == "OFD"
+            latitude: selectedOrder.value.status == PICKED || selectedOrder.value.status == OFD
                 ? double.parse(selectedOrder.value.dropoffLatitude ?? "0.0")
                 : double.parse(selectedOrder.value.pickupLatitude ?? "0.0"),
-            longitude: selectedOrder.value.status == "PICKED" || selectedOrder.value.status == "OFD"
+            longitude: selectedOrder.value.status == PICKED || selectedOrder.value.status == OFD
                 ? double.parse(selectedOrder.value.dropoffLongitude ?? "0.0")
                 : double.parse(selectedOrder.value.pickupLongitude ?? "0.0"),
           ),
@@ -202,7 +202,7 @@ class AllOrdersMapController extends GetxController  {
   void fetchNearByOrders() {
     _nearbyOrdersTimer?.cancel();
     _nearbyOrdersTimer = Timer.periodic(const Duration(minutes: 5), (_)  {
-      //getFeAllOrders(["PLACED"]);
+      //getFeAllOrders([PLACED]);
     });
   }
 
@@ -248,10 +248,10 @@ class AllOrdersMapController extends GetxController  {
     if (currentLocation == null || ordersList.isEmpty) return;
     final nearbyOrders = ordersList.where((order) {
       final orderLatLng = LatLng(
-       latitude:  order.status == "PICKED" || order.status == "OFD"
+       latitude:  order.status == PICKED || order.status == OFD
             ? double.parse(order.dropoffLatitude ?? "0.0")
             : double.parse(order.pickupLatitude ?? "0.0"),
-        longitude:  order.status == "PICKED" || order.status == "OFD"
+        longitude:  order.status == PICKED || order.status == OFD
             ? double.parse(order.dropoffLongitude ?? "0.0")
             : double.parse(order.pickupLongitude ?? "0.0"),
       );
@@ -341,10 +341,10 @@ class AllOrdersMapController extends GetxController  {
         selectedOrder.value = ordersList[i];
         selectedOrderIndex.value = i;
         // updateSelectedMarker(  LatLng(
-        //   latitude: selectedOrder.value.status == "PICKED" || selectedOrder.value.status == "OFD"
+        //   latitude: selectedOrder.value.status == PICKED || selectedOrder.value.status == OFD
         //       ? double.parse(selectedOrder.value.dropoffLatitude ?? "0.0")
         //       : double.parse(selectedOrder.value.pickupLatitude ?? "0.0"),
-        //   longitude: selectedOrder.value.status == "PICKED" || selectedOrder.value.status == "OFD"
+        //   longitude: selectedOrder.value.status == PICKED || selectedOrder.value.status == OFD
         //       ? double.parse(selectedOrder.value.dropoffLongitude ?? "0.0")
         //       : double.parse(selectedOrder.value.pickupLongitude ?? "0.0"),
         // ));
@@ -500,10 +500,10 @@ class AllOrdersMapController extends GetxController  {
       Map<String, dynamic> data = {
         'status': status,
         'fe_code': user.code ?? "",
-        if(status == "PICKED") 'picked_buffer_time': bufferMinutes.value,
-        if(status == "DELIVERED") 'dropoff_buffer_time': bufferMinutes.value,
+        if(status == PICKED) 'picked_buffer_time': bufferMinutes.value,
+        if(status == DELIVERED) 'dropoff_buffer_time': bufferMinutes.value,
         'awb_no': selectedOrder.value.awbNo ?? "",
-        if (status == "UNDELIVERED") 'reason': selectedReason.value,
+        if (status == UNDELIVERED) 'reason': selectedReason.value,
       };
       if (kDebugMode) {
         print(data);
@@ -517,8 +517,8 @@ class AllOrdersMapController extends GetxController  {
         // updateExistingOrder(order);
         isUpdateCardVisibleForUpdate.value =  false;
 
-        getFeAllOrders(["ASSIGNED","RE-ASSIGNED","REACHED","PICKED","OFD"]);
-        if(status == "DELIVERED" || status == "UNDELIVERED" ){
+        getFeAllOrders([ASSIGNED,RE_ASSIGNED,REACHED,PICKED,OFD]);
+        if(status == DELIVERED || status == UNDELIVERED ){
           deliveredImage = null;
           deliveryProof = null;
           paymentProof.value = null;
@@ -788,11 +788,11 @@ class AllOrdersMapController extends GetxController  {
     final List<LatLng> tempLatLngList = [];
 
     for (var order in currentOrdersList) {
-      final double latitude = (order.status == "PICKED" || order.status == "OFD")
+      final double latitude = (order.status == PICKED || order.status == OFD)
           ? double.tryParse(order.dropoffLatitude ?? "0.0") ?? 0.0
           : double.tryParse(order.pickupLatitude ?? "0.0") ?? 0.0;
 
-      final double longitude = (order.status == "PICKED" || order.status == "OFD")
+      final double longitude = (order.status == PICKED || order.status == OFD)
           ? double.tryParse(order.dropoffLongitude ?? "0.0") ?? 0.0
           : double.tryParse(order.pickupLongitude ?? "0.0") ?? 0.0;
 
@@ -800,7 +800,7 @@ class AllOrdersMapController extends GetxController  {
 
       final ImageDescriptor customIcon = await registerDynamicMarker(
         order.awbNo.toString(),
-        (order.status == "PICKED" || order.status == "OFD") ? "DELIVERY" : "PICKUP",
+        (order.status == PICKED || order.status == OFD) ? "DELIVERY" : "PICKUP",
       );
 
       final marker = Marker(
@@ -870,11 +870,11 @@ class AllOrdersMapController extends GetxController  {
   //   }
   //
   //   for (var order in currentOrdersList) {
-  //     final double latitude = order.status == "PICKED" || order.status == "OFD"
+  //     final double latitude = order.status == PICKED || order.status == OFD
   //         ? double.parse(order.dropoffLatitude ?? "0.0")
   //         : double.parse(order.pickupLatitude ?? "0.0");
   //
-  //     final double longitude = order.status == "PICKED" || order.status == "OFD"
+  //     final double longitude = order.status == PICKED || order.status == OFD
   //         ? double.parse(order.dropoffLongitude ?? "0.0")
   //         : double.parse(order.pickupLongitude ?? "0.0");
   //
@@ -883,7 +883,7 @@ class AllOrdersMapController extends GetxController  {
   //
   //     final ImageDescriptor customIcon = await registerDynamicMarker(
   //       order.awbNo.toString(),
-  //       order.status == "PICKED" || order.status == "OFD"
+  //       order.status == PICKED || order.status == OFD
   //           ? "DELIVERY":"PICKUP",
   //     );
   //
@@ -956,16 +956,16 @@ class AllOrdersMapController extends GetxController  {
   //       markerId: order.awbNo!,
   //       options: MarkerOptions(
   //         position: LatLng(
-  //           latitude: order.status == "PICKED" || order.status == "OFD"
+  //           latitude: order.status == PICKED || order.status == OFD
   //               ? double.parse(order.dropoffLatitude ?? "0.0")
   //               : double.parse(order.pickupLatitude ?? "0.0"),
-  //           longitude: order.status == "PICKED" || order.status == "OFD"
+  //           longitude: order.status == PICKED || order.status == OFD
   //               ? double.parse(order.dropoffLongitude ?? "0.0")
   //               : double.parse(order.pickupLongitude ?? "0.0"),
   //         ),
   //         icon: isSelected
-  //             ? (order.status == "PICKED" || order.status == "OFD" ? selectedDropIcon! : selectedPickIcon!)
-  //             : (order.status == "PICKED" || order.status == "OFD" ? dropIcon! : pickIcon!),
+  //             ? (order.status == PICKED || order.status == OFD ? selectedDropIcon! : selectedPickIcon!)
+  //             : (order.status == PICKED || order.status == OFD ? dropIcon! : pickIcon!),
   //         infoWindow: InfoWindow(
   //           title: order.pickupLocationName,
   //           snippet: "location",
@@ -980,20 +980,20 @@ class AllOrdersMapController extends GetxController  {
   //     waypoints.add(NavigationWaypoint.withLatLngTarget(
   //       title: order.consigneeAddress.toString(),
   //       target: LatLng(
-  //         latitude: order.status == "PICKED" || order.status == "OFD"
+  //         latitude: order.status == PICKED || order.status == OFD
   //             ? double.parse(order.dropoffLatitude ?? "0.0")
   //             : double.parse(order.pickupLatitude ?? "0.0"),
-  //         longitude: order.status == "PICKED" || order.status == "OFD"
+  //         longitude: order.status == PICKED || order.status == OFD
   //             ? double.parse(order.dropoffLongitude ?? "0.0")
   //             : double.parse(order.pickupLongitude ?? "0.0"),
   //       ),
   //     ));
   //
   //     markerLatLangList.add(LatLng(
-  //       latitude: order.status == "PICKED" || order.status == "OFD"
+  //       latitude: order.status == PICKED || order.status == OFD
   //           ? double.parse(order.dropoffLatitude ?? "0.0")
   //           : double.parse(order.pickupLatitude ?? "0.0"),
-  //       longitude: order.status == "PICKED" || order.status == "OFD"
+  //       longitude: order.status == PICKED || order.status == OFD
   //           ? double.parse(order.dropoffLongitude ?? "0.0")
   //           : double.parse(order.pickupLongitude ?? "0.0"),
   //     ));
@@ -1102,10 +1102,10 @@ class AllOrdersMapController extends GetxController  {
   //   // Step 1: Calculate distance for each order and store it in a list
   //   final ordersWithDistance = ordersList.map((order) {
   //     final latLng = LatLng(
-  //       latitude: order.status == "PICKED" || order.status == "OFD"  ? double.parse(order.dropoffLatitude ?? "0.0") : double.parse(order.pickupLatitude ?? "0.0"),
-  //       longitude: order.status == "PICKED" || order.status == "OFD"   ? double.parse(order.dropoffLongitude ?? "0.0") : double.parse(order.pickupLongitude ?? "0.0"),
+  //       latitude: order.status == PICKED || order.status == OFD  ? double.parse(order.dropoffLatitude ?? "0.0") : double.parse(order.pickupLatitude ?? "0.0"),
+  //       longitude: order.status == PICKED || order.status == OFD   ? double.parse(order.dropoffLongitude ?? "0.0") : double.parse(order.pickupLongitude ?? "0.0"),
   //     );
-  //     final distance = order.status == "PICKED" || order.status == "OFD"  ? order.current_dropoff_distance_value: order.current_pickup_distance_value;
+  //     final distance = order.status == PICKED || order.status == OFD  ? order.current_dropoff_distance_value: order.current_pickup_distance_value;
   //     return {
   //       'order': order,
   //       'distance': distance,
@@ -1153,9 +1153,9 @@ class AllOrdersMapController extends GetxController  {
   //     if ((distanceA - distanceB).abs() <= 2000) {
   //       // Check if the 2nd order is within 5 km
   //       if (distanceB <= 5000) {
-  //         // Check if one of the orders is critical (status is "OFD" or "PICKED" || order.status == "OFD")
-  //         final isACritical = statusA == "OFD" || statusA == "PICKED" ;
-  //         final isBCritical = statusB == "OFD" || statusB == "PICKED" ;
+  //         // Check if one of the orders is critical (status is OFD or PICKED || order.status == OFD)
+  //         final isACritical = statusA == OFD || statusA == PICKED ;
+  //         final isBCritical = statusB == OFD || statusB == PICKED ;
   //
   //         // If both are critical, prioritize the one with less remaining time
   //         if (isACritical && isBCritical) {

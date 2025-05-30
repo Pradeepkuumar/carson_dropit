@@ -56,16 +56,14 @@ class MyApp extends StatelessWidget {
     ));
 
     return ScreenUtilInit(
-
         designSize: const Size(375, 812),
         builder: (context, child) {
           return GetMaterialApp(
             debugShowCheckedModeBanner: false,
-            title: 'Carson Zyppy',
+            title: 'Carson Drop-it',
             home: const SplashScreen(),
             theme: AppThemes.light,
-            darkTheme: AppThemes.dark,
-            themeMode: ThemeMode.system,
+           themeMode: ThemeMode.light,
            getPages: AppPages.routes,
           );
         });

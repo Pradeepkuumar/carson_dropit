@@ -62,6 +62,7 @@ class PlacedOrdersController extends GetxController {
       channel = WebSocketChannel.connect(
         Uri.parse('wss://dev.zyppy.qa/app/ezuXpnkK4TJnZkxRV4BdpwUH9xjYKex?protocol=7&client=js&version=8.4.0&flash=false'),
       );
+
       isConnected.value = true;
 
 

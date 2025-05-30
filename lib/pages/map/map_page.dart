@@ -71,7 +71,7 @@ class _MapPageState extends State<MapPage> {
     //     longitude: double.parse(widget.orderDetails.pickupLongitude ?? "0.0"),
     //   );
     //
-    //   if (widget.orderDetails.status == "OFD") {
+    //   if (widget.orderDetails.status == OFD) {
     //     _waypoints.add(NavigationWaypoint.withLatLngTarget(
     //         title: "Delivery Location",
     //         target: deliveryLocation
@@ -949,16 +949,16 @@ class _MapPageState extends State<MapPage> {
                                                     .selectedOrder
                                                     .value
                                                     .status ==
-                                                    "ASSIGNED" ||
+                                                    ASSIGNED ||
                                                     controller.selectedOrder
                                                         .value.status ==
-                                                        "RE-ASSIGNED"),
+                                                        RE_ASSIGNED),
                                                 child: utils.iconButton(
                                                     "Mark Reached",
                                                         () async {
                                                       await controller
                                                           .updateOrder(
-                                                          "REACHED");
+                                                          REACHED);
                                                     },
                                                     Icons
                                                         .follow_the_signs_rounded,
@@ -970,11 +970,11 @@ class _MapPageState extends State<MapPage> {
                                                     .selectedOrder
                                                     .value
                                                     .status ==
-                                                    "REACHED",
+                                                    REACHED,
                                                 child: utils.iconButton(
                                                     "Mark Pick", () async {
                                                   await controller.updateOrder(
-                                                      "PICKED");
+                                                      PICKED);
                                                 },
                                                     Icons.signpost_rounded,
                                                     AppColors.blue,
@@ -992,7 +992,7 @@ class _MapPageState extends State<MapPage> {
                                                               .selectedOrder
                                                               .value
                                                               .status ==
-                                                              "OFD",
+                                                              OFD,
                                                       child: Row(children: [
                                                         utils.iconButton(
                                                             "UnDeliver", () {
@@ -1030,7 +1030,7 @@ class _MapPageState extends State<MapPage> {
                                                 .selectedOrder
                                                 .value
                                                 .status ==
-                                                "OFD" &&
+                                                OFD &&
                                                 controller
                                                     .markDelivered.value,
                                             child: utils.iconButton(
@@ -1041,7 +1041,7 @@ class _MapPageState extends State<MapPage> {
                                                 var isDElivered =
                                                 await controller
                                                     .updateOrder(
-                                                    "DELIVERED");
+                                                    DELIVERED);
                                                 if (isDElivered == true) {
                                                   clearImageSign();
                                                 }
@@ -1062,7 +1062,7 @@ class _MapPageState extends State<MapPage> {
                                         alignment: Alignment.bottomCenter,
                                         child: Visibility(
                                             visible: controller.selectedOrder
-                                                .value.status == "OFD" &&
+                                                .value.status == OFD &&
                                                 controller.markUnDelivered
                                                     .value,
                                             child: utils.iconButton(
@@ -1071,7 +1071,7 @@ class _MapPageState extends State<MapPage> {
                                                   var isUpdated =
                                                   await controller
                                                       .updateOrder(
-                                                      "UNDELIVERED");
+                                                      UNDELIVERED);
                                                   if (isUpdated == true) {
                                                     clearImageSign();
                                                   }
@@ -1151,7 +1151,7 @@ class _MapPageState extends State<MapPage> {
   //         //
   //         // LatLng matchingLocation;
   //         //
-  //         // if(widget.orderDetails.status == "OFD"){
+  //         // if(widget.orderDetails.status == OFD){
   //         //   matchingLocation =  LatLng(latitude: deliveryLocation.latitude, longitude: deliveryLocation.longitude);
   //         // }else{
   //         //   matchingLocation =  LatLng(latitude: pickUpLocation.latitude, longitude: pickUpLocation.longitude);
