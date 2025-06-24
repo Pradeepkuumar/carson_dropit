@@ -29,7 +29,7 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file("/Users/macbook/Documents/carson_zyppy/android/ketstore/carson_drop_it.jks")
+            storeFile = file("/Users/drmac/Documents/neha_2024/carosn_zyppy/android/app/ketstore/carson_drop_it.jks")
             storePassword = "dropit1234"
             keyAlias = "drop-it"
             keyPassword = "dropit1234"
