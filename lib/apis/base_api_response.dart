@@ -3,7 +3,7 @@ class BaseApiResponse {
   int? status_code;
   String? method;
   String? status;
-  dynamic? data;
+  dynamic data;
   String? message;
 
   BaseApiResponse({this.success, this.status_code, this.method,this.status, this.data, this.message});
@@ -20,7 +20,9 @@ class BaseApiResponse {
         data = jsonData;
       } else if (jsonData is List<dynamic>) {
         data = jsonData;
-      } else {
+      } else if(jsonData is String) {
+        data = jsonData;
+      }else{
         data = null;
       }
     } else {

@@ -1,19 +1,15 @@
 import 'package:carson_zyppy/pages/my_orders/orders/controller/orders_controller.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_state_manager/src/simple/get_state.dart';
-import 'package:get/get_state_manager/src/simple/get_view.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:signature/signature.dart';
 
 import '../../../../app_pages/app_pages.dart';
+import '../../../../global/consts.dart';
 import '../../../../global/global.dart';
 import '../../../../utils/colors.dart';
 
 class ImageSignatureView extends GetView<OrdersController> {
-  ImageSignatureView({super.key});
+  const ImageSignatureView({super.key});
 
 
   @override
@@ -33,7 +29,7 @@ class ImageSignatureView extends GetView<OrdersController> {
                     elevation: 2,
                     child: Column(
                       children: [
-                        SizedBox(height: 10,),
+                        const SizedBox(height: 10,),
                         utils.tvCustom(
                             "Signature & Image", AppColors.primaryThemeColor,
                             15),
@@ -80,10 +76,10 @@ class ImageSignatureView extends GetView<OrdersController> {
                           ),
                         ),
                         Padding(
-                          padding: EdgeInsets.all(5),
+                          padding: const EdgeInsets.all(5),
                           child: InkWell(
                             onTap: () {
-                              controller.captureImage(ImageSource.camera);
+                             // controller.captureImage(ImageSource.camera,0);
                             },
                             child: Container(
                               width: Get.width,
@@ -99,16 +95,16 @@ class ImageSignatureView extends GetView<OrdersController> {
                                       children: [
                                         utils.iconButtonWithoutBorder("Change",
                                                 () {
-                                              controller.image.refresh();
-                                              controller.captureImage(
-                                                  ImageSource.camera);
+                                              // controller.image.refresh();
+                                              // controller.captureImage(
+                                              //     ImageSource.camera,0);
                                             }, Icons.refresh, null)
                                       ],
                                     ),
                                   ),
                                   Obx(() =>
                                       Padding(
-                                        padding: EdgeInsets.all(5),
+                                        padding: const EdgeInsets.all(5),
                                         child: Container(
                                           decoration: BoxDecoration(
                                               borderRadius:
@@ -124,7 +120,7 @@ class ImageSignatureView extends GetView<OrdersController> {
                                           Column(
                                             mainAxisAlignment: MainAxisAlignment.center,
                                             children: [
-                                              Icon(Icons.camera,size: 80,color: AppColors.primaryThemeColor,),
+                                              const Icon(Icons.camera,size: 80,color: AppColors.primaryThemeColor,),
                                               utils.tvCustom("Capture Image", AppColors.primaryThemeColor, 15)
                                             ],
                                           ),
@@ -137,11 +133,10 @@ class ImageSignatureView extends GetView<OrdersController> {
                           ),
                         ),
                         Padding(
-                          padding: EdgeInsets.all(5),
+                          padding: const EdgeInsets.all(5),
                           child: utils.mainButton("DELIVER", () async{
-                            if (controller.signatureFile != null
-                                && controller.deliveredImage != null) {
-                                 var isDelivered = await controller.updateOrder("DELIVERED");
+                            if (controller.deliveredImage != null) {
+                                 var isDelivered = await controller.updateOrder(DELIVERED);
                                  if(isDelivered){
                                    Get.offNamed(Routes.ordersScreen);
                                  }

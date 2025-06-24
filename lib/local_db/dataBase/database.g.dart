@@ -74,6 +74,8 @@ class _$AppDatabase extends AppDatabase {
 
   UserDao? _userDaoInstance;
 
+  NotificatiosDao? _notificationsDaoInstance;
+
   Future<sqflite.Database> open(
     String path,
     List<Migration> migrations, [
@@ -96,7 +98,9 @@ class _$AppDatabase extends AppDatabase {
       },
       onCreate: (database, version) async {
         await database.execute(
-            'CREATE TABLE IF NOT EXISTS `UserData` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `roleId` INTEGER, `vendorId` INTEGER, `name` TEXT, `code` TEXT, `email` TEXT, `phone` TEXT, `apiToken` TEXT, `address` TEXT, `active` INTEGER, `avatar` TEXT, `deviceToken` TEXT, `latitude` TEXT, `longitude` TEXT, `emailVerifiedAt` TEXT, `createdAt` TEXT, `updatedAt` TEXT)');
+            'CREATE TABLE IF NOT EXISTS `UserData` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `roleId` INTEGER, `vendorId` INTEGER, `name` TEXT, `code` TEXT, `email` TEXT, `phone` TEXT, `apiToken` TEXT, `address` TEXT, `active` INTEGER, `avatar` TEXT, `deviceToken` TEXT, `latitude` TEXT, `longitude` TEXT, `emailVerifiedAt` TEXT, `createdAt` TEXT, `updatedAt` TEXT, `isSignedIn` TEXT)');
+        await database.execute(
+            'CREATE TABLE IF NOT EXISTS `LocalNotification` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `body` TEXT, `title` TEXT)');
 
         await callback?.onCreate?.call(database, version);
       },
@@ -107,6 +111,12 @@ class _$AppDatabase extends AppDatabase {
   @override
   UserDao get userDao {
     return _userDaoInstance ??= _$UserDao(database, changeListener);
+  }
+
+  @override
+  NotificatiosDao get notificationsDao {
+    return _notificationsDaoInstance ??=
+        _$NotificatiosDao(database, changeListener);
   }
 }
 
@@ -135,7 +145,8 @@ class _$UserDao extends UserDao {
                   'longitude': item.longitude,
                   'emailVerifiedAt': item.emailVerifiedAt,
                   'createdAt': item.createdAt,
-                  'updatedAt': item.updatedAt
+                  'updatedAt': item.updatedAt,
+                  'isSignedIn': item.isSignedIn
                 }),
         _userDataUpdateAdapter = UpdateAdapter(
             database,
@@ -158,7 +169,8 @@ class _$UserDao extends UserDao {
                   'longitude': item.longitude,
                   'emailVerifiedAt': item.emailVerifiedAt,
                   'createdAt': item.createdAt,
-                  'updatedAt': item.updatedAt
+                  'updatedAt': item.updatedAt,
+                  'isSignedIn': item.isSignedIn
                 });
 
   final sqflite.DatabaseExecutor database;
@@ -191,7 +203,8 @@ class _$UserDao extends UserDao {
             longitude: row['longitude'] as String?,
             emailVerifiedAt: row['emailVerifiedAt'] as String?,
             createdAt: row['createdAt'] as String?,
-            updatedAt: row['updatedAt'] as String?));
+            updatedAt: row['updatedAt'] as String?,
+            isSignedIn: row['isSignedIn'] as String?));
   }
 
   @override
@@ -207,5 +220,46 @@ class _$UserDao extends UserDao {
   @override
   Future<void> updateEmployee(UserData user) async {
     await _userDataUpdateAdapter.update(user, OnConflictStrategy.abort);
+  }
+}
+
+class _$NotificatiosDao extends NotificatiosDao {
+  _$NotificatiosDao(
+    this.database,
+    this.changeListener,
+  )   : _queryAdapter = QueryAdapter(database),
+        _localNotificationInsertionAdapter = InsertionAdapter(
+            database,
+            'LocalNotification',
+            (LocalNotification item) => <String, Object?>{
+                  'id': item.id,
+                  'body': item.body,
+                  'title': item.title
+                });
+
+  final sqflite.DatabaseExecutor database;
+
+  final StreamController<String> changeListener;
+
+  final QueryAdapter _queryAdapter;
+
+  final InsertionAdapter<LocalNotification> _localNotificationInsertionAdapter;
+
+  @override
+  Future<LocalNotification?> getAllNotifications() async {
+    return _queryAdapter.query('SELECT * FROM NotificationModel',
+        mapper: (Map<String, Object?> row) => LocalNotification(
+            body: row['body'] as String?, title: row['title'] as String?));
+  }
+
+  @override
+  Future<void> deleteNotifications() async {
+    await _queryAdapter.queryNoReturn('DELETE FROM NotificationModel');
+  }
+
+  @override
+  Future<void> saveNotification(LocalNotification notificationModel) async {
+    await _localNotificationInsertionAdapter.insert(
+        notificationModel, OnConflictStrategy.replace);
   }
 }

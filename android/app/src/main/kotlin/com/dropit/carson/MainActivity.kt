@@ -1,4 +1,4 @@
-package com.carson.zyppy
+package com.dropit.carson
 
 import io.flutter.embedding.android.FlutterActivity
 

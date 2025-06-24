@@ -66,24 +66,24 @@ class UserData {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['id'] = this.id;
-    data['role_id'] = this.roleId;
-    data['vendor_id'] = this.vendorId;
-    data['name'] = this.name;
-    data['code'] = this.code;
-    data['email'] = this.email;
-    data['phone'] = this.phone;
-    data['api_token'] = this.apiToken;
-    data['address'] = this.address;
-    data['active'] = this.active;
-    data['avatar'] = this.avatar;
-    data['device_token'] = this.deviceToken;
-    data['latitude'] = this.latitude;
-    data['longitude'] = this.longitude;
-    data['email_verified_at'] = this.emailVerifiedAt;
-    data['created_at'] = this.createdAt;
-    data['updated_at'] = this.updatedAt;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['id'] = id;
+    data['role_id'] = roleId;
+    data['vendor_id'] = vendorId;
+    data['name'] = name;
+    data['code'] = code;
+    data['email'] = email;
+    data['phone'] = phone;
+    data['api_token'] = apiToken;
+    data['address'] = address;
+    data['active'] = active;
+    data['avatar'] = avatar;
+    data['device_token'] = deviceToken;
+    data['latitude'] = latitude;
+    data['longitude'] = longitude;
+    data['email_verified_at'] = emailVerifiedAt;
+    data['created_at'] = createdAt;
+    data['updated_at'] = updatedAt;
     return data;
   }
 }

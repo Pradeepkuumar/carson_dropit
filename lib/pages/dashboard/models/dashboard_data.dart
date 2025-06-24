@@ -1,41 +1,63 @@
-import 'dart:convert';
+class DashBoardData {
+  TodayOrdersCount? todayOrdersCount;
+  TodayOrdersCount? allOrdersCount;
 
-DashboardData dashboardDataFromJson(String str) => DashboardData.fromJson(json.decode(str));
+  DashBoardData({this.todayOrdersCount, this.allOrdersCount});
 
-String dashboardDataToJson(DashboardData data) => json.encode(data.toJson());
+  DashBoardData.fromJson(Map<String, dynamic> json) {
+    todayOrdersCount = json['today_orders_count'] != null
+        ? TodayOrdersCount.fromJson(json['today_orders_count'])
+        : null;
+    allOrdersCount = json['all_orders_count'] != null
+        ? TodayOrdersCount.fromJson(json['all_orders_count'])
+        : null;
+  }
 
-class DashboardData {
-    DashboardData({
-         this.cancelled,
-         this.delivered,
-         this.assigned,
-         this.ofd,
-         this.picked,
-         this.allOrder,
-    });
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = <String, dynamic>{};
+    if (todayOrdersCount != null) {
+      data['today_orders_count'] = todayOrdersCount!.toJson();
+    }
+    if (allOrdersCount != null) {
+      data['all_orders_count'] = allOrdersCount!.toJson();
+    }
+    return data;
+  }
+}
 
-    int? cancelled;
-    int? delivered;
-    int? assigned;
-    int? ofd;
-    int? picked;
-    int? allOrder;
+class TodayOrdersCount {
+  int? aLLORDER;
+  int? aSSIGNED;
+  int? pICKED;
+  int? oFD;
+  int? uNDELIVERED;
+  int? dELIVERED;
 
-    factory DashboardData.fromJson(Map<dynamic, dynamic> json) => DashboardData(
-        cancelled: json["CANCELLED"],
-        delivered: json["DELIVERED"],
-        assigned: json["ASSIGNED"],
-        ofd: json["OFD"],
-        picked: json["PICKED"],
-        allOrder: json["ALL_ORDER"],
-    );
+  TodayOrdersCount(
+      {this.aLLORDER,
+        this.aSSIGNED,
+        this.pICKED,
+        this.oFD,
+        this.uNDELIVERED,
+        this.dELIVERED});
 
-    Map<dynamic, dynamic> toJson() => {
-        "CANCELLED": cancelled,
-        "DELIVERED": delivered,
-        "ASSIGNED": assigned,
-        "OFD": ofd,
-        "PICKED": picked,
-        "ALL_ORDER": allOrder,
-    };
+  TodayOrdersCount.fromJson(Map<String, dynamic> json) {
+    aLLORDER = json['ALL_ORDER'];
+    aSSIGNED = json['ASSIGNED'];
+    pICKED = json['PICKED'];
+    oFD = json['OFD'];
+    uNDELIVERED = json['UNDELIVERED'];
+    dELIVERED = json['DELIVERED'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['ALL_ORDER'] = aLLORDER;
+    data['ASSIGNED'] = aSSIGNED;
+    data['PICKED'] = pICKED;
+    data['OFD'] = oFD;
+    data['UNDELIVERED'] = uNDELIVERED;
+    data['DELIVERED'] = dELIVERED;
+    return data;
+  }
 }

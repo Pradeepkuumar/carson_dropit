@@ -18,7 +18,7 @@ class AuthController extends GetxController {
   @override
   void onInit() {
     getUser();
-   Future.delayed(Duration(seconds: 3), () {
+   Future.delayed(const Duration(seconds: 3), () {
      showSplashScreen.value = false;
    });
     super.onInit();
@@ -29,7 +29,7 @@ class AuthController extends GetxController {
     try {
        userId.value = box.read(USER_ID_KEY) ;
     } catch (e){
-      utils.errorSnackBar("Exception", e.toString());
+     // utils.errorSnackBar("Exception", e.toString());
     }
 
   }

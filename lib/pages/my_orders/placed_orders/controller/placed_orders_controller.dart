@@ -1,11 +1,21 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:ui';
+
+import 'package:carson_zyppy/global/consts.dart';
 import 'package:carson_zyppy/local_db/entity/UserData.dart';
 import 'package:carson_zyppy/pages/dashboard/controller/rider_dashboard_controller.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:google_navigation_flutter/google_navigation_flutter.dart';
+import 'package:location/location.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 import '../../../../apis/base_api_response.dart';
 import '../../../../global/global.dart';
 import '../../../../utils/colors.dart';
+import '../../../map/marker_generator/dynamic_marker_generator.dart';
+import '../../nearby_orders/view/item_nearby_oredrs/neaby_orders_item.dart';
 import '../../orders/models/orders_model.dart';
 
 class PlacedOrdersController extends GetxController {
@@ -16,26 +26,122 @@ class PlacedOrdersController extends GetxController {
   var user = UserData();
   var viewAcceptView = false.obs;
   var selectedLocationId = "".obs;
+  ImageDescriptor?  icon;
+  final Location _locationController = Location();
+  GoogleMapViewController? navigationViewController;
 
   final notifications = [
     "Enter Order Number",
     "Scan QR Code for Order",
-    "Enter Order Number",
-    "Scan QR Code for Order",
   ];
 
+  LatLng? currentLocation;
+  final Map<String, MarkerOptions> markerMap = {};
+
+  List<Marker> markers = [];
+  List<CircleOptions> circle = [];
+
+  var isResponseSuccess = false.obs;
+
+  Rx<MapType> mapType = MapType.normal.obs;
+
+  late WebSocketChannel channel;
+  var isConnected = false.obs;
 
 
   @override
   void onInit() {
     getUser();
+    loadIcon();
+    connectSocket();
     super.onInit();
   }
+
+  void connectSocket() {
+    try {
+      channel = WebSocketChannel.connect(
+        Uri.parse('wss://dev.zyppy.qa/app/ezuXpnkK4TJnZkxRV4BdpwUH9xjYKex?protocol=7&client=js&version=8.4.0&flash=false'),
+      );
+
+      isConnected.value = true;
+
+
+      channel.sink.add(jsonEncode({
+        "event": "pusher:subscribe",
+        "data": {
+          "channel": "orders"
+        }
+      }));
+
+      channel.stream.listen((message) {
+
+        final decoded = json.decode(message);
+
+        dynamic innerData;
+        if (decoded['data'] is String) {
+          innerData = json.decode(decoded['data']);
+        } else {
+          innerData = decoded['data'];
+        }
+
+        final event = decoded['event'];
+
+        if (event == 'OrderShipmentStatusUpdated') {
+          final orderNumber = innerData['data']['order_number'];
+          Future.microtask(() => removeOrderFromList(orderNumber));
+
+        }
+      });
+
+
+    } catch (e) {
+      print("Connection failed: $e");
+    }
+  }
+
+
+  void disconnectSocket() {
+    channel.sink.close();
+    isConnected.value = false;
+  }
+
+
+
+  void removeOrderFromList(String acceptedOrderId) {
+    ordersList.removeWhere((order) => order.awbNo == acceptedOrderId);
+    selectedMerchantOrdersList.removeWhere((order) => order.awbNo == acceptedOrderId);
+
+    selectedMerchantOrdersList.refresh();
+
+    if (selectedMerchantOrdersList.isEmpty) {
+      viewAcceptView.value = false;
+    }
+  }
+
+
+   addCircle(){
+     circle.add(
+         CircleOptions(
+           position: currentLocation!,
+           radius: 1000,
+           strokeWidth: 2,
+           strokeColor: Colors.blue.shade900,
+           fillColor: Colors.blue.withOpacity(0.2),
+           visible: true,
+           clickable: false,
+         )
+     );
+   }
 
   void getUser() async{
     user = (await userRepository.getUser())!;
     if(user.code != null) {
-      await fetchOrders();
+      await getLocationUpdates().then((updated) async {
+        if (updated == true) {
+          await fetchOrders();
+        }
+      });
+
     }
   }
 
@@ -52,11 +158,43 @@ class PlacedOrdersController extends GetxController {
     viewAcceptView.value = true;
   }
 
+  Future<bool?> getLocationUpdates() async {
+    bool serviceEnabled = await _locationController.serviceEnabled();
+    if (!serviceEnabled) {
+      serviceEnabled = await _locationController.requestService();
+      if (!serviceEnabled) return false;
+    }
+
+    PermissionStatus permissionGranted = await _locationController.hasPermission();
+    if (permissionGranted == PermissionStatus.denied) {
+      permissionGranted = await _locationController.requestPermission();
+      if (permissionGranted != PermissionStatus.granted) return false;
+    }
+
+    Completer<bool> locationUpdated = Completer<bool>();
+
+    StreamSubscription<LocationData>? subscription;
+    subscription = _locationController.onLocationChanged.listen((LocationData locationData) {
+      if (locationData.latitude != null && locationData.longitude != null) {
+        currentLocation = LatLng(latitude: locationData.latitude!, longitude: locationData.longitude!);
+
+        if (!locationUpdated.isCompleted) {
+          locationUpdated.complete(true);
+        }
+        subscription?.cancel();
+      }
+    });
+
+    return locationUpdated.future;
+  }
+
   Future<bool?> fetchOrders() async {
     utils.showLoadingDialog("Loading...");
     try {
       Map<String, dynamic> model = {
         apiKeys.feCode: user.code,
+        apiKeys.latitude: currentLocation?.latitude,
+        apiKeys.longitude: currentLocation?.longitude,
       };
       dynamic response = await apiProvider.postRequest(
           apiEndPoints.fetchPlacedOrders, model);
@@ -68,7 +206,9 @@ class PlacedOrdersController extends GetxController {
           update();
           await Future.delayed(const Duration(milliseconds: 100));
         }
+        setMarkers();
         utils.closeLoadingDialog();
+        isResponseSuccess.value  = true;
         return true;
       } else {
         utils.errorSnackBar("Exception", result.message.toString());
@@ -85,7 +225,7 @@ class PlacedOrdersController extends GetxController {
   }
 
   Future<bool> acceptRejectOrder(String type, String orderNumber) async {
-    utils.showLoadingDialog("Loading...");
+    utils.showLoadingDialog("wait while updating order...");
     try {
       Map<String, dynamic> model = {
         apiKeys.feCode: user.code,
@@ -96,10 +236,17 @@ class PlacedOrdersController extends GetxController {
           apiEndPoints.acceptRejectOrder, model);
       var result = BaseApiResponse.fromJson(response);
       if (result.data != null) {
-         await fetchOrders();
-        riderDashboardController.getDashBoardData();
+
+        await riderDashboardController.getDashBoardData();
         selectedLocationOrders();
-        viewAcceptView.value = false;
+        removeOrderFromList(orderNumber);
+        if(type == acceptOrder) {
+          utils.successSnackBar("Order Accepted Successfully",
+              "Please find accepted order in My Orders");
+        }else{
+          utils.errorSnackBar("Order Rejected",
+              "This order no longer belongs to you");
+        }
         utils.closeLoadingDialog();
         return true;
       } else {
@@ -115,6 +262,86 @@ class PlacedOrdersController extends GetxController {
     }
     return false;
   }
+
+
+  Future<ImageDescriptor?> getOrCreateCustomImageFromAsset(
+      String assetPath, double width, double height) async {
+    final AssetImage assetImage = AssetImage(assetPath);
+    final ImageConfiguration configuration =
+    createLocalImageConfiguration(Get.context!);
+    final AssetBundleImageKey assetBundleImageKey =
+    await assetImage.obtainKey(configuration);
+    final double imagePixelRatio = assetBundleImageKey.scale;
+    final ByteData imageBytes = await rootBundle.load(assetBundleImageKey.name);
+
+    return await registerBitmapImage(
+        bitmap: imageBytes, imagePixelRatio: imagePixelRatio, width: width, height: height);
+  }
+
+
+  Future<ImageDescriptor> registerDynamicMarker(String ordersCount, String locationName) async {
+    final ByteData byteData = await createCustomMarkerByteData(ordersCount, locationName);
+
+    final ImageDescriptor descriptor = await registerBitmapImage(
+      bitmap: byteData,
+      imagePixelRatio: 1,
+      width: 90,
+      height: 70,
+    );
+
+    return descriptor;
+  }
+
+
+  Future<void> setMarkers() async {
+    await navigationViewController?.clearMarkers();
+    markers.clear();
+    markerMap.clear();
+
+    if (currentLocation != null) {
+      final marker = Marker(
+        markerId: "current_location",
+        options: MarkerOptions(
+          infoWindow: const InfoWindow(title: "Current Location", snippet: ""),
+          position: LatLng(
+            latitude: currentLocation?.latitude ?? 0.0,
+            longitude: currentLocation?.longitude ?? 0.0,
+          ),
+          icon: icon!,
+          consumeTapEvents: true,
+        ),
+      );
+      markers.add(marker);
+      markerMap[marker.markerId] = marker.options;
+      addCircle();
+    }
+
+    final futures = ordersList.map((order) async {
+      final ImageDescriptor customIcon = await registerDynamicMarker(
+        order.pickupLocationName ?? "location",
+        "PICKUP",
+      );
+
+      final marker = Marker(
+        markerId: order.locationId.toString(),
+        options: MarkerOptions(
+          position: LatLng(
+            latitude: double.parse(order.pickupLatitude ?? "0.0"),
+            longitude: double.parse(order.pickupLongitude ?? "0.0"),
+          ),
+          icon: customIcon,
+          consumeTapEvents: true,
+        ),
+      );
+
+      markers.add(marker);
+      markerMap[marker.markerId] = marker.options;
+    }).toList();
+
+    await Future.wait(futures);
+  }
+
+
 
 
   Future showCustomMarker(OrdersData data, int type) {
@@ -187,4 +414,23 @@ class PlacedOrdersController extends GetxController {
     );
   }
 
+
+
+  void loadIcon() async {
+    icon =   await getOrCreateCustomImageFromAsset(
+        'assets/icons/ic_scooter.png', 48, 48);
+  }
+
+  @override
+  void dispose() {
+    disconnectSocket();
+    super.dispose();
+  }
+
+
+
+
+
+
 }
+

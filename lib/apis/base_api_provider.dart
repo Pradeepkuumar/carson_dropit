@@ -15,33 +15,28 @@ class ApiProvider extends GetConnect {
   File? file;
 
   ApiProvider() {
-    timeout = const Duration(minutes: 5);
+    timeout = const Duration(seconds: 120);
     maxAuthRetries = 3;
+
     if (kDebugMode) {
       baseUrl = "https://dev.zyppy.qa/api/v1/";
     } else if (kReleaseMode) {
       baseUrl = "https://dev.zyppy.qa/api/v1/";
     }
+
     httpClient.addAuthenticator((Request<dynamic> request) async {
     final dynamic token = "Bearer "+box.read(apiKeys.apiToken);
       request.headers['Authorization'] = "$token";
       return request;
     });
     httpClient.addRequestModifier((Request<dynamic> request) {
-  //    final token = box.read("api_token") ?? "no_token";
-   //   request.headers['Authorization'] = "Bearer $token";
       request.headers['accept-encoding'] = acceptEncoding;
       request.headers['accept'] = accept;
-      // request.headers['cache-control'] = noCache;
+      request.headers.remove('content-length');
       return request;
     });
   }
 
-  @override
-  void onInit() {
-    super.onInit();
-    //token = "Bearer " + box.read("api_token");
-  }
 
   Future<dynamic> getRequest(String endpoint) async {
     dynamic responseJson;
@@ -78,15 +73,24 @@ class ApiProvider extends GetConnect {
   Future<dynamic> postRequest(String endpoint, Map<String, dynamic> map) async {
     dynamic responseJson;
     try {
-      final response = await post(endpoint, map,headers: {
-        'content-type': 'application/json; charset=UTF-8',
-      },);
+      final response = await post(endpoint, jsonEncode(map),headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Accept': '*/*',
+        'Accept-Encoding': 'gzip, deflate',
+        'Connection': 'keep-alive',
+      });
 
       responseJson = returnResponse(response);
+      print("Response Status Code: ${response.statusCode}");
+      print("Response Body: ${response.body}");
     } on TimeoutException {
       //throw FetchDataException('Request timed out');
     } on SocketException {
      // throw FetchDataException('no internet connection');
+    }catch(e){
+      if (kDebugMode) {
+        print(e.toString());
+      }
     }
     return responseJson;
   }
@@ -178,14 +182,12 @@ class ApiProvider extends GetConnect {
     return returnResponse(response);
   }
 
+
+
   dynamic returnResponse(Response response) {
     switch (response.statusCode) {
       case 200:
         var responseJson = json.decode(response.bodyString!);
-        // final Response Function(Map<String, dynamic>) parser;
-        // Map<String, dynamic> responseJson = jsonDecode(response.body);
-       //  final jsonBody = json.decode(response.body);
-        // var data = jsonBody["data"];
         return responseJson;
       case 400:
        // throw BadRequestException(response.hasError.toString());
@@ -198,4 +200,6 @@ class ApiProvider extends GetConnect {
        // throw FetchDataException("server error${response.statusCode}");
     }
   }
+
+
 }

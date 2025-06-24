@@ -7,9 +7,28 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:758204418570:android:70662c616526e2f1aaadf3",
+        "mobilesdk_app_id": "1:758204418570:android:9b8fbf3b6825e2efaaadf3",
         "android_client_info": {
-          "package_name": "com.carson.zyppy"
+          "package_name": "com.carson.dropit_supervisor"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBn_M3fn4Tjk86vBSGzZlwHVPyUmdFgC1Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:758204418570:android:5c36f365ac78a085aaadf3",
+        "android_client_info": {
+          "package_name": "com.dropit.carson"
         }
       },
       "oauth_client": [],

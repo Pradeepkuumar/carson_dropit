@@ -1,7 +1,7 @@
 import 'package:carson_zyppy/global/consts.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:simple_barcode_scanner/simple_barcode_scanner.dart';
+import '../../../../global/qr_scanner.dart';
 import '../../../../utils/colors.dart';
 import '../../../../utils/utils.dart';
 import '../controller/placed_orders_controller.dart';
@@ -10,6 +10,8 @@ import '../order_item/placed_orders_item.dart';
 class PlacedOrdersListView extends GetView<PlacedOrdersController> {
 
   final Utils utils = Utils();
+
+  PlacedOrdersListView({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +31,7 @@ class PlacedOrdersListView extends GetView<PlacedOrdersController> {
                       children: [
                         Padding(
                           padding: const EdgeInsets.all(8.0),
-                          child: Container(
+                          child: SizedBox(
                               height: 40,
                               child:  TextField(
                                   onChanged: (value) {
@@ -38,18 +40,24 @@ class PlacedOrdersListView extends GetView<PlacedOrdersController> {
                                   controller: controller.searchEditTextController,
                                   decoration: InputDecoration(
                                     hintText: "search order by number",
-                                    hintStyle: TextStyle(color: Colors.grey),
+                                    hintStyle: const TextStyle(color: Colors.grey),
                                     prefixIcon: const Icon(Icons.search),
                                     prefixIconColor:
                                         AppColors.primaryThemeColor,
                                     suffixIcon: IconButton(
                                       icon: const Icon(Icons.qr_code_scanner),
                                       onPressed: () async {
-                                        var res = await Get.to(
-                                            const SimpleBarcodeScannerPage());
-                                        if (res is String) {
-                                          searchResult(res, 2);
+
+                                        final result = await Navigator.push(
+                                          context,
+                                          MaterialPageRoute(builder: (context) => const QRScannerPage()),
+                                        );
+
+                                        if (result != null) {
+                                          searchResult(result, 2);
                                         }
+
+
                                       },
                                     ),
                                     suffixIconColor: AppColors.primaryThemeColor,
