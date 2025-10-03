@@ -1,6 +1,7 @@
 
 import 'package:carson_zyppy/utils/colors.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class AppThemes {
   static final light = ThemeData(
@@ -13,6 +14,11 @@ class AppThemes {
       backgroundColor: Colors.white,
       foregroundColor: Colors.white,
       elevation: 0,
+      systemOverlayStyle: SystemUiOverlayStyle(
+    statusBarColor: AppColors.primaryLight, 
+    statusBarIconBrightness: Brightness.dark,
+    statusBarBrightness: Brightness.light,
+  ),
     ),
     colorScheme: ColorScheme.fromSwatch().copyWith(secondary: AppColors.secondryThemeColor),
   );
@@ -26,6 +32,11 @@ class AppThemes {
       backgroundColor: Colors.black,
       foregroundColor: Colors.white,
       elevation: 0,
+      systemOverlayStyle: SystemUiOverlayStyle(
+    statusBarColor: AppColors.primaryLight, 
+    statusBarIconBrightness: Brightness.dark,
+    statusBarBrightness: Brightness.light,
+  ),
     ),
     colorScheme: ColorScheme.fromSwatch(
       brightness: Brightness.dark,

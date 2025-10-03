@@ -26,6 +26,7 @@ class RiderDashboardController extends GetxController {
   var updateRiderLocation = false.obs;
   var driverData = DriverData().obs;
   var dashBoardData = DashBoardData().obs;
+  var c2cDashBoardData = DashBoardData().obs;
   var isAttendanceLoaded = false.obs;
   var attendancesList = [].obs;
   var isAnyActiveOrder = false.obs;
@@ -104,6 +105,7 @@ class RiderDashboardController extends GetxController {
         userData = value;
         riderName.value = userData.name ?? "";
         await getDashBoardData();
+        await getC2CCDashBoardData();
       }
     } catch (e) {
       //  utils.errorSnackBar("Exception", e.toString());
@@ -150,6 +152,35 @@ class RiderDashboardController extends GetxController {
         dashBoardData.value.allOrdersCount?.oFD != 0) {
           isAnyActiveOrder.value = true;
         }
+        utils.closeLoadingDialog();
+        update();
+        return true;
+      } else {
+        utils.closeLoadingDialog();
+        update();
+        return false;
+      }
+    } catch (e) {
+      utils.closeLoadingDialog();
+      //   utils.errorSnackBar("Exception", e.toString());
+      return false;
+    }
+  }
+
+  Future<bool> getC2CCDashBoardData() async {
+    try {
+      Map<String, dynamic> model = {
+        apiKeys.feCode: userData.code,
+      };
+      var response = await apiProvider.getRequestWithQueryParams(
+          apiEndPoints.c2cDashBoardDetails, model);
+      var result = BaseApiResponse.fromJson(response);
+      if (result.status_code == 200) {
+        c2cDashBoardData.value = DashBoardData.fromJson(result.data);
+        // if(dashBoardData.value.allOrdersCount?.aSSIGNED != 0 || dashBoardData.value.allOrdersCount?.pICKED != 0 ||
+        // dashBoardData.value.allOrdersCount?.oFD != 0) {
+        //   isAnyActiveOrder.value = true;
+        // }
         utils.closeLoadingDialog();
         update();
         return true;

@@ -1,0 +1,211 @@
+import 'package:carson_zyppy/global/consts.dart';
+import 'package:carson_zyppy/pages/my_orders/orders/controller/orders_controller.dart';
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import '../../../../global/qr_scanner.dart';
+import '../../../../utils/colors.dart';
+import '../../../../utils/utils.dart';
+import 'orders_item.dart';
+
+class OrdersListView extends StatefulWidget {
+  var orderStatus = "";
+
+  OrdersListView({super.key, required this.orderStatus});
+
+  @override
+  OrdersListViewState createState() => OrdersListViewState();
+}
+
+class OrdersListViewState extends State<OrdersListView> {
+  late final OrdersController controller;
+  final Utils utils = Utils();
+  var statusBarColor;
+
+  @override
+  void initState() {
+    controller = Get.put(OrdersController());
+    controller.getUser();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if(controller.tabController.index == 0) {
+        controller.getFeOrders([ASSIGNED]);
+      }
+    });
+    super.initState();
+
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        backgroundColor: AppColors.transparent,
+        body: Obx(() {
+          return Stack(
+            children: [
+              Visibility(
+                visible: !controller.viewFullMap.value,
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    setState(() {
+                      controller.getFeOrders([widget.orderStatus]);
+                    });
+                  },
+                  child: SizedBox(
+                    height: Get.height,
+                    width: Get.width,
+                    child: Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: SizedBox(
+                              height: context.isPhone?40:60,
+                              child: Obx(() {
+                                return TextField(
+                                  onChanged: (value) {
+                                    searchResult(value, 1);
+                                  },
+                                  controller:
+                                      controller.searchEditTextController,
+                                  decoration: InputDecoration(
+                                    hintText: controller.currentHintText,
+                                    prefixIcon: const Icon(Icons.search),
+                                    prefixIconColor:
+                                        AppColors.primaryThemeColor,
+                                    suffixIcon: IconButton(
+                                      icon: const Icon(Icons.qr_code_scanner),
+                                      onPressed: () async {
+
+                                        final result = await Navigator.push(
+                                          context,
+                                          MaterialPageRoute(builder: (context) => const QRScannerPage()),
+                                        );
+
+                                        if (result != null) {
+                                          searchResult(result, 2);
+                                        }
+
+                                                                            },
+                                    ),
+                                    suffixIconColor:
+                                        AppColors.primaryThemeColor,
+                                    filled: true,
+                                    fillColor: Colors.white,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(13.0),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(13.0),
+                                      borderSide: const BorderSide(
+                                          color: AppColors.primaryThemeColor,
+                                          width: 2.0),
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                        vertical: 10.0),
+                                  ),
+                                  style: const TextStyle(height: 1.2),
+                                );
+                              })),
+                        ),
+                        Expanded(
+                          child: Obx(() => controller.isLoading.value ?
+                              Center(child: utils.iosProgressIndicator(AppColors.white,"Loading...")):
+                               controller.sortedOrders.isEmpty ?
+                               Center(child: utils.tvRegular("No Order Found !", AppColors.white))
+                                  : ListView.builder(
+                                itemCount: controller.sortedOrders.length,
+                                itemBuilder: (context, position) {
+                                  return Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: orderItem(
+                                      controller.sortedOrders[position],
+                                          (clickedOrder, clickType) async {
+                                        if (clickType == orderScanCLick) {
+                                          // var res = await Get.to(
+                                          //   SimpleBarcodeScannerPage(
+                                          //     appBarTitle: clickedOrder.awbNo,
+                                          //   ),
+                                          // );
+                                          // if (res is String && res != "-1") {
+                                          //   var result = res;
+                                          //   if (clickedOrder.awbNo == result) {
+                                          //
+                                          //   } else {
+                                          //     utils.errorSnackBar(
+                                          //       "Error !",
+                                          //       "Wrong Order Scanned",
+                                          //     );
+                                          //   }
+                                          // }
+                                        } else if (clickType == orderUpdateToOFD) {
+                                          controller.selectedOrder.value = clickedOrder;
+                                          controller.updateOrder(OFD);
+                                        } else if (clickType == orderUpdateToDeliver ||
+                                            clickType == fullMapViewCLick) {
+                                          controller.selectedOrder.value = clickedOrder;
+                                         // Get.to(() => MapPage(orderDetails:controller.selectedOrder.value,mapView: 1));
+
+                                        }
+                                      },
+                                    ),
+                                  );
+                                },
+                              )
+                          ),
+                        )
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              // Visibility(
+              //     visible: controller.viewFullMap.value,
+              //     child: Column(
+              //       children: [
+              //         Row(
+              //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              //           children: [
+              //             utils.tvCustom(
+              //                 "Order :${controller.selectedOrder.value.awbNo}",
+              //                 AppColors.white,
+              //                 15),
+              //             InkWell(
+              //               onTap: (){
+              //                 controller.viewFullMap.value = false;
+              //               },
+              //               child:Icon(Icons.close,color: AppColors.white),
+              //             )
+              //
+              //           ],
+              //         ),
+              //         SizedBox(
+              //             height: Get.height - 130,
+              //             width: Get.width,
+              //             child: MapPage(orderDetails: controller.selectedOrder.value,mapView: 1)),
+              //       ],
+              //     ))
+            ],
+          );
+        }));
+  }
+
+  void searchResult(String value, int type) {
+    if (value.isNotEmpty) {
+      var filteredList = controller.sortedOrders
+          .where((element) => element.awbNo!.contains(value))
+          .toList();
+      setState(() {
+        if (filteredList.isNotEmpty) {
+          controller.sortedOrders.value = filteredList;
+          if (type == 2) {
+            // ecomOrdersController.changeOrderStatus(
+            //     order.hawbNo, order.referenceNo, "");
+            // ordersList[0].status = "PICKED-UP";
+          }
+        } else {
+          utils.errorSnackBar("No Match Found", "");
+        }
+      });
+    } else {
+      controller.sortedOrders = controller.sortedOrders;
+    }
+  }
+}

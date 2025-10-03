@@ -61,7 +61,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                     child: SingleChildScrollView(
                       scrollDirection: Axis.vertical,
                       child: Container(
-                        height: utils.isMobileScreen(context) ? 620.sp : 920.sp,
+                        height: utils.isMobileScreen(context) ? 600.sp : 920.sp,
                         width: Get.width - 20,
                         decoration: BoxDecoration(
                           border: Border.all(
@@ -73,8 +73,11 @@ class _RiderDashboardState extends State<RiderDashboard> {
                           borderRadius: BorderRadius.circular(10),
                           child: BackdropFilter(
                               filter: ImageFilter.blur(sigmaY: 1, sigmaX: 1),
-                              child: Padding(
-                                  padding: const EdgeInsets.all(10.0),
+                              child: SingleChildScrollView(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                scrollDirection: Axis.vertical,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8.0),
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
@@ -139,7 +142,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                       ),
                                       InkWell(
                                         onTap: () {
-                                          // Get.toNamed(Routes.ordersScreen);
+                                         
                                         },
                                         child: Container(
                                           margin: const EdgeInsets.symmetric(
@@ -302,6 +305,8 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                           ),
                                         ),
                                       ),
+                                      
+                                     
                                       const SizedBox(
                                         height: 5,
                                       ),
@@ -352,6 +357,55 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                       const SizedBox(
                                         height: 5,
                                       ),
+                                       InkWell(
+                                        onTap: () {
+                                         Get.toNamed(Routes.c2cOrders);
+                                        },
+                                        child: Container(
+                                          margin: const EdgeInsets.symmetric(
+                                              horizontal: 15),
+                                          decoration:
+                                          utils.boxDecorationWhite(),
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(8.0),
+                                            child: Column(
+                                              mainAxisAlignment:
+                                              MainAxisAlignment.spaceEvenly,
+                                              children: [
+                                                Padding(
+                                                  padding:
+                                                  const EdgeInsets.all(8.0),
+                                                  child: Row(
+                                                    children: [
+                                                      utils.imageView(
+                                                          'assets/images/interaction.png',
+                                                          context.isPhone
+                                                              ? 50
+                                                              : 60,
+                                                          context.isPhone
+                                                              ? 50
+                                                              : 50),
+                                                      const SizedBox(
+                                                        width: 10,
+                                                      ),
+                                                      utils.tvCustom(
+                                                          "C2C Orders(${controller.c2cDashBoardData.value.allOrdersCount?.aLLORDER.toString()})",
+                                                          AppColors
+                                                              .primaryThemeColor,
+                                                          16)
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(
+                                        height: 5,
+                                      ),
+                                     
+                                      
                                       Obx(() {
                                         return Visibility(
                                           visible: controller.isAnyActiveOrder.value,
@@ -406,12 +460,14 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                 ],
                                               ),
                                             ),
-
+                                  
                                           ),
                                         );
                                       })
                                     ],
-                                  ))),
+                                  ),
+                                ),
+                              )),
                         ),
                       ),
                     ),

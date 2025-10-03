@@ -1,18 +1,17 @@
 import 'package:carson_zyppy/pages/dashboard/controller/rider_dashboard_controller.dart';
+import 'package:carson_zyppy/pages/my_orders/c2c_orders/orders/c2c_orders_screens/c2c_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:tab_container/tab_container.dart';
+import '../../../../../utils/colors.dart';
+import 'c2c_orders_list_view.dart';
 
-import '../../../../utils/colors.dart';
-import '../controller/orders_controller.dart';
-import 'orders_list_view.dart';
-
-class OrdersTabContainer extends GetView<OrdersController> {
+class C2cOrdersTabContainer extends GetView<C2COrdersController> {
 
   final RiderDashboardController riderDashboardController = Get.put(RiderDashboardController());
 
-  OrdersTabContainer({super.key});
+  C2cOrdersTabContainer({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -38,31 +37,31 @@ class OrdersTabContainer extends GetView<OrdersController> {
                 fontSize: context.isPhone?10.sp:20.sp,
               ),
               colors:  [
-                // AppColors.primaryLight.withAlpha(100),
-                // AppColors.lightBlue.withAlpha(100),
-                // AppColors.primaryThemeColor.withAlpha(100),
-                AppColors.lightGreen.withAlpha(100),
-                AppColors.red.withAlpha(100)
+                AppColors.primaryLight.withAlpha(200),
+                AppColors.lightBlue.withAlpha(200),
+                AppColors.primaryThemeColor.withAlpha(200),
+                AppColors.lightGreen.withAlpha(200),
+                AppColors.red.withAlpha(200)
               ],
               tabs: [
-                // Text("Assigned(${riderDashboardController.dashBoardData.value.allOrdersCount
-                //     ?.aSSIGNED})",style: TextStyle(fontSize: context.isPhone?10:20),),
-                // Text("Picked(${riderDashboardController.dashBoardData.value.allOrdersCount
-                //     ?.pICKED})",style: TextStyle(fontSize: context.isPhone?10:20),),
-                // Text(
-                //     "Ofd(${riderDashboardController.dashBoardData.value.allOrdersCount?.oFD})",style: TextStyle(fontSize: context.isPhone?10:20),),
-                Text("Delivered(${riderDashboardController.dashBoardData.value.allOrdersCount
+                Text("Assigned(${riderDashboardController.c2cDashBoardData.value.allOrdersCount
+                    ?.aSSIGNED})",style: TextStyle(fontSize: context.isPhone?10:20),),
+                Text("Picked(${riderDashboardController.c2cDashBoardData.value.allOrdersCount
+                    ?.pICKED})",style: TextStyle(fontSize: context.isPhone?10:20),),
+                Text(
+                    "Ofd(${riderDashboardController.c2cDashBoardData.value.allOrdersCount?.oFD})",style: TextStyle(fontSize: context.isPhone?10:20),),
+                Text("Delivered(${riderDashboardController.c2cDashBoardData.value.allOrdersCount
                     ?.dELIVERED})",style: TextStyle(fontSize: context.isPhone?10:20),),
-                Text("UnDelivered(${riderDashboardController.dashBoardData.value.allOrdersCount
+                Text("UnDelivered(${riderDashboardController.c2cDashBoardData.value.allOrdersCount
                     ?.uNDELIVERED})",style: TextStyle(fontSize: context.isPhone?10:20),),
 
               ],
               children: [
-                // OrdersListView(orderStatus: 'ASSIGNED'),
-                // OrdersListView(orderStatus: 'PICKED'),
-                // OrdersListView(orderStatus: 'OFD'),
-                OrdersListView(orderStatus: 'DELIVERED'),
-                OrdersListView(orderStatus: 'UNDELIVERED'),
+                C2COrdersListView(orderStatus: 'ASSIGNED'),
+                C2COrdersListView(orderStatus: 'PICKED'),
+                C2COrdersListView(orderStatus: 'OFD'),
+                C2COrdersListView(orderStatus: 'DELIVERED'),
+                C2COrdersListView(orderStatus: 'UNDELIVERED'),
               ],
             );
           }),
