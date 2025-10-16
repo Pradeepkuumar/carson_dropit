@@ -7,7 +7,7 @@ plugins {
 android {
 
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "29.0.13599879"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -29,7 +29,7 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file("/Users/drmac/Documents/neha_2024/carosn_zyppy/android/app/ketstore/carson_drop_it.jks")
+            storeFile = file("ketstore/carson_drop_it.jks")
             storePassword = "dropit1234"
             keyAlias = "drop-it"
             keyPassword = "dropit1234"

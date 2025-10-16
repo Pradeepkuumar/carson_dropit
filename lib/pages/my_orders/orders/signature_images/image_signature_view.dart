@@ -135,6 +135,7 @@ class ImageSignatureView extends GetView<OrdersController> {
                         Padding(
                           padding: const EdgeInsets.all(5),
                           child: utils.mainButton("DELIVER", () async{
+                     
                             if (controller.deliveredImage != null) {
                                  var isDelivered = await controller.updateOrder(DELIVERED);
                                  if(isDelivered){

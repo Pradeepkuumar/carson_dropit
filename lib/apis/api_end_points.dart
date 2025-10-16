@@ -16,4 +16,13 @@ class ApiEndPoints {
   final String driverUpdateBufferTime  = "driver/update-buffer-time";
 
 
+  final String driverC2CGetOrders = "driver/fetch-c2c-orders-list";
+  final String updateC2COrderStatus  = "driver/update-c2c-order-status";
+  final String c2cDashBoardDetails = "driver/fetch-c2c-order-dashboard-details";
+    
+  
+
+
+
+
 }

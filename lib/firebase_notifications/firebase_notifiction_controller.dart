@@ -8,6 +8,7 @@ class FirebaseMessagingController extends GetxController {
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
   String? fcm_token;
+  var onNewNotification = false.obs;
 
   @override
   void onInit() {
@@ -26,7 +27,9 @@ class FirebaseMessagingController extends GetxController {
     );
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       print(message);
+      onNewNotification.value = true;
       _handleNotification(message);
+      
     });
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       _handleNotification(message);
@@ -38,9 +41,17 @@ class FirebaseMessagingController extends GetxController {
         _handleNotification(message);
       }
     });
+
     fcm_token = await _firebaseMessaging.getToken();
     box.write("fcm_token", fcm_token);
+
   }
+
+  void getFirebaseToken(){
+
+  }
+
+
 
 
   void _handleNotification(RemoteMessage message) {

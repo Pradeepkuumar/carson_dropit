@@ -177,6 +177,7 @@ Widget customColumn(String name, String data) {
               ],
             ),
           ),
+           utils.imageView("assets/icons/maps_logo.png", 30, 30)
         ],
       ),
     ),

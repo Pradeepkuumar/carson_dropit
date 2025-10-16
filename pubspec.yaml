@@ -37,6 +37,7 @@ dependencies:
   wakelock_plus: ^1.3.2
   osrm: ^0.0.8
   mobile_scanner: ^7.0.0
+  syncfusion_flutter_signaturepad: ^29.2.11
 
 
   #firebase

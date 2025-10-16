@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:ui';
+import 'dart:ui' as ui;
 import 'package:carson_zyppy/utils/text_style_util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +9,7 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../global/consts.dart';
 import '../global/global.dart';
@@ -49,7 +51,7 @@ class Utils extends GetxController {
   // success snackBar this requires title and message in return
   successSnackBar(String title, String message) {
     return Get.snackbar(title, message,
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.green,
         duration: const Duration(seconds: 2),
         colorText: Colors.white);
@@ -65,7 +67,7 @@ class Utils extends GetxController {
       Get.snackbar(
         title,
         message,
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.red,
         duration: const Duration(seconds: 2),
         colorText: Colors.white,
@@ -324,6 +326,7 @@ class Utils extends GetxController {
   }
 
   errorDialog(String? title) {
+    closeLoadingDialog();
     return Get.defaultDialog(
       title: "Error !",
       titleStyle: const TextStyle(color: AppColors.red),
@@ -790,6 +793,15 @@ class Utils extends GetxController {
     launchUrl(Uri.parse('google.navigation:q=$Address'),
         mode: LaunchMode.externalApplication);
   }
+  void openMapsFromLatLang(double latitude, double longitude) async {
+  final Uri uri = Uri.parse('google.navigation:q=$latitude,$longitude');
+
+  if (await canLaunchUrl(uri)) {
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  } else {
+    throw 'Could not launch Google Maps';
+  }
+}
 
   getTodayDate() {
     final DateTime now = DateTime.now();
@@ -1182,12 +1194,12 @@ class Utils extends GetxController {
     );
   }
 
-  tvCustom(String? text, Color textColor, double fontSize) {
+  tvCustom(String? text, Color textColor, double fontSize, {TextAlign textAlignment = TextAlign.center}) {
     return Text(
       text ?? "",
       softWrap: true,
       style: AppTextStyle.tsCustom(Get.isDarkMode? AppColors.white : textColor, context!.isTablet ? 20:fontSize),
-      textAlign: TextAlign.center,
+      textAlign: textAlignment ,
     );
   }
 
@@ -1218,6 +1230,18 @@ class Utils extends GetxController {
       style: AppTextStyle.tsHeading(color),
     );
   }
+
+
+  Future<File> saveUiImageToFile(ui.Image image, String fileName) async {
+  final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+  final buffer = byteData!.buffer.asUint8List();
+  final directory = await getTemporaryDirectory();
+  final filePath = '${directory.path}/$fileName.png';
+  final file = File(filePath);
+  await file.writeAsBytes(buffer);
+
+  return file;
+}
 
   Future<XFile?> pickImageFromGallery() async {
     // Pick an Image From Memory.

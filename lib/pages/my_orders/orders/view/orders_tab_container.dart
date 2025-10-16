@@ -6,7 +6,7 @@ import 'package:tab_container/tab_container.dart';
 
 import '../../../../utils/colors.dart';
 import '../controller/orders_controller.dart';
-import '../orders_screens/orders_list_view.dart';
+import 'orders_list_view.dart';
 
 class OrdersTabContainer extends GetView<OrdersController> {
 
@@ -37,12 +37,12 @@ class OrdersTabContainer extends GetView<OrdersController> {
                 color: Get.isDarkMode ? AppColors.white : Colors.black,
                 fontSize: context.isPhone?10.sp:20.sp,
               ),
-              colors: const [
-                // AppColors.primaryLight,
-                // AppColors.lightBlue,
-                // AppColors.primaryThemeColor,
-                AppColors.lightGreen,
-                AppColors.red
+              colors:  [
+                // AppColors.primaryLight.withAlpha(100),
+                // AppColors.lightBlue.withAlpha(100),
+                // AppColors.primaryThemeColor.withAlpha(100),
+                AppColors.lightGreen.withAlpha(100),
+                AppColors.red.withAlpha(100)
               ],
               tabs: [
                 // Text("Assigned(${riderDashboardController.dashBoardData.value.allOrdersCount

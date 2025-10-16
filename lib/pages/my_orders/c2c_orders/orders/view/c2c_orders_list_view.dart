@@ -1,33 +1,34 @@
 import 'package:carson_zyppy/global/consts.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../../global/qr_scanner.dart';
-import '../../../../utils/colors.dart';
-import '../../../../utils/utils.dart';
-import '../controller/orders_controller.dart';
-import '../view/orders_item.dart';
+import '../../../../../app_pages/app_pages.dart';
+import '../../../../../global/qr_scanner.dart';
+import '../../../../../utils/colors.dart';
+import '../../../../../utils/utils.dart';
+import '../c2c_orders_screens/c2c_controller.dart';
+import 'c2cOrders_item.dart';
 
-class OrdersListView extends StatefulWidget {
+class C2COrdersListView extends StatefulWidget {
   var orderStatus = "";
 
-  OrdersListView({super.key, required this.orderStatus});
+  C2COrdersListView({super.key, required this.orderStatus});
 
   @override
   OrdersListViewState createState() => OrdersListViewState();
 }
 
-class OrdersListViewState extends State<OrdersListView> {
-  late final OrdersController controller;
+class OrdersListViewState extends State<C2COrdersListView> {
+  late final C2COrdersController controller;
   final Utils utils = Utils();
   var statusBarColor;
 
   @override
   void initState() {
-    controller = Get.put(OrdersController());
+    controller = Get.put(C2COrdersController());
     controller.getUser();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if(controller.tabController.index == 0) {
-        controller.getFeOrders([DELIVERED]);
+        controller.getC2CFeOrders([ASSIGNED]);
       }
     });
     super.initState();
@@ -46,7 +47,7 @@ class OrdersListViewState extends State<OrdersListView> {
                 child: RefreshIndicator(
                   onRefresh: () async {
                     setState(() {
-                      controller.getFeOrders([widget.orderStatus]);
+                      controller.getC2CFeOrders([widget.orderStatus]);
                     });
                   },
                   child: SizedBox(
@@ -83,7 +84,7 @@ class OrdersListViewState extends State<OrdersListView> {
                                           searchResult(result, 2);
                                         }
 
-                                                                            },
+                                      },
                                     ),
                                     suffixIconColor:
                                         AppColors.primaryThemeColor,
@@ -106,19 +107,31 @@ class OrdersListViewState extends State<OrdersListView> {
                               })),
                         ),
                         Expanded(
-                          child: Obx(() => controller.isLoading.value ?
-                              Center(child: utils.iosProgressIndicator(AppColors.white,"Loading...")):
-                               controller.sortedOrders.isEmpty ?
+                          child: Obx(() => 
+                          // controller.isLoading.value ?
+                          //     Center(child: utils.iosProgressIndicator(AppColors.white,"Loading...")):
+
+                               controller.ordersList.isEmpty ?
                                Center(child: utils.tvRegular("No Order Found !", AppColors.white))
                                   : ListView.builder(
-                                itemCount: controller.sortedOrders.length,
+                                itemCount: controller.ordersList.length,
                                 itemBuilder: (context, position) {
                                   return Padding(
                                     padding: const EdgeInsets.all(8.0),
-                                    child: orderItem(
-                                      controller.sortedOrders[position],
+                                    child: c2cOrderItem(
+                                      controller.ordersList[position] ,
                                           (clickedOrder, clickType) async {
-                                        if (clickType == orderScanCLick) {
+                                            controller.selectedOrder.value = clickedOrder;
+                                        if (clickType == fullMapViewCLick) {
+
+                                            utils.simpleDialog("Mark this orders as PICKED",
+                                             "Please match order number and mark this order to picked", 
+                                             (){
+                                                  controller.updateOrder(PICKED);
+                                                  Get.back();
+                                             }, (){
+                                              Get.back();
+                                             });
                                           // var res = await Get.to(
                                           //   SimpleBarcodeScannerPage(
                                           //     appBarTitle: clickedOrder.awbNo,
@@ -138,10 +151,9 @@ class OrdersListViewState extends State<OrdersListView> {
                                         } else if (clickType == orderUpdateToOFD) {
                                           controller.selectedOrder.value = clickedOrder;
                                           controller.updateOrder(OFD);
-                                        } else if (clickType == orderUpdateToDeliver ||
-                                            clickType == fullMapViewCLick) {
+                                        } else if (clickType == orderUpdateToDeliver) {
                                           controller.selectedOrder.value = clickedOrder;
-                                         // Get.to(() => MapPage(orderDetails:controller.selectedOrder.value,mapView: 1));
+                                          Get.toNamed(Routes.c2cImageSign);
 
                                         }
                                       },
@@ -189,12 +201,12 @@ class OrdersListViewState extends State<OrdersListView> {
 
   void searchResult(String value, int type) {
     if (value.isNotEmpty) {
-      var filteredList = controller.sortedOrders
+      var filteredList = controller.ordersList
           .where((element) => element.awbNo!.contains(value))
           .toList();
       setState(() {
         if (filteredList.isNotEmpty) {
-          controller.sortedOrders.value = filteredList;
+          controller.ordersList.value = filteredList;
           if (type == 2) {
             // ecomOrdersController.changeOrderStatus(
             //     order.hawbNo, order.referenceNo, "");
@@ -205,7 +217,7 @@ class OrdersListViewState extends State<OrdersListView> {
         }
       });
     } else {
-      controller.sortedOrders = controller.sortedOrders;
+      controller.ordersList = controller.ordersList;
     }
   }
 }
