@@ -326,6 +326,7 @@ class Utils extends GetxController {
   }
 
   errorDialog(String? title) {
+    closeLoadingDialog();
     return Get.defaultDialog(
       title: "Error !",
       titleStyle: const TextStyle(color: AppColors.red),
@@ -792,6 +793,15 @@ class Utils extends GetxController {
     launchUrl(Uri.parse('google.navigation:q=$Address'),
         mode: LaunchMode.externalApplication);
   }
+  void openMapsFromLatLang(double latitude, double longitude) async {
+  final Uri uri = Uri.parse('google.navigation:q=$latitude,$longitude');
+
+  if (await canLaunchUrl(uri)) {
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  } else {
+    throw 'Could not launch Google Maps';
+  }
+}
 
   getTodayDate() {
     final DateTime now = DateTime.now();
@@ -1184,12 +1194,12 @@ class Utils extends GetxController {
     );
   }
 
-  tvCustom(String? text, Color textColor, double fontSize) {
+  tvCustom(String? text, Color textColor, double fontSize, {TextAlign textAlignment = TextAlign.center}) {
     return Text(
       text ?? "",
       softWrap: true,
       style: AppTextStyle.tsCustom(Get.isDarkMode? AppColors.white : textColor, context!.isTablet ? 20:fontSize),
-      textAlign: TextAlign.start,
+      textAlign: textAlignment ,
     );
   }
 

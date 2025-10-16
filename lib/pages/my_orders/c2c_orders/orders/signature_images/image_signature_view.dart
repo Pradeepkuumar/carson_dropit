@@ -82,7 +82,7 @@ class C2cImageSignatureView extends GetView<C2COrdersController> {
                                 utils.iconButton("Save", () {
                                   controller.isSignDisbled.value = true;
                                   controller.exportSignature();
-                                }, Icons.cleaning_services_rounded,
+                                }, Icons.save,
                                     AppColors.blue, AppColors.white),
                               ],
                             ),
@@ -112,9 +112,9 @@ class C2cImageSignatureView extends GetView<C2COrdersController> {
                                   mainAxisAlignment: MainAxisAlignment.end,
                                   children: [
                                     utils.iconButtonWithoutBorder("Change", () {
-                                      // controller.image.refresh();
-                                      // controller.captureImage(
-                                      //     ImageSource.camera,0);
+                                      controller.image.refresh();
+                                      controller.captureImage(
+                                          ImageSource.camera,"0");
                                     }, Icons.refresh, null)
                                   ],
                                 ),
@@ -182,6 +182,7 @@ class C2cImageSignatureView extends GetView<C2COrdersController> {
                                       if (controller.isUndelivring.value &&
                                           controller.selectedReasonId.value !=
                                               0) {
+                                                
                                         if (controller.deliveredImage != null) {
                                           var isDelivered = await controller
                                               .updateOrder(UNDELIVERED);
@@ -205,6 +206,10 @@ class C2cImageSignatureView extends GetView<C2COrdersController> {
                                     var isDelivered =
                                         await controller.updateOrder(DELIVERED);
                                     if (isDelivered) {
+                                       controller.isSignDisbled.value = false;
+                                  controller.signaturePadKey.currentState
+                                      ?.clear();
+                                  controller.signatureFile = null;
                                       Get.back();
                                     }
                                   } else {

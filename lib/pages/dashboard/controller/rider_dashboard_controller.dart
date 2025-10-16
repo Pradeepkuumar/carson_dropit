@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:carson_zyppy/firebase_notifications/firebase_notifiction_controller.dart';
 import 'package:carson_zyppy/local_db/entity/UserData.dart';
 import 'package:carson_zyppy/pages/dashboard/models/dashboard_data.dart';
 import 'package:flutter/foundation.dart';
@@ -32,6 +33,8 @@ class RiderDashboardController extends GetxController {
   var isAnyActiveOrder = false.obs;
   var checkBoxValue = false.obs;
   RxBool isConsentGiven = RxBool(false);
+  late FirebaseMessagingController firebaseMessagingController;
+  
 
 
   @override
@@ -47,6 +50,15 @@ class RiderDashboardController extends GetxController {
       updateLocation();
       requestBackgroundPermission();
     }
+    firebaseMessagingController = Get.find<FirebaseMessagingController>();
+     ever(firebaseMessagingController.onNewNotification, (bool isNew) {
+    if (isNew) {
+      getC2CCDashBoardData();
+      getDashBoardData();
+      firebaseMessagingController.onNewNotification.value = false;
+    }
+  });
+
     super.onReady();
   }
 
@@ -59,6 +71,9 @@ class RiderDashboardController extends GetxController {
   //       break;
   //   }
   // });
+
+
+
 
   updateLocation() async {
     await getCurrentLocation();

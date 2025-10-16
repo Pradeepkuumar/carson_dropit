@@ -199,19 +199,27 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                           .spaceBetween,
                                                       children: [
                                                         utils.tvCustom(
-                                                            "Assigned : ${controller
+                                                            "Assigned : ${(controller
                                                                 .dashBoardData
                                                                 .value
                                                                 .todayOrdersCount
-                                                                ?.aSSIGNED}",
+                                                                !.aSSIGNED!+controller
+                                                                .c2cDashBoardData
+                                                                .value
+                                                                .todayOrdersCount
+                                                                !.aSSIGNED!) }",
                                                             AppColors.black,
                                                             12),
                                                         utils.tvCustom(
-                                                            "Picked : ${controller
+                                                            "Picked : ${(controller
                                                                 .dashBoardData
                                                                 .value
                                                                 .todayOrdersCount
-                                                                ?.pICKED}",
+                                                                !.pICKED! + controller
+                                                                .c2cDashBoardData
+                                                                .value
+                                                                .todayOrdersCount
+                                                                !.pICKED!)}",
                                                             AppColors.black,
                                                             12)
                                                       ],
@@ -222,19 +230,27 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                           .spaceBetween,
                                                       children: [
                                                         utils.tvCustom(
-                                                            "OFD : ${controller
+                                                            "OFD : ${(controller
                                                                 .dashBoardData
                                                                 .value
                                                                 .todayOrdersCount
-                                                                ?.oFD}",
+                                                                !.oFD! + controller
+                                                                .c2cDashBoardData
+                                                                .value
+                                                                .todayOrdersCount
+                                                                !.oFD!)}",
                                                             AppColors.black,
                                                             12),
                                                         utils.tvCustom(
-                                                            "Delivered : ${controller
+                                                            "Delivered : ${(controller
                                                                 .dashBoardData
                                                                 .value
                                                                 .todayOrdersCount
-                                                                ?.dELIVERED}",
+                                                                !.dELIVERED! + controller
+                                                                .c2cDashBoardData
+                                                                .value
+                                                                .todayOrdersCount
+                                                                !.dELIVERED!)}",
                                                             AppColors.black,
                                                             12)
                                                       ],
@@ -258,19 +274,27 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                           .spaceBetween,
                                                       children: [
                                                         utils.tvCustom(
-                                                            "Assigned : ${controller
+                                                            "Assigned : ${(controller
                                                                 .dashBoardData
                                                                 .value
                                                                 .allOrdersCount
-                                                                ?.aSSIGNED}",
+                                                                !.aSSIGNED!+controller
+                                                                .c2cDashBoardData
+                                                                .value
+                                                                .allOrdersCount
+                                                                !.aSSIGNED!)}",
                                                             AppColors.black,
                                                             12),
                                                         utils.tvCustom(
-                                                            "Picked : ${controller
+                                                            "Picked : ${(controller
                                                                 .dashBoardData
                                                                 .value
                                                                 .allOrdersCount
-                                                                ?.pICKED}",
+                                                                !.pICKED! + controller
+                                                                .c2cDashBoardData
+                                                                .value
+                                                                .allOrdersCount
+                                                                !.pICKED!)}",
                                                             AppColors.black,
                                                             12)
                                                       ],
@@ -281,19 +305,27 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                           .spaceBetween,
                                                       children: [
                                                         utils.tvCustom(
-                                                            "OFD : ${controller
+                                                            "OFD : ${(controller
                                                                 .dashBoardData
                                                                 .value
                                                                 .allOrdersCount
-                                                                ?.oFD}",
+                                                                !.oFD! +controller
+                                                                .c2cDashBoardData
+                                                                .value
+                                                                .allOrdersCount
+                                                                !.oFD!)}",
                                                             AppColors.black,
                                                             12),
                                                         utils.tvCustom(
-                                                            "Delivered : ${controller
+                                                            "Delivered : ${(controller
                                                                 .dashBoardData
                                                                 .value
                                                                 .allOrdersCount
-                                                                ?.dELIVERED}",
+                                                                !.dELIVERED! + controller
+                                                                .c2cDashBoardData
+                                                                .value
+                                                                .allOrdersCount
+                                                                !.dELIVERED!)}",
                                                             AppColors.black,
                                                             12)
                                                       ],
@@ -312,7 +344,11 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                       ),
                                       InkWell(
                                         onTap: () {
-                                          Get.toNamed(Routes.nearByOrders);
+                                          Get.toNamed(Routes.nearByOrders)?.then((value) {
+                                             controller.getC2CCDashBoardData();
+                                             controller.getDashBoardData();
+
+                                          });
                                         },
                                         child: Container(
                                           margin: const EdgeInsets.symmetric(
@@ -357,50 +393,55 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                       const SizedBox(
                                         height: 5,
                                       ),
-                                       InkWell(
-                                        onTap: () {
-                                         Get.toNamed(Routes.c2cOrders);
-                                        },
-                                        child: Container(
-                                          margin: const EdgeInsets.symmetric(
-                                              horizontal: 15),
-                                          decoration:
-                                          utils.boxDecorationWhite(),
-                                          child: Padding(
-                                            padding: const EdgeInsets.all(8.0),
-                                            child: Column(
-                                              mainAxisAlignment:
-                                              MainAxisAlignment.spaceEvenly,
-                                              children: [
-                                                Padding(
-                                                  padding:
-                                                  const EdgeInsets.all(8.0),
-                                                  child: Row(
-                                                    children: [
-                                                      utils.imageView(
-                                                          'assets/images/interaction.png',
-                                                          context.isPhone
-                                                              ? 50
-                                                              : 60,
-                                                          context.isPhone
-                                                              ? 50
-                                                              : 50),
-                                                      const SizedBox(
-                                                        width: 10,
-                                                      ),
-                                                      utils.tvCustom(
-                                                          "C2C Orders(${controller.c2cDashBoardData.value.allOrdersCount?.aLLORDER.toString()})",
-                                                          AppColors
-                                                              .primaryThemeColor,
-                                                          16)
-                                                    ],
+                                       Obx( ()=>
+                                         InkWell(
+                                          onTap: () {
+                                           Get.toNamed(Routes.c2cOrders)?.then((_) async{
+                                                await controller.getC2CCDashBoardData();
+                                                await controller.getDashBoardData();
+                                            });
+                                          },
+                                          child: Container(
+                                            margin: const EdgeInsets.symmetric(
+                                                horizontal: 15),
+                                            decoration:
+                                            utils.boxDecorationWhite(),
+                                            child: Padding(
+                                              padding: const EdgeInsets.all(8.0),
+                                              child: Column(
+                                                mainAxisAlignment:
+                                                MainAxisAlignment.spaceEvenly,
+                                                children: [
+                                                  Padding(
+                                                    padding:
+                                                    const EdgeInsets.all(8.0),
+                                                    child: Row(
+                                                      children: [
+                                                        utils.imageView(
+                                                            'assets/images/interaction.png',
+                                                            context.isPhone
+                                                                ? 50
+                                                                : 60,
+                                                            context.isPhone
+                                                                ? 50
+                                                                : 50),
+                                                        const SizedBox(
+                                                          width: 10,
+                                                        ),
+                                                        utils.tvCustom(
+                                                            "C2C Orders(${controller.c2cDashBoardData.value.allOrdersCount?.aLLORDER.toString()})",
+                                                            AppColors
+                                                                .primaryThemeColor,
+                                                            16)
+                                                      ],
+                                                    ),
                                                   ),
-                                                ),
-                                              ],
+                                                ],
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      ),
+                                                                               ),
+                                       ),
                                       const SizedBox(
                                         height: 5,
                                       ),

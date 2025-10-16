@@ -8,14 +8,11 @@ import 'package:carson_zyppy/pages/my_orders/orders/models/reason_data.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
-import 'package:get_storage/get_storage.dart';
 import 'package:google_navigation_flutter/google_navigation_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:location/location.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:signature/signature.dart';
 import 'package:syncfusion_flutter_signaturepad/signaturepad.dart';
 
 import '../../../../../apis/base_api_response.dart';
@@ -29,7 +26,7 @@ class C2COrdersController extends GetxController with GetTickerProviderStateMixi
   var isLoading = true.obs;
   var currentHintIndex = 0.obs;
   late TabController tabController;
-  var selectedOrder = C2COrdersData().obs;
+  var selectedOrder = C2cOrdersData().obs;
   var viewFullMap = false.obs;
   var user = UserData();
 
@@ -65,7 +62,7 @@ class C2COrdersController extends GetxController with GetTickerProviderStateMixi
 
 
 
-  var ordersList = <C2COrdersData>[].obs;
+  var ordersList = <C2cOrdersData>[].obs;
 
   var reasonsList = <CancelReason>[].obs;
   TextEditingController searchEditTextController = TextEditingController();
@@ -147,7 +144,7 @@ class C2COrdersController extends GetxController with GetTickerProviderStateMixi
       if (result.data != null) {
         ordersList.clear();
         await Future.forEach(result.data, (json) async {
-          ordersList.add(C2COrdersData.fromJson(json as Map<String, dynamic>));
+          ordersList.add(C2cOrdersData.fromJson(json as Map<String, dynamic>));
         });
         isLoading.value = false;
         utils.closeLoadingDialog();
@@ -247,6 +244,7 @@ class C2COrdersController extends GetxController with GetTickerProviderStateMixi
         return false;
       }
     } catch (e) {
+      utils.closeLoadingDialog();
       utils.errorDialog(e.toString());
       return false;
     }
@@ -271,6 +269,7 @@ class C2COrdersController extends GetxController with GetTickerProviderStateMixi
   exportSignature() async {
     ui.Image sign =  await signaturePadKey.currentState!.toImage();
     signatureFile =  await utils.saveUiImageToFile(sign, "my_image");
+    utils.successSnackBar("success", "Signature saved successfully");
   }
 
   Future<File> uint8ListToFile(Uint8List data, String fileName) async {
@@ -547,6 +546,8 @@ class C2COrdersController extends GetxController with GetTickerProviderStateMixi
 
   @override
   void onClose() {
+
+    isSignDisbled.value = false;
 
   }
 }

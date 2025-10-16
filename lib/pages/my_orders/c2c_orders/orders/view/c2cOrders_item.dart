@@ -1,4 +1,3 @@
-
 import 'package:carson_zyppy/global/consts.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -9,9 +8,8 @@ import '../../../../map/orderItem/clickedOrderItem.dart';
 import '../../model/c2cOrdersModel.dart';
 
 
-c2cOrderItem(C2COrdersData orderData, void Function(C2COrdersData,int) onClick) {
+c2cOrderItem(C2cOrdersData orderData, void Function(C2cOrdersData,int) onClick) {
   Utils utils = Utils();
-
   return Card(
       elevation: 4,
       shadowColor: Colors.black,
@@ -116,7 +114,7 @@ c2cOrderItem(C2COrdersData orderData, void Function(C2COrdersData,int) onClick) 
                       child: Row(
                           children: [
                             Expanded(
-                              flex: 1,
+                            flex: 1,
                              child: Column(children: [
                                 Column(
                                   children: [
@@ -127,11 +125,14 @@ c2cOrderItem(C2COrdersData orderData, void Function(C2COrdersData,int) onClick) 
                                       
                                   ],
                                 ),
-                                  Text(
-                                  "${orderData.shipperName}\n${orderData.shipperAddress}\n${orderData.shipperZoneNo}\n"'Street '"${orderData.shipperBuildingNo}\n"'Building '"${orderData.shipperStreetNo}",
-                                  style:  TextStyle(
-                                    fontSize: Get.context!.isPhone?12:20,
-                                  ),)
+                                  Padding(
+                                    padding: const EdgeInsets.all(3.0),
+                                    child: Text(
+                                    "${orderData.shipperName}\n${orderData.shipperAddress}\n"'Zone '"${orderData.shipperZoneNo}\n"'Street '"${orderData.shipperStreetNo}\n"'Building '"${orderData.shipperBuildingNo}",
+                                    style:  TextStyle(
+                                      fontSize: Get.context!.isPhone?12:20,
+                                    ),),
+                                  )
                               ],)
                               
                             ),
@@ -142,17 +143,20 @@ c2cOrderItem(C2COrdersData orderData, void Function(C2COrdersData,int) onClick) 
                                 Column(
                                   children: [
                                      const Icon(
-                                      Icons.store_mall_directory,
+                                      Icons.person,
                                       color: AppColors.blue,),
                                       utils.tvCustom("Consignee", AppColors.blue, 12)
                                       
                                   ],
                                 ),
-                                  Text(
-                                  "${orderData.consigneeName}\n${orderData.consigneeAddress}\n${orderData.consigneeZoneNo}\n"'Street '"${orderData.consigneeBuildingNo}\n"'Building '"${orderData.consigneeStreetNo}",
-                                  style:  TextStyle(
-                                    fontSize: Get.context!.isPhone?12:20,
-                                  ),)
+                                  Padding(
+                                    padding: const EdgeInsets.all(3.0),
+                                    child: Text(
+                                    "${orderData.consigneeName}\n${orderData.consigneeAddress}\n"'Zone '"${orderData.consigneeZoneNo}\n"'Street '"${orderData.consigneeStreetNo}\n"'Building '"${orderData.consigneeBuildingNo}",
+                                    style:  TextStyle(
+                                      fontSize: Get.context!.isPhone?12:20,
+                                    ),),
+                                  )
                               ],)
                             ),
                       
@@ -166,11 +170,10 @@ c2cOrderItem(C2COrdersData orderData, void Function(C2COrdersData,int) onClick) 
                       customRow("Item", orderData.itemName ?? ""),
                       customRow("Description", orderData.itemDescription ?? ""),
                       customRow("Quantity", orderData.quantity.toString()),
-                      customRow("Order Amount.",orderData.orderAmount ?? ""),
-                      customRow("Weight.",  orderData.weight ?? ""),
+                      customRow("Order Amount.",'${orderData.orderAmount} (Qar) '),
+                      customRow("Weight.",  ' ${orderData.weight} (Kg) '),
                       customRow("Created Date", utils.formatDate(orderData.createdAt.toString(),"dd MMM yyyy hh:mm a")),
                       customRow("Remark", orderData.remarks ?? ""),
-                    
                     ],
                   ),
                   Column(
@@ -179,24 +182,29 @@ c2cOrderItem(C2COrdersData orderData, void Function(C2COrdersData,int) onClick) 
                     children: [
                       InkWell(
                         onTap: (){
-                          utils.openMaps(orderData.shipperAddress ?? "");
-                        },
-                        child: customColumn("Pick-Up Location", orderData.consigneeAddress ?? "")),
+                          if(orderData.status != DELIVERED && orderData.status != UNDELIVERED){
+                            if(orderData.shipperLatitude != null && orderData.shipperLongitude != null){
+                              utils.openMapsFromLatLang(double.parse(orderData.shipperLatitude!), double.parse(orderData.shipperLongitude!));
+                            }else{  
+                             utils.openMaps(orderData.shipperAddress ?? "");
+                          }
+                        }},
+                        child: customColumn("Pick-Up Location", orderData.shipperAddress ?? "")),
                       InkWell(
                         onTap: (){
-                           utils.openMaps(orderData.consigneeAddress ?? "");
+                          if(orderData.status != DELIVERED && orderData.status != UNDELIVERED){
+                            if(orderData.consigneeLatitude != null && orderData.consigneeLongitude != null){
+                              utils.openMapsFromLatLang(double.parse(orderData.consigneeLatitude!), double.parse(orderData.consigneeLongitude!));
+                            }else{
+                            utils.openMaps(orderData.consigneeAddress ?? "");
+                           }
+                          }
                         },
                         child: customColumn("Drop-Off Location", orderData.consigneeAddress ?? "")),
                     ],
                   ),
-                  // Visibility(
-                  //   visible: orderData.status == UNDELIVERED,
-                  //     child: Column( children: [
-                  //         customRow("Undelivered Reason", orderData.reason ?? ""),
-                  //         Image.network(orderData.failed_delivery_proof ?? "",height: 350,width: 300,fit: BoxFit.fill,)
-                  //     ])),
                   Visibility(
-                    visible: orderData.status == ASSIGNED || orderData.status == RE_ASSIGNED ||orderData.status == REACHED ? true : false,
+                    visible: orderData.status == ASSIGNED || orderData.status == RE_ASSIGNED || orderData.status == REACHED ? true : false,
                     child: Column(
                       children: [
                         const SizedBox(height: 10,),
@@ -265,13 +273,13 @@ Widget customRow(String name, String data) {
         children: [
           Expanded(
             flex: 4,
-            child: utils.tvCustom(name, AppColors.black, 10),
+            child: utils.tvCustom(name, AppColors.black, 11,textAlignment: TextAlign.start),
           ),
           Expanded(
             flex: 2,
             child: utils.tvRegular(":", AppColors.black),
           ),
-          Expanded(flex: 4, child: utils.tvCustom(data, AppColors.black, 10)),
+          Expanded(flex: 4, child: utils.tvCustom(data, AppColors.black, 11,textAlignment: TextAlign.start)),
         ],
       ),
     ),

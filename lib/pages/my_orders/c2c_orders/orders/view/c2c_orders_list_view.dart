@@ -1,13 +1,11 @@
 import 'package:carson_zyppy/global/consts.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
 import '../../../../../app_pages/app_pages.dart';
 import '../../../../../global/qr_scanner.dart';
 import '../../../../../utils/colors.dart';
 import '../../../../../utils/utils.dart';
 import '../c2c_orders_screens/c2c_controller.dart';
-import '../signature_images/image_signature_view.dart';
 import 'c2cOrders_item.dart';
 
 class C2COrdersListView extends StatefulWidget {
@@ -109,8 +107,10 @@ class OrdersListViewState extends State<C2COrdersListView> {
                               })),
                         ),
                         Expanded(
-                          child: Obx(() => controller.isLoading.value ?
-                              Center(child: utils.iosProgressIndicator(AppColors.white,"Loading...")):
+                          child: Obx(() => 
+                          // controller.isLoading.value ?
+                          //     Center(child: utils.iosProgressIndicator(AppColors.white,"Loading...")):
+
                                controller.ordersList.isEmpty ?
                                Center(child: utils.tvRegular("No Order Found !", AppColors.white))
                                   : ListView.builder(
