@@ -220,7 +220,12 @@ orderItem(OrdersData orderData, void Function(OrdersData,int) onClick) {
                       visible: orderData.status == OFD ? true : false,
                       child: utils.iconButton("Update", () {
                         onClick(orderData,orderUpdateToDeliver);
-                      }, Icons.update, AppColors.primaryThemeColor, AppColors.white))
+                      }, Icons.update, AppColors.primaryThemeColor, AppColors.white)),
+                       Visibility(
+                      visible: orderData.status == UNDELIVERED ? true : false,
+                      child: utils.iconButton("Drop at Warehouse", () {
+                        onClick(orderData,orderUpdateDropClw);
+                      }, Icons.add_road, AppColors.greenLight, AppColors.white)),
 
                 ],
               )

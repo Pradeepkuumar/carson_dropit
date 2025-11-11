@@ -2,11 +2,14 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'dart:io';
+import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide FormData, MultipartFile;
 import 'package:get/get_connect/http/src/request/request.dart';
 
 import '../global/global.dart';
+import 'package:http/http.dart' as http;
+ import 'package:dio/dio.dart' show FormData, Dio, DioException, Options,MultipartFile,IOHttpClientAdapter;
 
 class ApiProvider extends GetConnect {
   final String acceptEncoding = 'gzip, deflate';
@@ -112,75 +115,201 @@ class ApiProvider extends GetConnect {
     return responseJson;
   }
 
-  Future<dynamic> postRequestWithImages(String endpoint,
-      Map<String, dynamic> data, List<Map<String, dynamic>> images) async {
-    dynamic responseJson;
-    try {
-      FormData form = FormData({
-        ...data,
-      });
-
-      for (var imageMap in images) {
-        String key = imageMap['key'];
-        File image = imageMap['file'];
-
-        form.files.add(MapEntry(
-            key, MultipartFile(image, filename: image.path.split('/').last)));
-      }
-
-      final response = await post(endpoint,
-        form
-      );
-
-      responseJson = returnResponse(response);
-      print(responseJson);
-    } on TimeoutException {
-      //throw FetchDataException('Request timed out');
-    } on SocketException {
-     // throw FetchDataException('No internet connection');
-    }
-
-    return responseJson;
-  }
-
-  // Future<Response> postRequestFromData(
-  //     String endpoint, Map<String, dynamic> data, File file) async {
+  // Future<dynamic> postRequestWithImages(String endpoint,
+  //     Map<String, dynamic> data, List<Map<String, dynamic>>? images) async {
   //   dynamic responseJson;
   //   try {
   //     FormData form = FormData({
-  //       'file': MultipartFile(file, filename: 'image.png'),
   //       ...data,
   //     });
-  //    // 'otherFile': MultipartFile(back, filename: 'image.png'),
-  //     // formData.files.add(MapEntry('qatar_id_accept_image_front',
-  //     //     MultipartFile(idImageFront.absolute.path, filename: "")));
-  //     // formData.files.add(MapEntry('qatar_id_accept_image_back',
-  //     //     MultipartFile(idkImageBack.absolute.path, filename: "")));
-  //     // formData = formData;
-  //     final response = await post(
-  //       baseUrl + endpoint,
-  //       form,
-  //
+
+  //     if(images!.isNotEmpty) {
+  //     for (var imageMap in images) {
+  //       String key = imageMap['key'];
+  //       File image = imageMap['file'];
+
+  //       form.files.add(MapEntry(
+  //           key, MultipartFile(image, filename: image.path.split('/').last)));
+  //     }
+  //     }
+
+  //     final response = await post(endpoint,
+  //       form
   //     );
+
   //     responseJson = returnResponse(response);
+  //     print(responseJson);
   //   } on TimeoutException {
-  //     throw FetchDataException('Request timed out');
+  //     //throw FetchDataException('Request timed out');
   //   } on SocketException {
-  //     throw FetchDataException('no internet connection');
+  //    // throw FetchDataException('No internet connection');
   //   }
+
   //   return responseJson;
   // }
 
-  Future<dynamic> uploadImage(String endpoint, File? file) async {
-    final form = FormData({
-      'image': MultipartFile(file, filename: file!.path.split('/').last),
+
+
+
+
+Future<dynamic> postRequestWithImages(
+  String endpoint,
+  Map<String, dynamic> data, 
+  List<Map<String, dynamic>>? images,
+) async {
+  try {
+    // Create multipart request
+    var request = http.MultipartRequest('POST', Uri.parse("https://dev.zyppy.qa/api/v1/$endpoint"));
+      dynamic responseJson;
+    // Add form fields
+    data.forEach((key, value) {
+      request.fields[key] = value.toString();
     });
 
-    final response = await post(endpoint,
-      form,
-    );
-    return returnResponse(response);
+    // Add images
+    if (images != null && images.isNotEmpty) {
+      for (final imageMap in images) {
+        final String key = imageMap['key'];
+        final File image = imageMap['file'];
+        
+        if (await image.exists()) {
+          request.files.add(await http.MultipartFile.fromPath(
+            key,
+            image.path,
+            filename: image.path.split('/').last,
+          ));
+        }
+      }
+    }
+
+    print('🚀 Making POST request to: $endpoint');
+    
+    // Send request
+   // Send request
+    final streamedResponse = await request.send().timeout(const Duration(seconds: 30));
+    
+    // Convert streamed response to regular response
+    final response = await http.Response.fromStream(streamedResponse);
+    
+    print('✅ Request successful: ${response.statusCode}');
+    
+     responseJson = returnHttpResponse(response);
+    return responseJson;
+
+  } on TimeoutException catch (e) {
+    print('❌ Request timed out: $e');
+    throw Exception('Request timed out');
+  } catch (e) {
+    print('❌ Error: $e');
+    throw Exception('Request failed: $e');
   }
+}
+
+dynamic returnHttpResponse(http.Response response) {
+  print('📡 Response status: ${response.statusCode}');
+  print('📡 Response body: ${response.body}');
+  
+  switch (response.statusCode) {
+    case 200:
+    case 201:
+      try {
+        var responseJson = json.decode(response.body);
+        print('✅ Success response: $responseJson');
+        return responseJson;
+      } catch (e) {
+        print('❌ JSON decode error: $e');
+        return {'success': true, 'message': 'Request successful', 'data': response.body};
+      }
+    case 400:
+      throw Exception('Bad Request: ${response.body}');
+    case 401:
+      throw Exception('Unauthorized: ${response.body}');
+    case 403:
+      throw Exception('Forbidden: ${response.body}');
+    case 404:
+      throw Exception('Not Found: ${response.body}');
+    case 500:
+      throw Exception('Internal Server Error: ${response.body}');
+    default:
+      throw Exception('Error occurred with status code: ${response.statusCode}');
+  }
+}
+
+
+   
+
+Future<dynamic> postRequestWithImagesDio(
+  String endpoint,
+  Map<String, dynamic> data, 
+  List<Map<String, dynamic>>? images,
+) async {
+  try {
+    // Create FormData using dio's fromMap method
+    final form = FormData.fromMap(data);
+
+    if (images != null && images.isNotEmpty) {
+      for (final imageMap in images) {
+        final String key = imageMap['key'];
+        final File image = imageMap['file'];
+        
+        if (await image.exists()) {
+          form.files.add(MapEntry(
+            key, 
+            await MultipartFile.fromFile(
+              image.path,
+              filename: image.path.split('/').last,
+            ),
+          ));
+        }
+      }
+    }
+
+    print('🚀 Making POST request to: $endpoint');
+    
+    // Use Dio for the request
+    final dio = Dio();
+    
+    // Bypass SSL for development
+    (dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
+      final HttpClient client = HttpClient();
+      client.badCertificateCallback = 
+          (X509Certificate cert, String host, int port) => true;
+      return client;
+    };
+
+    final response = await dio.post(
+      endpoint,
+      data: form,
+      options: Options(
+        receiveTimeout: const Duration(seconds: 30),
+        sendTimeout: const Duration(seconds: 30),
+      ),
+    );
+
+    print('✅ Request successful: ${response.statusCode}');
+    return response.data;
+
+  } on DioException catch (e) {
+    print('❌ Dio Error: ${e.type} - ${e.message}');
+    throw Exception('Request failed: ${e.message}');
+  } catch (e) {
+    print('❌ Error: $e');
+    throw Exception('Request failed: $e');
+  }
+}
+
+ 
+
+  // Future<dynamic> uploadImage(String endpoint, File? file) async {
+  //   final form = FormData({
+  //     'image': MultipartFile(file, filename: file!.path.split('/').last),
+  //   });
+
+  //   final response = await post(endpoint,
+  //     form,
+  //   );
+  //   return returnResponse(response);
+  // }
 
 
 

@@ -23,7 +23,6 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
   StreamSubscription<RemainingTimeOrDistanceChangedEvent>?
   remainingTimeOrDistanceChangedSubscription;
 
-
   final controller = Get.put(AllOrdersMapController());
 
   var enableMapLiveCamera = false.obs;

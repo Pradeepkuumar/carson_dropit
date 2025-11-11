@@ -20,82 +20,190 @@ c2cOrderItem(C2cOrdersData orderData, void Function(C2cOrdersData,int) onClick) 
           padding:  const EdgeInsets.all(10.0),
           child: Column(
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                mainAxisSize: MainAxisSize.max,
-                children: [
-                  Column(
-                    children: [
-                        Text(
-                        "Order No.",
-                        style: TextStyle(
-                          fontSize:  Get.context!.isPhone ? 12 : 15,
-                          color: Colors.black,
-                        ),
-                      ),
-                      Text(
-                        orderData.awbNo.toString(),
-                        style:   TextStyle(
-                          fontSize: Get.context!.isPhone ?10:15,
-                          color: AppColors.black,
-                        ),
-                      ),
-                    ],
-                  ),
-                   const Spacer(),
-                  Column(
-                    children: [
-                        Text(
-                        "Order Status",
-                        style: TextStyle(
-                          fontSize: Get.context!.isPhone?12:15,
-                          color: Colors.black,
-                        ),
-                      ),
-                      Container(
-                        decoration: BoxDecoration(
-                            color: orderData.status == ASSIGNED ? AppColors.linkColor :
-                            orderData.status == REACHED? AppColors.primaryThemeColor : orderData.status == PICKED ?
-                            AppColors.blue : orderData.status == DELIVERED ? AppColors.greenLight : orderData.status == UNDELIVERED ? AppColors.red : AppColors.primaryThemeColor,
-                            borderRadius: BorderRadius.circular(8)),
-                        child: Padding(
-                          padding:  const EdgeInsets.all(4.0),
-                          child: Text(
-                            orderData.status.toString().toUpperCase(),
-                            style:   TextStyle(
-                              fontSize: Get.context!.isPhone ?10 :15,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                   const Spacer(),
-                  Column(
-                    children: [
-                        Text(
-                        "Payment Type",
-                        style: TextStyle(
-                          fontSize: Get.context!.isPhone?12:15,
-                          color: Colors.black,
-                        ),
-                      ),
-                      Text(
-                        orderData.paymentType.toString(),
-                        style:   TextStyle(
-                          fontSize: Get.context!.isPhone?12:15,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+              // Row(
+              //   crossAxisAlignment: CrossAxisAlignment.center,
+              //   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              //   mainAxisSize: MainAxisSize.max,
+              //   children: [
+              //     Column(
+              //       children: [
+              //           Text(
+              //           "Order No.",
+              //           style: TextStyle(
+              //             fontSize:  Get.context!.isPhone ? 12 : 15,
+              //             color: Colors.black,
+              //           ),
+              //         ),
+              //         Text(
+              //           orderData.awbNo.toString(),
+              //           style:   TextStyle(
+              //             fontSize: Get.context!.isPhone ?10:15,
+              //             color: AppColors.black,
+              //           ),
+              //         ),
+              //       ],
+              //     ),
+              //      const Spacer(),
+              //     Column(
+              //       children: [
+              //           Text(
+              //           "Order Status",
+              //           style: TextStyle(
+              //             fontSize: Get.context!.isPhone?12:15,
+              //             color: Colors.black,
+              //           ),
+              //         ),
+              //         Container(
+              //           decoration: BoxDecoration(
+              //               color: orderData.status == ASSIGNED ? AppColors.linkColor :
+              //               orderData.status == REACHED? AppColors.primaryThemeColor : orderData.status == PICKED ?
+              //               AppColors.blue : orderData.status == DELIVERED ? AppColors.greenLight : orderData.status == UNDELIVERED ? AppColors.red : AppColors.primaryThemeColor,
+              //               borderRadius: BorderRadius.circular(8)),
+              //           child: Padding(
+              //             padding:  const EdgeInsets.all(4.0),
+              //             child: Text(
+              //               orderData.status.toString().toUpperCase(),
+              //               style:   TextStyle(
+              //                 fontSize: Get.context!.isPhone ?10 :15,
+              //                 color: Colors.white,
+              //               ),
+              //             ),
+              //           ),
+              //         ),
+              //       ],
+              //     ),
+              //      const Spacer(),
+              //     Column(
+              //       children: [
+              //           Text(
+              //           "Payment Type",
+              //           style: TextStyle(
+              //             fontSize: Get.context!.isPhone?12:15,
+              //             color: Colors.black,
+              //           ),
+              //         ),
+              //         Text(
+              //           orderData.paymentType.toString(),
+              //           style:   TextStyle(
+              //             fontSize: Get.context!.isPhone?12:15,
+              //             color: Colors.black,
+              //           ),
+              //         ),
+              //       ],
+              //     ),
+              //   ],
+              // ),
+              //  const SizedBox(
+              //   height: 5,
+              // ),
+               Row(
+  crossAxisAlignment: CrossAxisAlignment.center,
+  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+  mainAxisSize: MainAxisSize.max,
+  children: [
+    Column(
+      children: [
+        Text(
+          "Order No.",
+          style: TextStyle(
+            fontSize: Get.context!.isPhone ? 12 : 15,
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          orderData.awbNo.toString(),
+          style: TextStyle(
+            fontSize: Get.context!.isPhone ? 10 : 15,
+            color: AppColors.black,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    ),
+    const Spacer(),
+    Column(
+      children: [
+        Text(
+          "Order Status",
+          style: TextStyle(
+            fontSize: Get.context!.isPhone ? 12 : 15,
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          decoration: BoxDecoration(
+            color: orderData.status == ASSIGNED 
+                ? AppColors.linkColor 
+                : orderData.status == REACHED 
+                    ? AppColors.primaryThemeColor 
+                    : orderData.status == PICKED 
+                        ? AppColors.blue 
+                        : orderData.status == DELIVERED 
+                            ? AppColors.greenLight 
+                            : orderData.status == UNDELIVERED 
+                                ? AppColors.red 
+                                : AppColors.primaryThemeColor,
+            borderRadius: BorderRadius.circular(8)
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(4.0),
+            child: Text(
+              orderData.status.toString().toUpperCase(),
+              style: TextStyle(
+                fontSize: Get.context!.isPhone ? 10 : 15,
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
               ),
-               const SizedBox(
-                height: 5,
+            ),
+          ),
+        ),
+      ],
+    ),
+    const Spacer(),
+    Column(
+      children: [
+        Text(
+          "Payment Type",
+          style: TextStyle(
+            fontSize: Get.context!.isPhone ? 12 : 15,
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          decoration: BoxDecoration(
+            color: orderData.paymentType.toString().toLowerCase() == "cod" 
+                ? Colors.orangeAccent // COD color
+                : Colors.greenAccent, // PPD color
+            borderRadius: const BorderRadius.only(
+              topRight: Radius.circular(12),
+              bottomLeft: Radius.circular(12),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Text(
+              orderData.paymentType.toString().toUpperCase(),
+              style: TextStyle(
+                fontSize: Get.context!.isPhone ? 10 : 15,
+                color: orderData.paymentType.toString().toLowerCase() == "cod" 
+                    ? Colors.white // COD text color
+                    : Colors.black, // PPD text color
+                fontWeight: FontWeight.bold,
               ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  ],
+),
+const SizedBox(height: 5),
                const Divider(
                 thickness: 1,
                 indent: 5,
@@ -115,8 +223,11 @@ c2cOrderItem(C2cOrdersData orderData, void Function(C2cOrdersData,int) onClick) 
                           children: [
                             Expanded(
                             flex: 1,
-                             child: Column(children: [
+                             child: Column(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: [
                                 Column(
+                                  
                                   children: [
                                      const Icon(
                                       Icons.local_shipping,
@@ -139,7 +250,9 @@ c2cOrderItem(C2cOrdersData orderData, void Function(C2cOrdersData,int) onClick) 
                             
                             Expanded(
                               flex: 1,
-                              child: Column(children: [
+                              child: Column(
+                                 mainAxisAlignment: MainAxisAlignment.start,
+                                children: [
                                 Column(
                                   children: [
                                      const Icon(
@@ -204,7 +317,7 @@ c2cOrderItem(C2cOrdersData orderData, void Function(C2cOrdersData,int) onClick) 
                     ],
                   ),
                   Visibility(
-                    visible: orderData.status == ASSIGNED || orderData.status == RE_ASSIGNED || orderData.status == REACHED ? true : false,
+                    visible: orderData.status == DELIVERED || orderData.status == UNDELIVERED ? false : true,
                     child: Column(
                       children: [
                         const SizedBox(height: 10,),
@@ -235,15 +348,19 @@ c2cOrderItem(C2cOrdersData orderData, void Function(C2cOrdersData,int) onClick) 
                           ],
                         ),
                         const SizedBox(height: 10,),
-                        utils.iconButton("Update", () {
-                          onClick(orderData,fullMapViewCLick);
-                        }, Icons.arrow_circle_right_rounded,
-                            AppColors.primaryThemeColor, AppColors.white),
+                       
                       ],
                     ),
                   ),
-
-                  Visibility(
+                   
+                  Visibility( 
+                      visible: orderData.status == DELIVERED || orderData.status == UNDELIVERED || orderData.status == OFD || orderData.status == PICKED ? false : true,
+                      child: utils.iconButton("Update", () {
+                          onClick(orderData,fullMapViewCLick);
+                        }, Icons.arrow_circle_right_rounded,
+                            AppColors.primaryThemeColor, AppColors.white),
+                      ),
+                  Visibility( 
                       visible: orderData.status == PICKED ? true : false,
                       child: utils.iconButton("Out For Delivery", () {
                         onClick(orderData,orderUpdateToOFD);
@@ -252,7 +369,12 @@ c2cOrderItem(C2cOrdersData orderData, void Function(C2cOrdersData,int) onClick) 
                       visible: orderData.status == OFD ? true : false,
                       child: utils.iconButton("Deliver", () {
                         onClick(orderData,orderUpdateToDeliver);
-                      }, Icons.update, AppColors.primaryThemeColor, AppColors.white))
+                      }, Icons.update, AppColors.primaryThemeColor, AppColors.white)),
+                  Visibility(
+                      visible: orderData.status == UNDELIVERED ? true : false,
+                      child: utils.iconButton("Drop at Warehouse", () {
+                        onClick(orderData,orderUpdateDropClw);
+                      }, Icons.add_road, AppColors.greenLight, AppColors.white)),
 
                 ],
               )

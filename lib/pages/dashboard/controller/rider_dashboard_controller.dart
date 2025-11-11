@@ -4,6 +4,7 @@ import 'package:carson_zyppy/firebase_notifications/firebase_notifiction_control
 import 'package:carson_zyppy/local_db/entity/UserData.dart';
 import 'package:carson_zyppy/pages/dashboard/models/dashboard_data.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:location/location.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -119,8 +120,11 @@ class RiderDashboardController extends GetxController {
       if (value != null) {
         userData = value;
         riderName.value = userData.name ?? "";
+        WidgetsBinding.instance.addPostFrameCallback((_) async{
         await getDashBoardData();
         await getC2CCDashBoardData();
+        });
+       
       }
     } catch (e) {
       //  utils.errorSnackBar("Exception", e.toString());
