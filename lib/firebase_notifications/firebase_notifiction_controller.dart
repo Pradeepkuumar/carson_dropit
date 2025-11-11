@@ -15,6 +15,15 @@ class FirebaseMessagingController extends GetxController {
     super.onInit();
     _initializeFirebaseMessaging();
     initializeLocalNotifications();
+    getFirebaseToken();
+  }
+
+  @override
+  void onReady() {
+     _initializeFirebaseMessaging();
+    initializeLocalNotifications();
+    getFirebaseToken();
+    super.onReady();
   }
 
 
@@ -25,12 +34,36 @@ class FirebaseMessagingController extends GetxController {
       alert: true,
       provisional: false,
     );
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print(message);
-      onNewNotification.value = true;
-      _handleNotification(message);
+    // FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    //   print(message);
+    //   onNewNotification.value = true;
+    //   _handleNotification(message);
       
+    // });
+   
+   FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
+      print("🔔 Foreground FCM: ${message.data}");
+      onNewNotification.value = true;
+
+      final title = message.notification?.title ?? message.data['title'] ?? 'Notification';
+      final body = message.notification?.body ?? message.data['body'] ?? '';
+      final type = message.data['type'] ?? '';
+      final sound = message.data['sound'] ?? (type == 'NearByOrders' ? 'nearby_order' : 'new_order');
+      final channelId = type == 'NearByOrders'
+          ? 'nearby_orders_channel_v3'
+          : 'assigned_new_order_channel_v3';
+
+      await _showNotification(
+        title: title,
+        body: body,
+        soundName: sound,
+        channelId: channelId,
+      );
     });
+
+
+
+
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       _handleNotification(message);
     });
@@ -42,13 +75,21 @@ class FirebaseMessagingController extends GetxController {
       }
     });
 
+
+    FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
+        fcm_token = newToken;
+        box.write("fcm_token", newToken);
+        print("🔄 FCM Token refreshed: $newToken");
+    });
+
     fcm_token = await _firebaseMessaging.getToken();
     box.write("fcm_token", fcm_token);
 
   }
 
-  void getFirebaseToken(){
-
+  void getFirebaseToken() async{
+        fcm_token = await _firebaseMessaging.getToken();
+        box.write("fcm_token", fcm_token);
   }
 
 

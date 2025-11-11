@@ -1,25 +1,31 @@
+import 'package:carson_zyppy/pages/my_orders/c2c_orders/model/c2cOrdersModel.dart';
 import 'package:carson_zyppy/pages/my_orders/c2c_orders/orders/c2c_orders_screens/c2c_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:signature/signature.dart';
 import 'package:syncfusion_flutter_signaturepad/signaturepad.dart';
 
-import '../../../../../app_pages/app_pages.dart';
 import '../../../../../global/consts.dart';
 import '../../../../../global/global.dart';
 import '../../../../../utils/colors.dart';
 
 class C2cImageSignatureView extends GetView<C2COrdersController> {
-  const C2cImageSignatureView({super.key});
+   var orderType = "".obs;
+   var clickedOrder;
+   C2cImageSignatureView({super.key});
+  
 
   @override
   Widget build(BuildContext context) {
+     orderType.value = Get.arguments != null && Get.arguments['orderType'] != null ? Get.arguments['orderType'] : "";
+      clickedOrder  = Get.arguments != null && Get.arguments['selectedOrder'] != null ? Get.arguments['selectedOrder'] : C2cOrdersData();
+      controller.selectedOrder.value.awbNo = clickedOrder.awbNo;
+      controller.selectedOrder.value.status = clickedOrder.status;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.primaryThemeColor,
         title: const Text(
-          "Delivery Proof",
+          "Picture & Signature Proof",
           style: TextStyle(color: AppColors.white),
         ),
         centerTitle: true,
@@ -39,7 +45,7 @@ class C2cImageSignatureView extends GetView<C2COrdersController> {
                       height: 10,
                     ),
                     utils.tvCustom(
-                        "Signature & Image", AppColors.primaryThemeColor, 15),
+                        "Signature(optional)", AppColors.primaryThemeColor, 15),
                     Padding(
                       padding: const EdgeInsets.all(5.0),
                       child: Container(
@@ -76,7 +82,7 @@ class C2cImageSignatureView extends GetView<C2COrdersController> {
                                   controller.signatureFile = null;
                                 }, Icons.cleaning_services_rounded,
                                     AppColors.blue, AppColors.white),
-                                SizedBox(
+                                const SizedBox(
                                   width: 10,
                                 ),
                                 utils.iconButton("Save", () {
@@ -86,7 +92,7 @@ class C2cImageSignatureView extends GetView<C2COrdersController> {
                                     AppColors.blue, AppColors.white),
                               ],
                             ),
-                            SizedBox(
+                            const SizedBox(
                               height: 10,
                             )
                           ],
@@ -163,62 +169,112 @@ class C2cImageSignatureView extends GetView<C2COrdersController> {
                         child: Padding(
                             padding: EdgeInsets.all(8),
                             child: utils.iconButtonWithRoundedBorder(
-                                controller.selectedReason.value, 45, () {
-                              controller.popUpWindowReasons();
+                                controller.selectedReason.value, 45, () async {
+                                     await controller.getReasons().then((value){
+                                        controller.popUpWindowReasons();
+                                     });
+                             
                             }, Icons.arrow_drop_down, AppColors.primaryLight,
                                 Icons.bike_scooter, 2, AppColors.primaryLight)),
                       ),
                     ),
-                    Padding(
-                        padding: const EdgeInsets.all(5),
-                        child: Row(
-                          children: [
-                            Flexible(
-                                flex: 1,
-                                child: Padding(
-                                    padding: EdgeInsets.all(5),
-                                    child:
-                                        utils.mainButton("UNDELIVER", () async {
-                                      if (controller.isUndelivring.value &&
-                                          controller.selectedReasonId.value !=
-                                              0) {
-                                                
-                                        if (controller.deliveredImage != null) {
-                                          var isDelivered = await controller
-                                              .updateOrder(UNDELIVERED);
-                                          if (isDelivered) {
-                                            Get.back();
-                                          }
-                                        } else {
-                                          utils.errorSnackBar("Error",
-                                              "Pls upload Sign & Image");
+                    const SizedBox(
+                      height: 10,
+                    ),
+                    Obx(() {
+                          final isUndelivered = controller.selectedOrder.value.status == UNDELIVERED;
+                          return Column(
+                            children: [
+
+                              if (isUndelivered)
+                                Padding(
+                                  padding: const EdgeInsets.all(5),
+                                  child: utils.mainButton(
+                                    "DROP AT WAREHOUSE",
+                                    () async {
+                                      if (controller.deliveredImage != null) {
+                                        var isDelivered = await controller.updateOrder(DROPBACK_CLW,orderType.value);
+                                        if (isDelivered) {
+                                          controller.isSignDisbled.value = false;
+                                          controller.signaturePadKey.currentState?.clear();
+                                          controller.signatureFile = null;
+                                          Get.back();
                                         }
                                       } else {
-                                        utils.errorSnackBar("Error",
-                                            "Pls Select undeliver reason");
-                                        controller.isUndelivring.value = true;
+                                        utils.errorSnackBar("Error", "Pls upload Sign & Image");
                                       }
-                                    }, AppColors.red.withAlpha(200)))),
-                            Flexible(
-                                flex: 1,
-                                child: utils.mainButton("DELIVER", () async {
-                                  if (controller.deliveredImage != null) {
-                                    var isDelivered =
-                                        await controller.updateOrder(DELIVERED);
-                                    if (isDelivered) {
-                                       controller.isSignDisbled.value = false;
-                                  controller.signaturePadKey.currentState
-                                      ?.clear();
-                                  controller.signatureFile = null;
-                                      Get.back();
-                                    }
-                                  } else {
-                                    utils.errorSnackBar(
-                                        "Error", "Pls upload Sign & Image");
-                                  }
-                                }, AppColors.greenLight.withAlpha(200))),
-                          ],
-                        ))
+                                    },
+                                    AppColors.primaryThemeColor,
+                                  ),
+                                ),
+
+                             
+                              if (!isUndelivered)
+                                Padding(
+                                  padding: const EdgeInsets.all(5),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(5),
+                                          child: utils.mainButton(
+                                            "UNDELIVER",
+                                            () async {
+                                              controller.selectedOrder.value.awbNo = clickedOrder.awbNo;
+                                              controller.selectedOrder.value.status = clickedOrder.status;
+                                              if (controller.isUndelivring.value &&
+                                                  controller.selectedReasonId.value != 0) {
+                                                if (controller.deliveredImage != null) {
+                                                  var isDelivered =
+                                                      await controller.updateOrder(UNDELIVERED,orderType.value);
+                                                  if (isDelivered) {
+                                                    Get.back();
+                                                  }
+                                                } else {
+                                                  utils.errorSnackBar(
+                                                      "Error", "Pls upload Sign & Image");
+                                                }
+                                              } else {
+                                                utils.errorSnackBar(
+                                                    "Error", "Pls Select undeliver reason");
+                                                controller.isUndelivring.value = true;
+                                              }
+                                            },
+                                            AppColors.red.withAlpha(200),
+                                          ),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: utils.mainButton(
+                                          "DELIVER",
+                                          () async {
+                                              controller.selectedOrder.value.awbNo = clickedOrder.awbNo;
+                                              controller.selectedOrder.value.status = clickedOrder.status;
+                                            if (controller.deliveredImage != null) {
+                                              var isDelivered =
+                                                  await controller.updateOrder(DELIVERED,orderType.value);
+                                              if (isDelivered) {
+                                                controller.isSignDisbled.value = false;
+                                                controller.signaturePadKey.currentState?.clear();
+                                                controller.signatureFile = null;
+                                                Get.back();
+                                              }
+                                            } else {
+                                              utils.errorSnackBar("Error", "Pls upload Sign & Image");
+                                            }
+                                          },
+                                          AppColors.greenLight.withAlpha(200),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                            ],
+                          );
+                        }),
+                    const SizedBox(
+                      height: 10,
+                    ) 
                   ],
                 ),
               ),

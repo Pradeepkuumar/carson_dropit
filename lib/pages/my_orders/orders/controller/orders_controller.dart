@@ -57,7 +57,6 @@ class OrdersController extends GetxController with GetTickerProviderStateMixin {
   final Location _locationController = Location();
   late StreamSubscription<LocationData> _locationSubscription;
 
-
   var ordersList = <OrdersData>[].obs;
   var sortedOrders = <OrdersData>[].obs;
   var reasonsList = <CancelReason>[].obs;
@@ -73,11 +72,16 @@ class OrdersController extends GetxController with GetTickerProviderStateMixin {
 
   @override
   void onInit() {
-    super.onInit();
-    getLocationUpdates();
-    getOrCreateCustomImageFromAsset();
     tabController = TabController(initialIndex: 0, length: 2, vsync: this);
-    getUser();
+    super.onInit();
+    
+  }
+
+  @override
+  void onReady() async {
+    await  getLocationUpdates();
+    await  getOrCreateCustomImageFromAsset();
+    await  getUser();
     tabController.addListener(() {
       viewFullMap.value = false;
       if (tabController.index == 0) {
@@ -94,7 +98,9 @@ class OrdersController extends GetxController with GetTickerProviderStateMixin {
       // }
       signatureController.addListener(signatureListner);
     });
+    await getFeOrders([DELIVERED]);
     startHintTextTimer();
+    super.onReady();
   }
 
   getUser() async {
@@ -141,7 +147,7 @@ class OrdersController extends GetxController with GetTickerProviderStateMixin {
         });
 
         setMarkers();
-        await  sortOrdersBySLAAndDistance(currentLocation!,ordersList);
+        await  sortOrdersBySLAAndDistance(currentLocation ??  LatLng(latitude: 0.0, longitude: 0.0),ordersList);
         isLoading.value = false;
         utils.closeLoadingDialog();
         return true;
@@ -211,7 +217,6 @@ class OrdersController extends GetxController with GetTickerProviderStateMixin {
   Future<bool> updateOrder(String status) async {
     try {
       utils.showLoadingDialog("Updating...");
-
       List<Map<String, dynamic>> images = [
         if (markDelivered.value)
           {'key': 'delivery_proof', 'file': deliveredImage},

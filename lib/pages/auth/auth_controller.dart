@@ -1,3 +1,4 @@
+import 'package:carson_zyppy/firebase_notifications/firebase_notifiction_controller.dart';
 import 'package:carson_zyppy/global/consts.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
@@ -21,18 +22,22 @@ class AuthController extends GetxController {
    Future.delayed(const Duration(seconds: 3), () {
      showSplashScreen.value = false;
    });
+    
     super.onInit();
   }
 
 
   getUser() async {
     try {
-       userId.value = box.read(USER_ID_KEY) ;
+       userId.value = box.read(USER_ID_KEY);
+       Get.find<FirebaseMessagingController>();
     } catch (e){
      // utils.errorSnackBar("Exception", e.toString());
     }
 
   }
+
+  
 
 
   Future<bool> login() async {

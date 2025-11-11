@@ -24,7 +24,7 @@ class OrdersListViewState extends State<C2COrdersListView> {
 
   @override
   void initState() {
-    controller = Get.put(C2COrdersController());
+    controller = Get.find<C2COrdersController>();
     controller.getUser();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if(controller.tabController.index == 0) {
@@ -127,7 +127,7 @@ class OrdersListViewState extends State<C2COrdersListView> {
                                             utils.simpleDialog("Mark this orders as PICKED",
                                              "Please match order number and mark this order to picked", 
                                              (){
-                                                  controller.updateOrder(PICKED);
+                                                  controller.updateOrder(PICKED,"C2C");
                                                   Get.back();
                                              }, (){
                                               Get.back();
@@ -149,12 +149,21 @@ class OrdersListViewState extends State<C2COrdersListView> {
                                           //   }
                                           // }
                                         } else if (clickType == orderUpdateToOFD) {
-                                          controller.selectedOrder.value = clickedOrder;
-                                          controller.updateOrder(OFD);
+                                          controller.selectedOrder.value.awbNo = clickedOrder.awbNo;
+                                          controller.selectedOrder.value.status = clickedOrder.status;
+                                          controller.updateOrder(OFD,"C2C");
                                         } else if (clickType == orderUpdateToDeliver) {
-                                          controller.selectedOrder.value = clickedOrder;
-                                          Get.toNamed(Routes.c2cImageSign);
-
+                                          controller.selectedOrder.value.awbNo = clickedOrder.awbNo;
+                                          controller.selectedOrder.value.status = clickedOrder.status;
+                                          Get.toNamed(Routes.c2cImageSign,arguments: {"orderType":"C2C","selectedOrder":clickedOrder})?.then((_){
+                                            controller.getC2CFeOrders([widget.orderStatus]);
+                                          });
+                                        }else if (clickType == orderUpdateDropClw) {
+                                          controller.selectedOrder.value.awbNo = clickedOrder.awbNo;
+                                          controller.selectedOrder.value.status = clickedOrder.status;
+                                          Get.toNamed(Routes.c2cImageSign,arguments: {"orderType":"C2C","selectedOrder":clickedOrder})?.then((_){
+                                            controller.getC2CFeOrders([widget.orderStatus]);
+                                          });
                                         }
                                       },
                                     ),

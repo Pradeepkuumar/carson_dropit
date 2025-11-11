@@ -22,6 +22,7 @@ const String USER_ID_KEY = "user_id";
  const int fullMapViewCLick = 2;
  const int orderUpdateToOFD = 3;
  const int orderUpdateToDeliver = 4;
+ const int orderUpdateDropClw = 5;
 
  const String acceptOrder =  "ACCEPTED";
  const String rejectOrder =  "REJECTED";
@@ -42,6 +43,8 @@ const String PICKED = "PICKED";
 const String OFD = "OFD";
 const String DELIVERED = "DELIVERED";
 const String UNDELIVERED = "UNDELIVERED";
+const String DROPBACK_CLW = "DROPBACK_CLW";
+const String DROPBACK_ML = "DROPBACK_ML";
 
 
 

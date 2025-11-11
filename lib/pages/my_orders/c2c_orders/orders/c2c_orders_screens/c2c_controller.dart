@@ -5,6 +5,7 @@ import 'package:carson_zyppy/firebase_notifications/notification_model/notificat
 import 'package:carson_zyppy/local_db/entity/UserData.dart';
 import 'package:carson_zyppy/pages/my_orders/c2c_orders/model/c2cOrdersModel.dart';
 import 'package:carson_zyppy/pages/my_orders/orders/models/reason_data.dart';
+import 'package:carson_zyppy/utils/colors.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -48,6 +49,7 @@ class C2COrdersController extends GetxController with GetTickerProviderStateMixi
   var selectedReasonId = 0.obs;
   var isUndelivring = false.obs;
 
+
   final List<String> hintTexts = [
     "Enter Order Number",
     "Scan QR Code for Order",
@@ -69,6 +71,7 @@ class C2COrdersController extends GetxController with GetTickerProviderStateMixi
   final riderDashboardController = Get.put(RiderDashboardController());
   var notificationList = <String>[].obs;
 
+
   GlobalKey<SfSignaturePadState> signaturePadKey = GlobalKey();
 
   // final SignatureController signatureController = SignatureController(
@@ -79,14 +82,15 @@ class C2COrdersController extends GetxController with GetTickerProviderStateMixi
 
   @override
   void onInit() {
-  
+   tabController = TabController(initialIndex: 0, length: 5, vsync: this);
+   
     super.onInit();
     
   }
 
+
   @override
   void onReady() {
-    tabController = TabController(initialIndex: 0, length: 5, vsync: this);
     getUser();
     tabController.addListener(() {
       viewFullMap.value = false;
@@ -105,13 +109,14 @@ class C2COrdersController extends GetxController with GetTickerProviderStateMixi
      // signatureController.addListener(signatureListner);
     });
     startHintTextTimer();
+
+    
     super.onReady();
   }
 
   getUser() async {
     await userRepository.getUser().then((value) => {user = value!});
-    await getReasons();
-
+    //await getReasons();
   }
 
   void startHintTextTimer() {
@@ -188,15 +193,16 @@ class C2COrdersController extends GetxController with GetTickerProviderStateMixi
   }
 
 
-  Future<bool> updateOrder(String status) async {
+  Future<bool> updateOrder(String status,String orderType) async {
     try {
       utils.showLoadingDialog("Updating...");
-
       List<Map<String, dynamic>> images = [
         if (status == DELIVERED)
           {'key': 'delivery_proof', 'file': deliveredImage},
         if (status == UNDELIVERED)
           {'key': 'failed_delivery_proof', 'file': deliveredImage},
+        if (status == DROPBACK_CLW)
+          {'key': 'dropback_proof', 'file': deliveredImage},
         if (signatureFile != null) {'key': 'signature', 'file': signatureFile},
         //if (deliveryProof != null) {'key': 'delivery_proof_image_2', 'file': deliveryProof}
       ];
@@ -210,8 +216,16 @@ class C2COrdersController extends GetxController with GetTickerProviderStateMixi
       if (kDebugMode) {
         print(data);
       }
-      var response = (await apiProvider.postRequestWithImages(
-          apiEndPoints.updateC2COrderStatus, data, images));
+      var response; 
+
+      if(orderType == "C2C") {   response = await apiProvider.postRequestWithImages(
+          apiEndPoints.updateC2COrderStatus, data, images);
+      }
+      else{
+       response = await apiProvider.postRequestWithImages(
+          apiEndPoints.updateOrderStatus, data, images);
+      }
+
       var result = BaseApiResponse.fromJson(response);
       if (response['status_code'] == 200) {
         var order = OrdersData.fromJson(result.data);
@@ -234,6 +248,14 @@ class C2COrdersController extends GetxController with GetTickerProviderStateMixi
           deliveredImage = null;
           image.value = null;
 
+          await riderDashboardController.getC2CCDashBoardData();
+          await getC2CFeOrders([OFD]);
+        }
+        if (status == DROPBACK_CLW  || status == DROPBACK_ML) {
+          signaturePadKey.currentState?.clear();
+          signatureFile = null;
+          deliveredImage = null;
+          image.value = null;
           await riderDashboardController.getC2CCDashBoardData();
           await getC2CFeOrders([OFD]);
         }
@@ -280,56 +302,65 @@ class C2COrdersController extends GetxController with GetTickerProviderStateMixi
     return file;
   }
 
+
   Future<void> popUpWindowReasons() async {
-    TextEditingController searchController = TextEditingController();
-    RxList<CancelReason> filteredCountriesList = RxList.from(reasonsList);
-    return Get.defaultDialog(
-      title: "",
-      content: Container(
-        child: Expanded(
-          child: Column(
-            children: [
-              TextField(
-                controller: searchController,
-                decoration: const InputDecoration(
-                  labelText: 'Search',
-                  hintText: 'Search....',
-                  prefixIcon: Icon(Icons.search),
-                  border: OutlineInputBorder(),
+  TextEditingController searchController = TextEditingController();
+  RxList<CancelReason> filteredCountriesList = RxList.from(reasonsList);
+
+  return Get.defaultDialog(
+    title: "",
+    content: SizedBox(
+      width: Get.width * 0.9, 
+      height: Get.height * 0.6,
+      child: Column(
+        children: [
+          Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            decoration: utils.roundedBorder(AppColors.primaryThemeColor, 5),
+            child: TextField(
+              controller: searchController,
+              decoration: const InputDecoration(
+                labelText: 'Search',
+                hintText: 'Search....',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(5)),
                 ),
-                onChanged: (value) {
-                  filteredCountriesList.assignAll(reasonsList.where((country) {
-                    var countryName = country.reason.toLowerCase();
+              ),
+              onChanged: (value) {
+                filteredCountriesList.assignAll(
+                  reasonsList.where((country) {
+                    final countryName = country.reason.toLowerCase();
                     return countryName.startsWith(value.toLowerCase());
-                  }).toList());
+                  }).toList(),
+                );
+              },
+            ),
+          ),
+          Expanded(
+            child: Obx(
+              () => ListView.builder(
+                itemCount: filteredCountriesList.length,
+                itemBuilder: (context, index) {
+                  return popUpWindowItem<CancelReason>(
+                    filteredCountriesList[index],
+                    filteredCountriesList[index].reason,
+                    (selectedItem) {
+                      selectedReason.value = selectedItem.reason;
+                      selectedReasonId.value = selectedItem.id;
+                      Get.back();
+                    },
+                  );
                 },
               ),
-              Obx(() => Expanded(
-                    flex: 1,
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: filteredCountriesList.length,
-                      itemBuilder: (BuildContext context, int index) {
-                        return popUpWindowItem<CancelReason>(
-                          filteredCountriesList[index],
-                          filteredCountriesList[index].reason,
-                          (selectedItem) {
-                            selectedReason.value = selectedItem.reason;
-                            selectedReasonId.value = selectedItem.id;
-                            Get.back();
-                          },
-                        );
-                      },
-                    ),
-                  )),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 
-  
 
   // Future<void> setMarkers() async {
   //   markers.clear();

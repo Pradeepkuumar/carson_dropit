@@ -1,7 +1,9 @@
 import 'package:carson_zyppy/global/consts.dart';
+import 'package:carson_zyppy/pages/dashboard/controller/rider_dashboard_controller.dart';
 import 'package:carson_zyppy/pages/my_orders/orders/controller/orders_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../app_pages/app_pages.dart';
 import '../../../../global/qr_scanner.dart';
 import '../../../../utils/colors.dart';
 import '../../../../utils/utils.dart';
@@ -18,6 +20,8 @@ class OrdersListView extends StatefulWidget {
 
 class OrdersListViewState extends State<OrdersListView> {
   late final OrdersController controller;
+  late final RiderDashboardController riderDashboardController =
+      Get.put(RiderDashboardController());
   final Utils utils = Utils();
   var statusBarColor;
 
@@ -27,9 +31,10 @@ class OrdersListViewState extends State<OrdersListView> {
     controller.getUser();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if(controller.tabController.index == 0) {
-        controller.getFeOrders([ASSIGNED]);
+        controller.getFeOrders([DELIVERED]);
       }
     });
+
     super.initState();
 
   }
@@ -143,6 +148,12 @@ class OrdersListViewState extends State<OrdersListView> {
                                           controller.selectedOrder.value = clickedOrder;
                                          // Get.to(() => MapPage(orderDetails:controller.selectedOrder.value,mapView: 1));
 
+                                        } else if (clickType == orderUpdateDropClw) {
+                                          Get.toNamed(Routes.c2cImageSign,arguments: {"orderType":"CL","selectedOrder":clickedOrder})?.then((_){
+                                            controller.getFeOrders([widget.orderStatus]);
+                                            riderDashboardController.getC2CCDashBoardData();
+                                            riderDashboardController.getDashBoardData();
+                                          });
                                         }
                                       },
                                     ),
