@@ -80,7 +80,7 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
 //     ]
 //   },
 //   {
-//     "featureType": "road",
+//     "featureType": "road",         
 //     "elementType": "labels.icon",
 //     "stylers": [
 //       {
@@ -226,7 +226,7 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                     strokeWidth: 5.0,
                                     textAlign: TextAlign.center,
                                     textStyle: TextStyle(
-                                        fontSize: 15,
+                                        fontSize: 12,
                                         color: Get.isDarkMode
                                             ? AppColors.white
                                             : Colors.black),
@@ -268,11 +268,11 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                         height: controller.currentLocationOrders
                             .isNotEmpty
                             ? controller.currentLocationOrders.first
-                            .status == PICKED ? 550.sp : 185.sp
+                            .status == PICKED ? 600.sp : 200.sp
                             : controller
                             .ordersList.first.status == PICKED
-                            ? 550.sp
-                            : 185.sp,
+                            ? 600.sp
+                            : 200.sp,
                         width: controller.currentLocationOrders
                             .isNotEmpty
                             ? controller.currentLocationOrders.first
@@ -292,7 +292,7 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                               const SizedBox(
                                 height: 10,
                               ),
-                              Row(
+                              Column(
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 mainAxisAlignment: MainAxisAlignment
                                     .spaceAround,
@@ -326,11 +326,11 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                     ],
                                   ),
                                   const SizedBox(
-                                    width: 10,
+                                    height: 5,
                                   ),
                                   slaTimer(
-                                      40.sp,
-                                      40.sp,
+                                      45.sp,
+                                      45.sp,
                                       controller.currentLocationOrders.isNotEmpty ? controller.currentLocationOrders
                                           .first
                                           .createdAt
@@ -349,33 +349,34 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                           .toString()
                                           .toString()) ??
                                           0,
-                                      12),
+                                      10),
                                 ],
                               ),
+
                               Column(
                                 children: [
                                   customRow("Zone",
                                       controller.currentLocationOrders
                                           .isNotEmpty
                                           ? controller.currentLocationOrders
-                                          .first.consigneeZone! : controller
-                                          .ordersList.first.consigneeZone!),
+                                          .first.consigneeZone ?? "" : controller
+                                          .ordersList.first.consigneeZone ?? ""),
                                   customRow("Street",
                                       controller.currentLocationOrders
                                           .isNotEmpty
                                           ? controller.currentLocationOrders
-                                          .first.consigneeStreetNumber!
+                                          .first.consigneeStreetNumber ?? ""
                                           : controller
                                           .ordersList.first
-                                          .consigneeStreetNumber!),
+                                          .consigneeStreetNumber ?? ""),
                                   customRow("Building",
                                       controller.currentLocationOrders
                                           .isNotEmpty
                                           ? controller.currentLocationOrders
-                                          .first.consigneeBuildingNo!
+                                          .first.consigneeBuildingNo ?? ""
                                           : controller
                                           .ordersList.first
-                                          .consigneeBuildingNo!),
+                                          .consigneeBuildingNo ?? ""),
                                 ],
                               ),
                               Visibility(
@@ -404,42 +405,42 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                                   .isNotEmpty
                                                   ? controller
                                                   .currentLocationOrders.first
-                                                  .distance! : controller
-                                                  .ordersList.first.distance!),
+                                                  .distance ?? "" : controller
+                                                  .ordersList.first.distance ?? ""),
                                           customRow("Approx. Time",
                                               controller.currentLocationOrders
                                                   .isNotEmpty
                                                   ? controller
                                                   .currentLocationOrders.first
-                                                  .duration! : controller
-                                                  .ordersList.first.duration!),
+                                                  .duration ?? "" : controller
+                                                  .ordersList.first.duration ?? "" ),
                                           customRow("Order Amount.",
                                               controller.currentLocationOrders
                                                   .isNotEmpty
                                                   ? controller
                                                   .currentLocationOrders.first
-                                                  .orderAmount ! : controller
+                                                  .orderAmount  ?? ""  : controller
                                                   .ordersList.first
-                                                  .orderAmount!),
+                                                  .orderAmount  ?? ""),
                                           customRow("Weight.",
                                               controller.currentLocationOrders
                                                   .isNotEmpty
                                                   ? controller
                                                   .currentLocationOrders.first
-                                                  .weight! : controller
-                                                  .ordersList.first.weight!),
+                                                  .weight ?? "" : controller
+                                                  .ordersList.first.weight ?? ""),
                                           customRow("Consignee Name",
                                               controller.currentLocationOrders
                                                   .isNotEmpty
                                                   ? controller
                                                   .currentLocationOrders.first
-                                                  .consigneeAddress!
+                                                  .consigneeName ?? ""
                                                   : controller
                                                   .ordersList.first
-                                                  .consigneeAddress!),
+                                                  .consigneeName ?? ""),
                                         ],
                                       ),
-                                      SizedBox(height: 20,),
+                                      const SizedBox(height: 20,),
                                       Column(
                                         mainAxisAlignment: MainAxisAlignment
                                             .start,
@@ -451,25 +452,25 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                                   .isNotEmpty
                                                   ? controller
                                                   .currentLocationOrders.first
-                                                  .pickupAddress! : controller
+                                                  .pickupAddress ?? "" : controller
                                                   .ordersList.first
-                                                  .pickupAddress!),
+                                                  .pickupAddress ?? ""),
                                           customColumn("Drop-Off Location",
                                               controller.currentLocationOrders
                                                   .isNotEmpty
                                                   ? controller
                                                   .currentLocationOrders.first
-                                                  .consigneeAddress!
+                                                  .consigneeAddress ?? ""
                                                   : controller
                                                   .ordersList.first
-                                                  .consigneeAddress!),
+                                                  .consigneeAddress ?? ""),
                                         ],
                                       ),
                                     ],
 
                                   )
                               ),
-                              SizedBox(
+                              const SizedBox(
                                 height: 10,
                               ),
                               Visibility(
@@ -523,7 +524,6 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                 );
               }),
 
-
               Positioned(
                   bottom: 1,
                   right: 10,
@@ -538,8 +538,8 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                               controller.startGuidedNavigation();
                             },
                             child: Container(
-                              height: context.isPhone ? 62 : 100,
-                              width: context.isPhone ? 60 : 100,
+                              height: GetPlatform.isMobile ? 60 : 100,
+                              width: GetPlatform.isMobile  ? 60 : 100,
                               decoration: utils.boxDecorationWhite(),
                               child: Padding(
                                   padding: const EdgeInsets.all(5),
@@ -547,12 +547,12 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                     children: [
                                       Icon(Icons.navigation,
                                           size: enableMapType.value
-                                              ? context.isPhone
+                                              ? GetPlatform.isMobile 
                                               ? 30
                                               : 50
-                                              : context.isPhone
+                                              : GetPlatform.isMobile 
                                               ? 35
-                                              : 55,
+                                              : 50,
                                           color: AppColors.selectedBlue),
                                       Align(
                                         alignment: Alignment.center,
@@ -708,7 +708,7 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                 Expanded(
                                   flex: 10,
                                   child: SizedBox(
-                                    height: min(350.sp, 400.sp),
+                                    height: min(400.sp, 450.sp),
                                     child: PageView.builder(
                                         scrollDirection: Axis.horizontal,
                                         controller: controller.pageController,

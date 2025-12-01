@@ -17,6 +17,7 @@ clickedOrderItem(
         child: Padding(
           padding: const EdgeInsets.all(10.0),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -42,7 +43,7 @@ clickedOrderItem(
 
                     ],
                   ),
-                  slaTimer(40, 40 ,orderData.createdAt ?? "", int.tryParse(orderData.sla_in_hours.toString()) ?? 0,12),
+                  slaTimer(50, 50 ,orderData.createdAt ?? "", int.tryParse(orderData.sla_in_hours.toString()) ?? 0,10),
 
                 ],
               ),

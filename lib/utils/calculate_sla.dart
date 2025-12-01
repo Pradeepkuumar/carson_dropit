@@ -50,7 +50,7 @@ Column slaTimer(double height,double width,String createdAt, int slaHours,double
       ),
       const SizedBox(height: 2,),
       Text("Remaining Time",style: TextStyle(
-        color: Get.isDarkMode ? AppColors.white : Colors.black,fontSize: Get.context!.isPhone ? 6.sp:13.sp
+        color: Get.isDarkMode ? AppColors.white : Colors.black,fontSize: Get.context!.isPhone ? 8.sp:12.sp
       ),
       textAlign: TextAlign.center,)
     ],

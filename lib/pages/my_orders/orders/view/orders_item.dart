@@ -122,7 +122,7 @@ orderItem(OrdersData orderData, void Function(OrdersData,int) onClick) {
                                 color: AppColors.primaryThemeColor,
                               ),
                               title: Text(
-                                "${orderData.merchantName}\n${orderData.itemName}\n${orderData.itemDescription}(${orderData.quantity})",
+                                "${orderData.merchantName})",
                                 style:  TextStyle(
                                   fontSize: Get.context!.isPhone?12:20,
                                 ),
@@ -143,6 +143,7 @@ orderItem(OrdersData orderData, void Function(OrdersData,int) onClick) {
 
                   Column(
                     children: [
+                      // \n${orderData.itemName}\n${orderData.itemDescription}(${orderData.quantity}
                       customRow("Order SLA","${orderData.sla_in_hours}(Hrs)"),
                       customRow("Pickup-Delivery Distance",orderData.distance ?? ""),
                       customRow("Approx. Time",orderData.duration ?? ""),

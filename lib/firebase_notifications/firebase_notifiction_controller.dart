@@ -43,6 +43,7 @@ class FirebaseMessagingController extends GetxController {
    
    FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
       print("🔔 Foreground FCM: ${message.data}");
+      print(message.toString());
       onNewNotification.value = true;
 
       final title = message.notification?.title ?? message.data['title'] ?? 'Notification';
@@ -50,8 +51,8 @@ class FirebaseMessagingController extends GetxController {
       final type = message.data['type'] ?? '';
       final sound = message.data['sound'] ?? (type == 'NearByOrders' ? 'nearby_order' : 'new_order');
       final channelId = type == 'NearByOrders'
-          ? 'nearby_orders_channel_v3'
-          : 'assigned_new_order_channel_v3';
+          ? 'nearby_orders_channel'
+          : 'assigned_new_order_channel';
 
       await _showNotification(
         title: title,
@@ -133,13 +134,13 @@ class FirebaseMessagingController extends GetxController {
 
 
   void initializeLocalNotifications() async {
-    final initializationSettingsAndroid =
+    const initializationSettingsAndroid =
     AndroidInitializationSettings('ic_launcher');
     // final initializationSettingsIOS = IOSInitializationSettings(
     //    requestSoundPermission: false,
     //     requestBadgePermission: false,
     //      requestAlertPermission: false,);
-    final initializationSettings = InitializationSettings(
+    const initializationSettings = InitializationSettings(
       android: initializationSettingsAndroid,
       // iOS: initializationSettingsIOS,
     );
@@ -149,7 +150,6 @@ class FirebaseMessagingController extends GetxController {
         // Handle navigation or action when notification is tapped
       },
     );
-
     await _createNotificationChannels();
   }
 
@@ -213,6 +213,7 @@ class FirebaseMessagingController extends GetxController {
       body,
       platformChannelSpecifics,
     );
+    print("🔔 notification shown: $title - $body");
   }
 
 
