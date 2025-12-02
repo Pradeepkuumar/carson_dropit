@@ -25,8 +25,7 @@ class ApiProvider extends GetConnect {
     maxAuthRetries = 3;
 
     if (kDebugMode) {
-     // baseUrl = devBaseUrl ;
-      baseUrl = liveBaseUrl ;
+      baseUrl = devBaseUrl;
     } else if (kReleaseMode) {
       baseUrl = liveBaseUrl;
     }
@@ -196,7 +195,7 @@ Future<dynamic> postRequestWithImages(
     
     print('✅ Request successful: ${response.statusCode}');
     
-     responseJson = returnHttpResponse(response);
+    responseJson = returnHttpResponse(response);
     return responseJson;
 
   } on TimeoutException catch (e) {
