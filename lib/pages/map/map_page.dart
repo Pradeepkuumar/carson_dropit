@@ -387,705 +387,703 @@ class _MapPageState extends State<MapPage> {
                           left: 20,
                           right: 20,
                           bottom:
-                          controller.markDelivered.value ? 10.sp : 100.sp),
+                          controller.markDelivered.value ? 100.sp : 100.sp),
                       child: Container(
                         decoration: utils.boxDecorationWhite(),
                         child: SingleChildScrollView(
                           scrollDirection: Axis.vertical,
-                          child: Container(
-                            child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Obx(() {
-                                return Column(
-                                  children: [
-                                    Column(
-                                      children: [
-                                        Visibility(
-                                          visible: controller
-                                              .markDelivered.value ||
-                                              controller
-                                                  .markUnDelivered.value,
-                                          child: Align(
-                                              alignment: Alignment.topRight,
-                                              child: InkWell(
-                                                  onTap: () {
-                                                    controller.markDelivered
-                                                        .value = false;
-                                                    controller
-                                                        .markUnDelivered
-                                                        .value = false;
-                                                  },
-                                                  child: const Icon(
-                                                      Icons.cancel,
-                                                      color:
-                                                      AppColors.red))),
-                                        ),
-                                        const SizedBox(
-                                          height: 5,
-                                        ),
-                                        // Row(
-                                        //   mainAxisAlignment:
-                                        //       MainAxisAlignment
-                                        //           .spaceBetween,
-                                        //   children: [
-                                        //     utils.tvMedium(
-                                        //         "Pickup to Delivery Distance"),
-                                        //     utils.tvCustom(
-                                        //         orderDistanceByGoogle.value,
-                                        //         AppColors.blue,
-                                        //         10),
-                                        //   ],
-                                        // ),
-                                        // Row(
-                                        //   mainAxisAlignment:
-                                        //       MainAxisAlignment
-                                        //           .spaceBetween,
-                                        //   children: [
-                                        //     utils.tvMedium(
-                                        //         "Estimated Time By Google"),
-                                        //     utils.tvCustom(
-                                        //         orderDurationByGoogle.value,
-                                        //         AppColors.primaryThemeColor,
-                                        //         10),
-                                        //   ],
-                                        // ),
-                                        Row(
-                                          mainAxisAlignment:
-                                          MainAxisAlignment
-                                              .spaceBetween,
-                                          children: [
-                                            utils.tvMedium("Order Number"),
-                                            utils.tvMedium(controller
-                                                .selectedOrder
-                                                .value
-                                                .awbNo ??
-                                                ""),
-                                          ],
-                                        ),
-                                        Row(
-                                          mainAxisAlignment:
-                                          MainAxisAlignment
-                                              .spaceBetween,
-                                          children: [
-                                            utils.tvMedium("status"),
-                                            utils.tvCustom(
-                                                controller.selectedOrder
-                                                    .value.status ??
-                                                    "",
-                                                AppColors.green,
-                                                10),
-                                          ],
-                                        ),
-                                        Row(
-                                          mainAxisAlignment:
-                                          MainAxisAlignment
-                                              .spaceBetween,
-                                          children: [
-                                            utils.tvMedium("Item"),
-                                            utils.tvCustom(
-                                                "${controller.selectedOrder
-                                                    .value
-                                                    .itemName}(${controller
-                                                    .selectedOrder.value
-                                                    .quantity})",
-                                                AppColors.black,
-                                                10),
-                                          ],
-                                        ),
-                                        Row(
-                                          mainAxisAlignment:
-                                          MainAxisAlignment
-                                              .spaceBetween,
-                                          children: [
-                                            utils.tvMedium("Order Amount"),
-                                            utils.tvCustom(
-                                                "${controller.selectedOrder
-                                                    .value.orderAmount}(Qar)",
-                                                AppColors.black,
-                                                10),
-                                          ],
-                                        ),
-                                        Row(
-                                          mainAxisAlignment:
-                                          MainAxisAlignment
-                                              .spaceBetween,
-                                          children: [
-                                            utils.tvMedium("Merchant Name"),
-                                            utils.tvCustom(
-                                                controller
-                                                    .selectedOrder
-                                                    .value
-                                                    .merchantName ??
-                                                    "",
-                                                AppColors.black,
-                                                10),
-                                          ],
-                                        ),
-                                        const SizedBox(
-                                          height: 10,
-                                        ),
-                                        Obx(() {
-                                          return Visibility(
-                                              visible: controller
-                                                  .markDelivered
-                                                  .value ||
-                                                  controller.markUnDelivered
-                                                      .value,
-                                              child: Column(
-                                                children: [
-                                                  Padding(
-                                                    padding:
-                                                    const EdgeInsets
-                                                        .symmetric(
-                                                        horizontal: 5),
-                                                    child: Row(
-                                                      mainAxisAlignment:
-                                                      MainAxisAlignment
-                                                          .spaceBetween,
-                                                      children: [
-
-                                                        utils.tvCustom(
-                                                            "Image Proof",
-                                                            AppColors
-                                                                .primaryThemeColor,
-                                                            10),
-                                                        InkWell(
-                                                            onTap: () {
-                                                              controller
-                                                                  .captureImage(
-                                                                  ImageSource
-                                                                      .camera,
-                                                                  imageOne);
-                                                            },
-                                                            child: const Icon(
-                                                              Icons.refresh,
-                                                              color:
-                                                              AppColors
-                                                                  .blue,
-                                                              size: 20,
-                                                            ))
-                                                      ],
-                                                    ),
-                                                  ),
-                                                  Padding(
-                                                    padding:
-                                                    const EdgeInsets.all(5),
-                                                    child:
-                                                    Container(
-                                                      height: 200,
-                                                      width:
-                                                      double.infinity,
-                                                      decoration: utils
-                                                          .roundedBorder(
-                                                          AppColors
-                                                              .primaryThemeColor,
-                                                          5),
-                                                      child: controller
-                                                          .image
-                                                          .value !=
-                                                          null
-                                                          ? Image.file(
-                                                        controller
-                                                            .image
-                                                            .value!,
-                                                        fit: BoxFit
-                                                            .fill,
-                                                      )
-                                                          : InkWell(
-                                                        onTap: () {
-                                                          controller
-                                                              .captureImage(
-                                                              ImageSource
-                                                                  .camera,
-                                                              imageOne);
-                                                        },
-                                                        child: Column(
-                                                          mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .center,
-                                                          children: [
-                                                            const Icon(
-                                                              Icons
-                                                                  .camera,
-                                                              size:
-                                                              80,
-                                                              color: AppColors
-                                                                  .primaryThemeColor,
-                                                            ),
-                                                            utils.tvCustom(
-                                                                "capture Image",
-                                                                AppColors
-                                                                    .primaryThemeColor,
-                                                                10)
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    ),
-
-
-                                                  ),
-                                                  Padding(
-                                                    padding:
-                                                    const EdgeInsets
-                                                        .symmetric(
-                                                        horizontal: 5),
-                                                    child: Row(
-                                                      mainAxisAlignment: MainAxisAlignment
-                                                          .spaceBetween,
-                                                      children: [
-                                                        utils.tvCustom(
-                                                            "Delivery Proof",
-                                                            AppColors
-                                                                .primaryThemeColor,
-                                                            10),
-                                                        InkWell(
-                                                            onTap: () {
-                                                              utils
-                                                                  .showCustomDialog(
-                                                                title: "Need Your Action",
-                                                                middleText: "Choose Image Source",
-                                                                buttons: [
-                                                                  TextButton
-                                                                      .icon(
-                                                                    onPressed: () {
-                                                                      controller
-                                                                          .captureImage(
-                                                                          ImageSource
-                                                                              .camera,
-                                                                          imageTwo);
-                                                                      Get
-                                                                          .back();
-                                                                    },
-                                                                    icon: const Icon(
-                                                                        Icons
-                                                                            .camera_alt,
-                                                                        color: AppColors
-                                                                            .primaryThemeColor),
-                                                                    label: const Text(
-                                                                        "Camera",
-                                                                        style: TextStyle(
-                                                                            color: AppColors
-                                                                                .primaryThemeColor)),
-                                                                  ),
-                                                                  TextButton
-                                                                      .icon(
-                                                                    onPressed: () {
-                                                                      controller
-                                                                          .captureImage(
-                                                                          ImageSource
-                                                                              .gallery,
-                                                                          imageTwo);
-                                                                      Get
-                                                                          .back();
-                                                                    },
-                                                                    icon: const Icon(
-                                                                        Icons
-                                                                            .image,
-                                                                        color: AppColors
-                                                                            .lightBlue),
-                                                                    label: const Text(
-                                                                        "Gallery",
-                                                                        style: TextStyle(
-                                                                            color: AppColors
-                                                                                .lightBlue)),
-                                                                  ),
-                                                                ],
-                                                              );
-                                                            },
-                                                            child: const Icon(
-                                                              Icons
-                                                                  .edit_note_rounded,
-                                                              color:
-                                                              AppColors
-                                                                  .blue,
-                                                              size: 20,
-                                                            ))
-                                                      ],
-                                                    ),
-                                                  ),
-                                                  Padding(
-                                                    padding:
-                                                    const EdgeInsets.all(5),
-                                                    child:
-                                                    Container(
-                                                      height: 200,
-                                                      width:
-                                                      double.infinity,
-                                                      decoration: utils
-                                                          .roundedBorder(
-                                                          AppColors
-                                                              .lightBlue,
-                                                          5),
-                                                      child: controller
-                                                          .paymentProof.value !=
-                                                          null
-                                                          ? Image.file(
-                                                        controller
-                                                            .paymentProof
-                                                            .value!,
-                                                        fit: BoxFit
-                                                            .fill,
-                                                      )
-                                                          : InkWell(
-                                                        onTap: () {
-                                                          utils
-                                                              .showCustomDialog(
-                                                            title: "Need Your Action",
-                                                            middleText: "Choose Image Source",
-                                                            buttons: [
-                                                              TextButton.icon(
-                                                                onPressed: () {
-                                                                  controller
-                                                                      .captureImage(
-                                                                      ImageSource
-                                                                          .camera,
-                                                                      imageTwo);
-                                                                  Get.back();
-                                                                },
-                                                                icon: const Icon(
-                                                                    Icons
-                                                                        .camera_alt,
-                                                                    color: AppColors
-                                                                        .primaryThemeColor),
-                                                                label: const Text(
-                                                                    "Camera",
-                                                                    style: TextStyle(
-                                                                        color: AppColors
-                                                                            .primaryThemeColor)),
-                                                              ),
-
-                                                              Obx(() {
-                                                                return Visibility(
-                                                                  visible: controller
-                                                                      .markUnDelivered
-                                                                      .value ==
-                                                                      true,
-                                                                  child: TextButton
-                                                                      .icon(
-                                                                    onPressed: () {
-                                                                      controller
-                                                                          .captureImage(
-                                                                          ImageSource
-                                                                              .gallery,
-                                                                          imageTwo);
-                                                                      Get
-                                                                          .back();
-                                                                    },
-                                                                    icon: const Icon(
-                                                                        Icons
-                                                                            .image,
-                                                                        color: AppColors
-                                                                            .lightBlue),
-                                                                    label: const Text(
-                                                                        "Gallery",
-                                                                        style: TextStyle(
-                                                                            color: AppColors
-                                                                                .lightBlue)),
-                                                                  ),
-                                                                );
-                                                              }),
-                                                            ],
-                                                          );
-                                                        },
-                                                        child: Column(
-                                                          mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .center,
-                                                          children: [
-                                                            const Icon(
-                                                              Icons
-                                                                  .image_outlined,
-                                                              size: 80,
-                                                              color: AppColors
-                                                                  .lightBlue,
-                                                            ),
-                                                            utils.tvCustom(
-                                                                "capture/select Image",
-                                                                AppColors
-                                                                    .lightBlue,
-                                                                10)
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    ),
-
-
-                                                  ),
-
-
-                                                  Visibility(
-                                                    visible: controller
-                                                        .markDelivered
-                                                        .value,
-                                                    child: Column(
-                                                      children: [
-                                                        Padding(
-                                                          padding:
-                                                          const EdgeInsets
-                                                              .symmetric(
-                                                              horizontal:
-                                                              5),
-                                                          child: Row(
-                                                            mainAxisAlignment:
-                                                            MainAxisAlignment
-                                                                .spaceBetween,
-                                                            children: [
-                                                              utils.tvCustom(
-                                                                  "Signature (optional)",
-                                                                  AppColors
-                                                                      .primaryThemeColor,
-                                                                  10),
-                                                              InkWell(
-                                                                  onTap:
-                                                                      () {
-                                                                    controller
-                                                                        .signatureController
-                                                                        .disabled =
-                                                                    false;
-                                                                    controller
-                                                                        .signatureController
-                                                                        .clear();
-                                                                    controller
-                                                                        .signImage
-                                                                        ?.clear();
-                                                                    controller
-                                                                        .signatureFile =
-                                                                    null;
-                                                                  },
-                                                                  child:
-                                                                  const Icon(
-                                                                    Icons
-                                                                        .mode_edit,
-                                                                    color: AppColors
-                                                                        .blue,
-                                                                    size:
-                                                                    20,
-                                                                  ))
-                                                            ],
-                                                          ),
-                                                        ),
-                                                        Padding(
-                                                          padding:
-                                                          const EdgeInsets
-                                                              .all(5.0),
-                                                          child: Container(
-                                                            decoration: utils
-                                                                .roundedBorder(
-                                                                AppColors
-                                                                    .blue,
-                                                                3),
-                                                            child: Padding(
-                                                              padding:
-                                                              const EdgeInsets
-                                                                  .all(
-                                                                  8.0),
-                                                              child:
-                                                              Signature(
-                                                                controller:
-                                                                controller
-                                                                    .signatureController,
-                                                                width: Get
-                                                                    .width,
-                                                                height: 180,
-                                                                backgroundColor:
-                                                                Colors
-                                                                    .white,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                  Visibility(
-                                                      visible: controller
-                                                          .markUnDelivered
-                                                          .value,
-                                                      child: utils
-                                                          .iconButtonWithRoundedBorder(
-                                                          controller
-                                                              .selectedReason
-                                                              .value ==
-                                                              ""
-                                                              ? "Select Reason"
-                                                              : controller
-                                                              .selectedReason
-                                                              .value,
-                                                          45, () {
-                                                        controller
-                                                            .popUpWindowReasons();
-                                                      },
-                                                          Icons
-                                                              .arrow_drop_down_circle_outlined,
-                                                          AppColors
-                                                              .primaryThemeColor,
-                                                          Icons
-                                                              .keyboard_return,
-                                                          1,
-                                                          AppColors
-                                                              .primaryThemeColor)),
-                                                  const SizedBox(
-                                                    height: 10,
-                                                  )
-                                                ],
-                                              ));
-                                        })
-                                      ],
-                                    ),
-                                    Obx(() {
-                                      return Align(
-                                        alignment: Alignment.bottomCenter,
-                                        child: Visibility(
-                                          //visible: isPickUpVisible.value,
-                                          visible: true,
-                                          child: Row(
-                                            mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                            crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                            children: [
-                                              Visibility(
-                                                visible: (controller
-                                                    .selectedOrder
-                                                    .value
-                                                    .status ==
-                                                    ASSIGNED ||
-                                                    controller.selectedOrder
-                                                        .value.status ==
-                                                        RE_ASSIGNED),
-                                                child: utils.iconButton(
-                                                    "Mark Reached",
-                                                        () async {
-                                                      await controller
-                                                          .updateOrder(
-                                                          REACHED);
-                                                    },
-                                                    Icons
-                                                        .follow_the_signs_rounded,
-                                                    AppColors.orange,
-                                                    AppColors.white),
-                                              ),
-                                              Visibility(
-                                                visible: controller
-                                                    .selectedOrder
-                                                    .value
-                                                    .status ==
-                                                    REACHED,
-                                                child: utils.iconButton(
-                                                    "Mark Pick", () async {
-                                                  await controller.updateOrder(
-                                                      PICKED);
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Obx(() {
+                              return Column(
+                                children: [
+                                  Column(
+                                    children: [
+                                      Visibility(
+                                        visible: controller
+                                            .markDelivered.value ||
+                                            controller
+                                                .markUnDelivered.value,
+                                        child: Align(
+                                            alignment: Alignment.topRight,
+                                            child: InkWell(
+                                                onTap: () {
+                                                  controller.markDelivered
+                                                      .value = false;
+                                                  controller
+                                                      .markUnDelivered
+                                                      .value = false;
                                                 },
-                                                    Icons.signpost_rounded,
-                                                    AppColors.blue,
-                                                    AppColors.white),
-                                              ),
-                                              Obx(() =>
-                                                  Visibility(
-                                                      visible: !controller
-                                                          .markUnDelivered
-                                                          .value &&
-                                                          !controller
-                                                              .markDelivered
-                                                              .value &&
-                                                          controller
-                                                              .selectedOrder
-                                                              .value
-                                                              .status ==
-                                                              OFD,
-                                                      child: Row(children: [
-                                                        utils.iconButton(
-                                                            "UnDeliver", () {
-                                                          controller
-                                                              .markUnDelivered
-                                                              .value = true;
-                                                        },
-                                                            Icons.cancel,
-                                                            AppColors.red,
-                                                            AppColors.white),
-                                                        const SizedBox(
-                                                          width: 90,
-                                                        ),
-                                                        utils.iconButton(
-                                                            "Deliver", () {
-                                                          controller
-                                                              .markDelivered
-                                                              .value = true;
-                                                        },
-                                                            Icons.check_box,
-                                                            AppColors
-                                                                .greenLight,
-                                                            AppColors.white),
-                                                      ])))
-                                            ],
-                                          ),
-                                        ),
-                                      );
-                                    }),
-                                    Obx(() {
-                                      return Align(
-                                        alignment: Alignment.bottomCenter,
-                                        child: Visibility(
+                                                child: const Icon(
+                                                    Icons.cancel,
+                                                    color:
+                                                    AppColors.red))),
+                                      ),
+                                      const SizedBox(
+                                        height: 5,
+                                      ),
+                                      // Row(
+                                      //   mainAxisAlignment:
+                                      //       MainAxisAlignment
+                                      //           .spaceBetween,
+                                      //   children: [
+                                      //     utils.tvMedium(
+                                      //         "Pickup to Delivery Distance"),
+                                      //     utils.tvCustom(
+                                      //         orderDistanceByGoogle.value,
+                                      //         AppColors.blue,
+                                      //         10),
+                                      //   ],
+                                      // ),
+                                      // Row(
+                                      //   mainAxisAlignment:
+                                      //       MainAxisAlignment
+                                      //           .spaceBetween,
+                                      //   children: [
+                                      //     utils.tvMedium(
+                                      //         "Estimated Time By Google"),
+                                      //     utils.tvCustom(
+                                      //         orderDurationByGoogle.value,
+                                      //         AppColors.primaryThemeColor,
+                                      //         10),
+                                      //   ],
+                                      // ),
+                                      Row(
+                                        mainAxisAlignment:
+                                        MainAxisAlignment
+                                            .spaceBetween,
+                                        children: [
+                                          utils.tvMedium("Order Number"),
+                                          utils.tvMedium(controller
+                                              .selectedOrder
+                                              .value
+                                              .awbNo ??
+                                              ""),
+                                        ],
+                                      ),
+                                      Row(
+                                        mainAxisAlignment:
+                                        MainAxisAlignment
+                                            .spaceBetween,
+                                        children: [
+                                          utils.tvMedium("status"),
+                                          utils.tvCustom(
+                                              controller.selectedOrder
+                                                  .value.status ??
+                                                  "",
+                                              AppColors.green,
+                                              10),
+                                        ],
+                                      ),
+                                      Row(
+                                        mainAxisAlignment:
+                                        MainAxisAlignment
+                                            .spaceBetween,
+                                        children: [
+                                          utils.tvMedium("Item"),
+                                          utils.tvCustom(
+                                              "${controller.selectedOrder
+                                                  .value
+                                                  .itemName}(${controller
+                                                  .selectedOrder.value
+                                                  .quantity})",
+                                              AppColors.black,
+                                              10),
+                                        ],
+                                      ),
+                                      Row(
+                                        mainAxisAlignment:
+                                        MainAxisAlignment
+                                            .spaceBetween,
+                                        children: [
+                                          utils.tvMedium("Order Amount"),
+                                          utils.tvCustom(
+                                              "${controller.selectedOrder
+                                                  .value.orderAmount}(Qar)",
+                                              AppColors.black,
+                                              10),
+                                        ],
+                                      ),
+                                      Row(
+                                        mainAxisAlignment:
+                                        MainAxisAlignment
+                                            .spaceBetween,
+                                        children: [
+                                          utils.tvMedium("Merchant Name"),
+                                          utils.tvCustom(
+                                              controller
+                                                  .selectedOrder
+                                                  .value
+                                                  .merchantName ??
+                                                  "",
+                                              AppColors.black,
+                                              10),
+                                        ],
+                                      ),
+                                      const SizedBox(
+                                        height: 10,
+                                      ),
+                                      Obx(() {
+                                        return Visibility(
                                             visible: controller
-                                                .selectedOrder
-                                                .value
-                                                .status ==
-                                                OFD &&
-                                                controller
-                                                    .markDelivered.value,
-                                            child: utils.iconButton(
-                                                "Mark Delivered", () async {
-                                              if (controller
-                                                  .deliveredImage !=
-                                                  null) {
-                                                var isDElivered =
-                                                await controller
-                                                    .updateOrder(
-                                                    DELIVERED);
-                                                if (isDElivered == true) {
-                                                  clearImageSign();
-                                                }
-                                              } else {
-                                                utils.errorSnackBar(
-                                                    " Error !",
-                                                    "Delivery Image required");
-                                              }
-                                              // Get.toNamed(Routes.signatureImageScreen);
-                                            },
-                                                Icons.check_box,
-                                                AppColors.greenLight,
-                                                AppColors.white)),
-                                      );
-                                    }),
-                                    Obx(() {
-                                      return Align(
-                                        alignment: Alignment.bottomCenter,
-                                        child: Visibility(
-                                            visible: controller.selectedOrder
-                                                .value.status == OFD &&
+                                                .markDelivered
+                                                .value ||
                                                 controller.markUnDelivered
                                                     .value,
-                                            child: utils.iconButton(
-                                                "Mark Un-Delivered",
-                                                    () async {
-                                                  var isUpdated =
-                                                  await controller
-                                                      .updateOrder(
-                                                      UNDELIVERED);
-                                                  if (isUpdated == true) {
-                                                    clearImageSign();
-                                                  }
-                                                },
-                                                Icons
-                                                    .cancel_presentation_outlined,
-                                                AppColors.red,
-                                                AppColors.white)),
-                                      );
-                                    }),
-                                  ],
-                                );
-                              }),
-                            ),
+                                            child: Column(
+                                              children: [
+                                                Padding(
+                                                  padding:
+                                                  const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 5),
+                                                  child: Row(
+                                                    mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                    children: [
+                          
+                                                      utils.tvCustom(
+                                                          "Image Proof",
+                                                          AppColors
+                                                              .primaryThemeColor,
+                                                          10),
+                                                      InkWell(
+                                                          onTap: () {
+                                                            controller
+                                                                .captureImage(
+                                                                ImageSource
+                                                                    .camera,
+                                                                imageOne);
+                                                          },
+                                                          child: const Icon(
+                                                            Icons.refresh,
+                                                            color:
+                                                            AppColors
+                                                                .blue,
+                                                            size: 20,
+                                                          ))
+                                                    ],
+                                                  ),
+                                                ),
+                                                Padding(
+                                                  padding:
+                                                  const EdgeInsets.all(5),
+                                                  child:
+                                                  Container(
+                                                    height: 200,
+                                                    width:
+                                                    double.infinity,
+                                                    decoration: utils
+                                                        .roundedBorder(
+                                                        AppColors
+                                                            .primaryThemeColor,
+                                                        5),
+                                                    child: controller
+                                                        .image
+                                                        .value !=
+                                                        null
+                                                        ? Image.file(
+                                                      controller
+                                                          .image
+                                                          .value!,
+                                                      fit: BoxFit
+                                                          .fill,
+                                                    )
+                                                        : InkWell(
+                                                      onTap: () {
+                                                        controller
+                                                            .captureImage(
+                                                            ImageSource
+                                                                .camera,
+                                                            imageOne);
+                                                      },
+                                                      child: Column(
+                                                        mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                        children: [
+                                                          const Icon(
+                                                            Icons
+                                                                .camera,
+                                                            size:
+                                                            80,
+                                                            color: AppColors
+                                                                .primaryThemeColor,
+                                                          ),
+                                                          utils.tvCustom(
+                                                              "capture Image",
+                                                              AppColors
+                                                                  .primaryThemeColor,
+                                                              10)
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
+                          
+                          
+                                                ),
+                                                Padding(
+                                                  padding:
+                                                  const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 5),
+                                                  child: Row(
+                                                    mainAxisAlignment: MainAxisAlignment
+                                                        .spaceBetween,
+                                                    children: [
+                                                      utils.tvCustom(
+                                                          "Delivery Proof",
+                                                          AppColors
+                                                              .primaryThemeColor,
+                                                          10),
+                                                      InkWell(
+                                                          onTap: () {
+                                                            utils
+                                                                .showCustomDialog(
+                                                              title: "Need Your Action",
+                                                              middleText: "Choose Image Source",
+                                                              buttons: [
+                                                                TextButton
+                                                                    .icon(
+                                                                  onPressed: () {
+                                                                    controller
+                                                                        .captureImage(
+                                                                        ImageSource
+                                                                            .camera,
+                                                                        imageTwo);
+                                                                    Get
+                                                                        .back();
+                                                                  },
+                                                                  icon: const Icon(
+                                                                      Icons
+                                                                          .camera_alt,
+                                                                      color: AppColors
+                                                                          .primaryThemeColor),
+                                                                  label: const Text(
+                                                                      "Camera",
+                                                                      style: TextStyle(
+                                                                          color: AppColors
+                                                                              .primaryThemeColor)),
+                                                                ),
+                                                                TextButton
+                                                                    .icon(
+                                                                  onPressed: () {
+                                                                    controller
+                                                                        .captureImage(
+                                                                        ImageSource
+                                                                            .gallery,
+                                                                        imageTwo);
+                                                                    Get
+                                                                        .back();
+                                                                  },
+                                                                  icon: const Icon(
+                                                                      Icons
+                                                                          .image,
+                                                                      color: AppColors
+                                                                          .lightBlue),
+                                                                  label: const Text(
+                                                                      "Gallery",
+                                                                      style: TextStyle(
+                                                                          color: AppColors
+                                                                              .lightBlue)),
+                                                                ),
+                                                              ],
+                                                            );
+                                                          },
+                                                          child: const Icon(
+                                                            Icons
+                                                                .edit_note_rounded,
+                                                            color:
+                                                            AppColors
+                                                                .blue,
+                                                            size: 20,
+                                                          ))
+                                                    ],
+                                                  ),
+                                                ),
+                                                Padding(
+                                                  padding:
+                                                  const EdgeInsets.all(5),
+                                                  child:
+                                                  Container(
+                                                    height: 200,
+                                                    width:
+                                                    double.infinity,
+                                                    decoration: utils
+                                                        .roundedBorder(
+                                                        AppColors
+                                                            .lightBlue,
+                                                        5),
+                                                    child: controller
+                                                        .paymentProof.value !=
+                                                        null
+                                                        ? Image.file(
+                                                      controller
+                                                          .paymentProof
+                                                          .value!,
+                                                      fit: BoxFit
+                                                          .fill,
+                                                    )
+                                                        : InkWell(
+                                                      onTap: () {
+                                                        utils
+                                                            .showCustomDialog(
+                                                          title: "Need Your Action",
+                                                          middleText: "Choose Image Source",
+                                                          buttons: [
+                                                            TextButton.icon(
+                                                              onPressed: () {
+                                                                controller
+                                                                    .captureImage(
+                                                                    ImageSource
+                                                                        .camera,
+                                                                    imageTwo);
+                                                                Get.back();
+                                                              },
+                                                              icon: const Icon(
+                                                                  Icons
+                                                                      .camera_alt,
+                                                                  color: AppColors
+                                                                      .primaryThemeColor),
+                                                              label: const Text(
+                                                                  "Camera",
+                                                                  style: TextStyle(
+                                                                      color: AppColors
+                                                                          .primaryThemeColor)),
+                                                            ),
+                          
+                                                            Obx(() {
+                                                              return Visibility(
+                                                                visible: controller
+                                                                    .markUnDelivered
+                                                                    .value ==
+                                                                    true,
+                                                                child: TextButton
+                                                                    .icon(
+                                                                  onPressed: () {
+                                                                    controller
+                                                                        .captureImage(
+                                                                        ImageSource
+                                                                            .gallery,
+                                                                        imageTwo);
+                                                                    Get
+                                                                        .back();
+                                                                  },
+                                                                  icon: const Icon(
+                                                                      Icons
+                                                                          .image,
+                                                                      color: AppColors
+                                                                          .lightBlue),
+                                                                  label: const Text(
+                                                                      "Gallery",
+                                                                      style: TextStyle(
+                                                                          color: AppColors
+                                                                              .lightBlue)),
+                                                                ),
+                                                              );
+                                                            }),
+                                                          ],
+                                                        );
+                                                      },
+                                                      child: Column(
+                                                        mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                        children: [
+                                                          const Icon(
+                                                            Icons
+                                                                .image_outlined,
+                                                            size: 80,
+                                                            color: AppColors
+                                                                .lightBlue,
+                                                          ),
+                                                          utils.tvCustom(
+                                                              "capture/select Image",
+                                                              AppColors
+                                                                  .lightBlue,
+                                                              10)
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
+                          
+                          
+                                                ),
+                          
+                          
+                                                Visibility(
+                                                  visible: controller
+                                                      .markDelivered
+                                                      .value,
+                                                  child: Column(
+                                                    children: [
+                                                      Padding(
+                                                        padding:
+                                                        const EdgeInsets
+                                                            .symmetric(
+                                                            horizontal:
+                                                            5),
+                                                        child: Row(
+                                                          mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .spaceBetween,
+                                                          children: [
+                                                            utils.tvCustom(
+                                                                "Signature (optional)",
+                                                                AppColors
+                                                                    .primaryThemeColor,
+                                                                10),
+                                                            InkWell(
+                                                                onTap:
+                                                                    () {
+                                                                  controller
+                                                                      .signatureController
+                                                                      .disabled =
+                                                                  false;
+                                                                  controller
+                                                                      .signatureController
+                                                                      .clear();
+                                                                  controller
+                                                                      .signImage
+                                                                      ?.clear();
+                                                                  controller
+                                                                      .signatureFile =
+                                                                  null;
+                                                                },
+                                                                child:
+                                                                const Icon(
+                                                                  Icons
+                                                                      .mode_edit,
+                                                                  color: AppColors
+                                                                      .blue,
+                                                                  size:
+                                                                  20,
+                                                                ))
+                                                          ],
+                                                        ),
+                                                      ),
+                                                      Padding(
+                                                        padding:
+                                                        const EdgeInsets
+                                                            .all(5.0),
+                                                        child: Container(
+                                                          decoration: utils
+                                                              .roundedBorder(
+                                                              AppColors
+                                                                  .blue,
+                                                              3),
+                                                          child: Padding(
+                                                            padding:
+                                                            const EdgeInsets
+                                                                .all(
+                                                                8.0),
+                                                            child:
+                                                            Signature(
+                                                              controller:
+                                                              controller
+                                                                  .signatureController,
+                                                              width: Get
+                                                                  .width,
+                                                              height: 180,
+                                                              backgroundColor:
+                                                              Colors
+                                                                  .white,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                Visibility(
+                                                    visible: controller
+                                                        .markUnDelivered
+                                                        .value,
+                                                    child: utils
+                                                        .iconButtonWithRoundedBorder(
+                                                        controller
+                                                            .selectedReason
+                                                            .value ==
+                                                            ""
+                                                            ? "Select Reason"
+                                                            : controller
+                                                            .selectedReason
+                                                            .value,
+                                                        45, () {
+                                                      controller
+                                                          .popUpWindowReasons();
+                                                    },
+                                                        Icons
+                                                            .arrow_drop_down_circle_outlined,
+                                                        AppColors
+                                                            .primaryThemeColor,
+                                                        Icons
+                                                            .keyboard_return,
+                                                        1,
+                                                        AppColors
+                                                            .primaryThemeColor)),
+                                                const SizedBox(
+                                                  height: 10,
+                                                )
+                                              ],
+                                            ));
+                                      })
+                                    ],
+                                  ),
+                                  Obx(() {
+                                    return Align(
+                                      alignment: Alignment.bottomCenter,
+                                      child: Visibility(
+                                        //visible: isPickUpVisible.value,
+                                        visible: true,
+                                        child: Row(
+                                          mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                          crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                          children: [
+                                            Visibility(
+                                              visible: (controller
+                                                  .selectedOrder
+                                                  .value
+                                                  .status ==
+                                                  ASSIGNED ||
+                                                  controller.selectedOrder
+                                                      .value.status ==
+                                                      RE_ASSIGNED),
+                                              child: utils.iconButton(
+                                                  "Mark Reached",
+                                                      () async {
+                                                    await controller
+                                                        .updateOrder(
+                                                        REACHED);
+                                                  },
+                                                  Icons
+                                                      .follow_the_signs_rounded,
+                                                  AppColors.orange,
+                                                  AppColors.white),
+                                            ),
+                                            Visibility(
+                                              visible: controller
+                                                  .selectedOrder
+                                                  .value
+                                                  .status ==
+                                                  REACHED,
+                                              child: utils.iconButton(
+                                                  "Mark Pick", () async {
+                                                await controller.updateOrder(
+                                                    PICKED);
+                                              },
+                                                  Icons.signpost_rounded,
+                                                  AppColors.blue,
+                                                  AppColors.white),
+                                            ),
+                                            Obx(() =>
+                                                Visibility(
+                                                    visible: !controller
+                                                        .markUnDelivered
+                                                        .value &&
+                                                        !controller
+                                                            .markDelivered
+                                                            .value &&
+                                                        controller
+                                                            .selectedOrder
+                                                            .value
+                                                            .status ==
+                                                            OFD,
+                                                    child: Row(children: [
+                                                      utils.iconButton(
+                                                          "UnDeliver", () {
+                                                        controller
+                                                            .markUnDelivered
+                                                            .value = true;
+                                                      },
+                                                          Icons.cancel,
+                                                          AppColors.red,
+                                                          AppColors.white),
+                                                      const SizedBox(
+                                                        width: 90,
+                                                      ),
+                                                      utils.iconButton(
+                                                          "Deliver", () {
+                                                        controller
+                                                            .markDelivered
+                                                            .value = true;
+                                                      },
+                                                          Icons.check_box,
+                                                          AppColors
+                                                              .greenLight,
+                                                          AppColors.white),
+                                                    ])))
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  }),
+                                  Obx(() {
+                                    return Align(
+                                      alignment: Alignment.bottomCenter,
+                                      child: Visibility(
+                                          visible: controller
+                                              .selectedOrder
+                                              .value
+                                              .status ==
+                                              OFD &&
+                                              controller
+                                                  .markDelivered.value,
+                                          child: utils.iconButton(
+                                              "Mark Delivered", () async {
+                                            if (controller
+                                                .deliveredImage !=
+                                                null) {
+                                              var isDElivered =
+                                              await controller
+                                                  .updateOrder(
+                                                  DELIVERED);
+                                              if (isDElivered == true) {
+                                                clearImageSign();
+                                              }
+                                            } else {
+                                              utils.errorSnackBar(
+                                                  " Error !",
+                                                  "Delivery Image required");
+                                            }
+                                            // Get.toNamed(Routes.signatureImageScreen);
+                                          },
+                                              Icons.check_box,
+                                              AppColors.greenLight,
+                                              AppColors.white)),
+                                    );
+                                  }),
+                                  Obx(() {
+                                    return Align(
+                                      alignment: Alignment.bottomCenter,
+                                      child: Visibility(
+                                          visible: controller.selectedOrder
+                                              .value.status == OFD &&
+                                              controller.markUnDelivered
+                                                  .value,
+                                          child: utils.iconButton(
+                                              "Mark Un-Delivered",
+                                                  () async {
+                                                var isUpdated =
+                                                await controller
+                                                    .updateOrder(
+                                                    UNDELIVERED);
+                                                if (isUpdated == true) {
+                                                  clearImageSign();
+                                                }
+                                              },
+                                              Icons
+                                                  .cancel_presentation_outlined,
+                                              AppColors.red,
+                                              AppColors.white)),
+                                    );
+                                  }),
+                                ],
+                              );
+                            }),
                           ),
                         ),
                       ),

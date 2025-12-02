@@ -16,15 +16,18 @@ class ApiProvider extends GetConnect {
   final String accept = '*/*';
   final String noCache = 'no-cache';
   File? file;
+  final String devBaseUrl = "https://dev.zyppy.qa/api/v1/";
+  final String liveBaseUrl = "https://zyppy.qa/api/v1/";
+  
 
   ApiProvider() {
     timeout = const Duration(seconds: 120);
     maxAuthRetries = 3;
 
     if (kDebugMode) {
-      baseUrl = "https://dev.zyppy.qa/api/v1/";
+      baseUrl = devBaseUrl;
     } else if (kReleaseMode) {
-      baseUrl = "https://dev.zyppy.qa/api/v1/";
+      baseUrl = liveBaseUrl;
     }
 
     httpClient.addAuthenticator((Request<dynamic> request) async {
@@ -158,15 +161,14 @@ Future<dynamic> postRequestWithImages(
   List<Map<String, dynamic>>? images,
 ) async {
   try {
-    // Create multipart request
-    var request = http.MultipartRequest('POST', Uri.parse("https://dev.zyppy.qa/api/v1/$endpoint"));
+
+    var request = http.MultipartRequest('POST', Uri.parse("$baseUrl$endpoint"));
       dynamic responseJson;
-    // Add form fields
+
     data.forEach((key, value) {
       request.fields[key] = value.toString();
     });
 
-    // Add images
     if (images != null && images.isNotEmpty) {
       for (final imageMap in images) {
         final String key = imageMap['key'];
@@ -193,7 +195,7 @@ Future<dynamic> postRequestWithImages(
     
     print('✅ Request successful: ${response.statusCode}');
     
-     responseJson = returnHttpResponse(response);
+    responseJson = returnHttpResponse(response);
     return responseJson;
 
   } on TimeoutException catch (e) {

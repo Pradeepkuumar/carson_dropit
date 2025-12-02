@@ -87,50 +87,61 @@ import 'package:carson_zyppy/local_db/dataBase/database.dart';
 import 'package:carson_zyppy/local_db/userRepository/db/floor_database.dart';
 import 'package:carson_zyppy/local_db/user_repo.dart';
 import 'package:carson_zyppy/splash_screen/splash_screen.dart';
-import 'package:carson_zyppy/utils/colors.dart';
 import 'package:carson_zyppy/app_pages/app_pages.dart';
 import 'package:carson_zyppy/app_theme/AppTheme.dart';
 import 'package:upgrader/upgrader.dart';
 
-/// 🔥 Background Firebase Messaging Handler
+@pragma('vm:entry-point') 
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  print("🔥 Background/Killed Notification: ${message.data}");
-}
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  //  Local Storage
-  await GetStorage.init();
-
-  // 🔥 Firebase Initialization
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // 🚀 Initialize Firebase Messaging
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-  await Get.put(FirebaseMessagingController(), permanent: true);
+  print("🔥 Background / Killed Notification");
+  print("Message ID: ${message.messageId}");
+  print("Data: ${message.data}");
+}
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-  // 💥 Crashlytics Error Handling
+  // 📦 Local Storage
+  await GetStorage.init();
+
+  // 🔥 Firebase Init (MAIN isolate)
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // ✅ REGISTER BACKGROUND HANDLER BEFORE runApp
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
+  // ✅ Controllers AFTER Firebase init
+  Get.put(FirebaseMessagingController(), permanent: true);
+
+  // 💥 Crashlytics
   FlutterError.onError = (errorDetails) {
     FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
   };
+
   PlatformDispatcher.instance.onError = (error, stack) {
     FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
     return true;
   };
 
-  // 🗄️ Floor Database Setup
+  // 🗄️ Floor DB
   await Get.putAsync<UserRepository>(permanent: true, () async {
-    final db = await $FloorAppDatabase.databaseBuilder('app_database.db').build();
+    final db = await $FloorAppDatabase
+        .databaseBuilder('app_database.db')
+        .build();
     return FloorUserRepository(db);
   });
 
-  // 📱 Lock Orientation to Portrait
-  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  // 📱 Orientation
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+  ]);
 
-  // 🧩 Launch App
+  // 🚀 Run App
   runApp(ScreenUtilInit(
     designSize: const Size(375, 812),
     builder: (context, child) => GetMaterialApp(
@@ -139,12 +150,13 @@ void main() async {
       themeMode: ThemeMode.light,
       theme: AppThemes.light,
       getPages: AppPages.routes,
-      home:  UpgradeAlert (
-          dialogStyle: UpgradeDialogStyle.material,
-          barrierDismissible: false,
-          showIgnore: false,
-          showLater: false,
-        child: const SplashScreen())
+      home: UpgradeAlert(
+        dialogStyle: UpgradeDialogStyle.material,
+        barrierDismissible: false,
+        showIgnore: false,
+        showLater: false,
+        child: const SplashScreen(),
+      ),
     ),
   ));
 }

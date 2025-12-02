@@ -71,9 +71,7 @@ class AuthController extends GetxController {
       return false;
     }
   }
-
-
-
+  
   @override
   void onClose() {}
 }
