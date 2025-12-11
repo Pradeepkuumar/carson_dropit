@@ -1,5 +1,6 @@
 
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 import '../global/global.dart';
@@ -9,19 +10,23 @@ class FirebaseMessagingController extends GetxController {
   final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
   String? fcm_token;
   var onNewNotification = false.obs;
+  
+  // Notification payload data
+  var notificationData = {}.obs;
+  var isInitilized = false;
 
   @override
   void onInit() {
     super.onInit();
-    _initializeFirebaseMessaging();
-    initializeLocalNotifications();
-    getFirebaseToken();
+   if (!isInitilized) {
+      isInitilized = true;
+      _initializeFirebaseMessaging();
+      initializeLocalNotifications();
+    }
   }
 
   @override
   void onReady() {
-     _initializeFirebaseMessaging();
-    initializeLocalNotifications();
     getFirebaseToken();
     super.onReady();
   }
@@ -30,7 +35,7 @@ class FirebaseMessagingController extends GetxController {
   Future<void> _initializeFirebaseMessaging() async {
     await _firebaseMessaging.requestPermission(
       sound: true,
-      badge: true,
+      badge: false,
       alert: true,
       provisional: false,
     );
@@ -64,16 +69,15 @@ class FirebaseMessagingController extends GetxController {
 
 
 
-
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      _handleNotification(message);
+     // _handleNotification(message);
     });
 
 
     FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
-      if (message != null) {
-        _handleNotification(message);
-      }
+      // if (message != null) {
+      //   _handleNotification(message);
+      // }
     });
 
 
@@ -93,6 +97,115 @@ class FirebaseMessagingController extends GetxController {
         box.write("fcm_token", fcm_token);
   }
 
+
+  static Future<void> firebaseBackgroundMessageHandler(RemoteMessage message) async {
+    print('🌙 ======== BACKGROUND MESSAGE HANDLER ========');
+    
+    try {
+      
+      WidgetsFlutterBinding.ensureInitialized();
+      
+      // Initialize local notifications
+      final FlutterLocalNotificationsPlugin notificationsPlugin = 
+          FlutterLocalNotificationsPlugin();
+      
+      // Initialize with your app icon
+      const AndroidInitializationSettings androidSettings = 
+          AndroidInitializationSettings('ic_launcher');
+      const InitializationSettings settings = InitializationSettings(
+        android: androidSettings,
+      );
+      
+      await notificationsPlugin.initialize(settings);
+      
+      // Extract notification data
+      final data = message.data;
+      final notification = message.notification;
+      
+      final title = data['title'] ?? notification?.title ?? 'New Order';
+      final body = data['body'] ?? notification?.body ?? 'You have a new order!';
+      final type = data['type'] ?? '';
+      
+      // Determine sound and channel
+      final sound = data['sound'] ?? 
+          (type == 'NearByOrders' ? 'nearby_order' : 'new_order');
+      final channelId = type == 'NearByOrders'
+          ? 'nearby_orders_channel'
+          : 'assigned_new_order_channel';
+      
+      print('🌙 Background notification:');
+      print('- Title: $title');
+      print('- Body: $body');
+      print('- Type: $type');
+      print('- Sound: $sound');
+      print('- Channel: $channelId');
+      
+      
+      await _createNotificationChannelInBackground(
+        notificationsPlugin, 
+        channelId, 
+        type, 
+        sound
+      );
+      
+      // Create notification with sound
+      final androidPlatformChannelSpecifics = AndroidNotificationDetails(
+        channelId,
+        type == 'NearByOrders' ? 'Nearby Orders' : 'Assigned Orders',
+        channelDescription: 'Notifications for $type orders',
+        importance: Importance.high,
+        priority: Priority.high,
+        playSound: true,
+        sound: RawResourceAndroidNotificationSound(sound),
+        enableVibration: true,
+        visibility: NotificationVisibility.public,
+        autoCancel: true,
+        ongoing: false,
+      );
+      
+      final platformChannelSpecifics = NotificationDetails(
+        android: androidPlatformChannelSpecifics,
+      );
+      final notificationId = DateTime.now().millisecondsSinceEpoch % 100000;
+      if(message.contentAvailable == true){
+      await notificationsPlugin.show(
+        notificationId,
+        title,
+        body,
+        platformChannelSpecifics,
+      );
+      }
+      print('✅ Background notification displayed with sound');
+    } catch (e, stackTrace) {
+      print('❌ Error in background message handler: $e');
+      print('❌ Stack trace: $stackTrace');
+    }
+  }
+
+  // Helper method to create notification channel in background
+  static Future<void> _createNotificationChannelInBackground(
+    FlutterLocalNotificationsPlugin notificationsPlugin,
+    String channelId,
+    String type,
+    String soundName,
+  ) async {
+    final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
+        notificationsPlugin.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+
+    if (androidImplementation != null) {
+      await androidImplementation.createNotificationChannel(
+        AndroidNotificationChannel(
+          channelId,
+          type == 'NearByOrders' ? 'Nearby Orders' : 'Assigned Orders',
+          description: 'Notifications for $type orders',
+          importance: Importance.high,
+          sound: RawResourceAndroidNotificationSound(soundName),
+          enableVibration: true,
+        ),
+      );
+    }
+  }
 
 
 

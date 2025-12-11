@@ -1198,7 +1198,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                           width: 10,
                                                         ),
                                                         utils.tvCustom(
-                                                            "Nearby B2B Pickup Orders",
+                                                            "Nearby B2C Pickup Orders",
                                                             AppColors.primaryThemeColor,
                                                             16)
                                                       ],
@@ -1247,7 +1247,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                                         ? 50
                                                                         : 50),
                                                                 utils.tvCustom(
-                                                                    "B2B Pickup/Delivery",
+                                                                    "B2C Pickup/Delivery",
                                                                     AppColors
                                                                         .primaryThemeColor,
                                                                     15),
