@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:carson_zyppy/global/app_bar.dart';
 import 'package:carson_zyppy/global/consts.dart';
 import 'package:carson_zyppy/global/global.dart';
 import 'package:carson_zyppy/pages/auth/auth_controller.dart';
@@ -25,6 +26,8 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // appBar: const MyAppBar(title: "DROP-IT"),
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -116,12 +119,17 @@ class _LoginScreenState extends State<LoginScreen> {
                         InkWell(
                             onTap: () async{
                               if(controller.feCode.value.text.isNotEmpty && controller.password.value.text.isNotEmpty) {
-                                bool isLoggedIn = await controller.login();
-                                if (isLoggedIn) {
-                                  Get.offAllNamed(Routes.riderDashBord);
-                                } else {
-                                  Get.snackbar('Login Failed', 'Invalid credentials');
+                                if(controller.isTokenLoaded.value){
+                                    bool isLoggedIn = await controller.login();
+                                  if (isLoggedIn) {
+                                    Get.offAllNamed(Routes.riderDashBord);
+                                  } else {
+                                    Get.snackbar('Login Failed', 'Invalid credentials');
+                                  }
+                                }else{
+                                  controller.firebaseNotificationController?.getFCMTokenWithRetry();
                                 }
+                                
                               }else{
                                 utils.errorDialog("Pls Enter Credentials");
                               }

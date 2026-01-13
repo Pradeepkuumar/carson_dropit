@@ -15,26 +15,38 @@ class AuthController extends GetxController {
   final TextEditingController feCode =  TextEditingController();
   final TextEditingController password =  TextEditingController();
   FirebaseMessagingController? firebaseNotificationController;
-  var fcmToken = "";
+  var fcmToken = "".obs;
+  var isTokenLoaded = false.obs;
 
 
   @override
   void onInit() {
     getUser();
-   Future.delayed(const Duration(seconds: 3), () {
-     showSplashScreen.value = false;
-   });
-    
+    Future.delayed(const Duration(seconds: 3), () {
+      showSplashScreen.value = false;
+    });  
     super.onInit();
   }
 
   @override
-  void onReady() {
-     firebaseNotificationController =  Get.find<FirebaseMessagingController>();
-     firebaseNotificationController?.getFirebaseToken();
-     fcmToken = firebaseNotificationController?.fcm_token ?? "";
+  void onReady() async {
+    await getFireBaseToken();
     super.onReady();
+  } 
+
+  getFireBaseToken() async{
+    utils.showLoadingDialog("Loading Token wait...");
+    await  firebaseNotificationController?.getFCMTokenWithRetry();
+    await Future.delayed(const Duration(seconds: 5), () async{
+       firebaseNotificationController =  Get.find<FirebaseMessagingController>();
+       fcmToken.value = firebaseNotificationController?.fcm_token ?? "";
+       utils.closeLoadingDialog();
+     });
+     if(fcmToken.value != ""){
+       isTokenLoaded.value = true;
+     }
   }
+   
 
 
   getUser() async {

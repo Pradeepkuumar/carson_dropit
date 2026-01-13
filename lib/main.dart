@@ -20,7 +20,8 @@ import 'package:upgrader/upgrader.dart';
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {  
-   await FirebaseMessagingController.firebaseBackgroundMessageHandler(message);
+  
+   //await FirebaseMessagingController.firebaseMessagingBackgroundHandler(message);
 }
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
