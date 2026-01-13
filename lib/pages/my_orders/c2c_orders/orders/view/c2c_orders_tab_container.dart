@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:tab_container/tab_container.dart';
+import '../../../../../global/app_bar.dart';
 import '../../../../../utils/colors.dart';
 import 'c2c_orders_list_view.dart';
 
@@ -16,7 +17,9 @@ class C2cOrdersTabContainer extends GetView<C2COrdersController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: const MyAppBar(title: "}"),
       body: SafeArea(
+        
         child: SizedBox.expand(
           child: Obx(() {
             // Get the latest dashboard data reactively

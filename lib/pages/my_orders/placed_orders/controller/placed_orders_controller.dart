@@ -417,7 +417,7 @@ class PlacedOrdersController extends GetxController {
 
   void loadIcon() async {
     icon =   await getOrCreateCustomImageFromAsset(
-        'assets/icons/ic_scooter.png', 48, 48);
+        'assets/icons/car_top.png', 48, 60);
   }
 
   @override

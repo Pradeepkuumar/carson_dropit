@@ -8,6 +8,7 @@ import 'package:lottie/lottie.dart';
 
 import '../global/consts.dart';
 import '../global/global.dart';
+import '../utils/bio_metric_login/biometric_login.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -59,9 +60,24 @@ class _SplashScreesState extends State<SplashScreen> {
         ),
       );
     } else {
+
       if (user.code == null) {
         return const LoginScreen();
       } else if (user.code != null) {
+      //  Get.to(()=>  BiometricLockScreen().authenticate(
+      //     localizedReason: 'Please authenticate to proceed',
+      //     biometricOnly: true,
+      //     stickyAuth: false,
+      //     sensitiveTransaction: true,
+      //     useErrorDialogs: true,
+      //   ).then((authenticated) {
+      //     if (authenticated) {
+            
+      //     } else {
+      //       utils.errorSnackBar("Authentication Failed", "Unable to authenticate using biometrics.");
+      //        return const RiderDashboard();
+      //     }
+      //   }));
         return const RiderDashboard();
       }else{
         return const SplashScreen();

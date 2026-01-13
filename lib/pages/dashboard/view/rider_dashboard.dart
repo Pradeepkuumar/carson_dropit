@@ -915,6 +915,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:lottie/lottie.dart';
 import '../../../app_pages/app_pages.dart';
+import '../../../global/app_bar.dart';
 import '../../../global/consts.dart';
 import '../components/attandanceItem.dart';
 
@@ -942,6 +943,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // appBar: const MyAppBar(title: ""),
       body: SafeArea(
         child: Stack(
           children: [
@@ -1098,11 +1100,11 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                             MainAxisAlignment.spaceBetween,
                                                         children: [
                                                           utils.tvCustom(
-                                                              "Assigned : ${(controller.dashBoardData.value.todayOrdersCount!.aSSIGNED! + controller.c2cDashBoardData.value.todayOrdersCount!.aSSIGNED!)}",
+                                                              "Assigned : ${((controller.dashBoardData.value.todayOrdersCount?.aSSIGNED ?? 0) + (controller.c2cDashBoardData.value.todayOrdersCount?.aSSIGNED ?? 0))}",
                                                               AppColors.black,
                                                               12),
                                                           utils.tvCustom(
-                                                              "Picked : ${(controller.dashBoardData.value.todayOrdersCount!.pICKED! + controller.c2cDashBoardData.value.todayOrdersCount!.pICKED!)}",
+                                                              "Picked : ${((controller.dashBoardData.value.todayOrdersCount?.pICKED ?? 0) + (controller.c2cDashBoardData.value.todayOrdersCount?.pICKED ?? 0))}",
                                                               AppColors.black,
                                                               12)
                                                         ],
@@ -1112,11 +1114,11 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                             MainAxisAlignment.spaceBetween,
                                                         children: [
                                                           utils.tvCustom(
-                                                              "OFD : ${(controller.dashBoardData.value.todayOrdersCount!.oFD! + controller.c2cDashBoardData.value.todayOrdersCount!.oFD!)}",
+                                                              "OFD : ${((controller.dashBoardData.value.todayOrdersCount?.oFD ?? 0) + (controller.c2cDashBoardData.value.todayOrdersCount?.oFD ?? 0))}",
                                                               AppColors.black,
                                                               12),
                                                           utils.tvCustom(
-                                                              "Delivered : ${(controller.dashBoardData.value.todayOrdersCount!.dELIVERED! + controller.c2cDashBoardData.value.todayOrdersCount!.dELIVERED!)}",
+                                                              "Delivered : ${((controller.dashBoardData.value.todayOrdersCount?.dELIVERED ?? 0) + (controller.c2cDashBoardData.value.todayOrdersCount?.dELIVERED ?? 0))}",
                                                               AppColors.black,
                                                               12)
                                                         ],
@@ -1136,11 +1138,11 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                             MainAxisAlignment.spaceBetween,
                                                         children: [
                                                           utils.tvCustom(
-                                                              "Assigned : ${(controller.dashBoardData.value.allOrdersCount!.aSSIGNED! + controller.c2cDashBoardData.value.allOrdersCount!.aSSIGNED!)}",
+                                                              "Assigned : ${((controller.dashBoardData.value.allOrdersCount?.aSSIGNED ?? 0 ) + (controller.c2cDashBoardData.value.allOrdersCount?.aSSIGNED ?? 0))}",
                                                               AppColors.black,
                                                               12),
                                                           utils.tvCustom(
-                                                              "Picked : ${(controller.dashBoardData.value.allOrdersCount!.pICKED! + controller.c2cDashBoardData.value.allOrdersCount!.pICKED!)}",
+                                                              "Picked : ${((controller.dashBoardData.value.allOrdersCount?.pICKED ?? 0) + (controller.c2cDashBoardData.value.allOrdersCount?.pICKED ?? 0))}",
                                                               AppColors.black,
                                                               12)
                                                         ],
@@ -1150,11 +1152,11 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                             MainAxisAlignment.spaceBetween,
                                                         children: [
                                                           utils.tvCustom(
-                                                              "OFD : ${(controller.dashBoardData.value.allOrdersCount!.oFD! + controller.c2cDashBoardData.value.allOrdersCount!.oFD!)}",
+                                                              "OFD : ${((controller.dashBoardData.value.allOrdersCount?.oFD ?? 0) + (controller.c2cDashBoardData.value.allOrdersCount?.oFD ?? 0))}",
                                                               AppColors.black,
                                                               12),
                                                           utils.tvCustom(
-                                                              "Delivered : ${(controller.dashBoardData.value.allOrdersCount!.dELIVERED! + controller.c2cDashBoardData.value.allOrdersCount!.dELIVERED!)}",
+                                                              "Delivered : ${((controller.dashBoardData.value.allOrdersCount?.dELIVERED ?? 0) + (controller.c2cDashBoardData.value.allOrdersCount?.dELIVERED ?? 0))}",
                                                               AppColors.black,
                                                               12)
                                                         ],
@@ -1198,7 +1200,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                           width: 10,
                                                         ),
                                                         utils.tvCustom(
-                                                            "Nearby B2B Pickup Orders",
+                                                            "Nearby B2C Pickup Orders",
                                                             AppColors.primaryThemeColor,
                                                             16)
                                                       ],
@@ -1247,7 +1249,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                                         ? 50
                                                                         : 50),
                                                                 utils.tvCustom(
-                                                                    "B2B Pickup/Delivery",
+                                                                    "B2C Pickup/Delivery",
                                                                     AppColors
                                                                         .primaryThemeColor,
                                                                     15),
@@ -1296,7 +1298,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                               width: 10,
                                                             ),
                                                             utils.tvCustom(
-                                                                "C2C Orders(${controller.c2cDashBoardData.value.allOrdersCount?.aLLORDER.toString()})",
+                                                                "C2C Orders(${controller.c2cDashBoardData.value.allOrdersCount?.aLLORDER.toString() ?? 0})",
                                                                 AppColors.primaryThemeColor,
                                                                 16)
                                                           ],

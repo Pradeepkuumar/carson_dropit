@@ -14,23 +14,45 @@ class AuthController extends GetxController {
   var userData =  UserData();
   final TextEditingController feCode =  TextEditingController();
   final TextEditingController password =  TextEditingController();
+  FirebaseMessagingController? firebaseNotificationController;
+  var fcmToken = "".obs;
+  var isTokenLoaded = false.obs;
 
 
   @override
   void onInit() {
     getUser();
-   Future.delayed(const Duration(seconds: 3), () {
-     showSplashScreen.value = false;
-   });
-    
+    Future.delayed(const Duration(seconds: 3), () {
+      showSplashScreen.value = false;
+    });  
     super.onInit();
   }
+
+  @override
+  void onReady() async {
+    await getFireBaseToken();
+    super.onReady();
+  } 
+
+  getFireBaseToken() async{
+    utils.showLoadingDialog("Loading Token wait...");
+    await  firebaseNotificationController?.getFCMTokenWithRetry();
+    await Future.delayed(const Duration(seconds: 5), () async{
+       firebaseNotificationController =  Get.find<FirebaseMessagingController>();
+       fcmToken.value = firebaseNotificationController?.fcm_token ?? "";
+       utils.closeLoadingDialog();
+     });
+     if(fcmToken.value != ""){
+       isTokenLoaded.value = true;
+     }
+  }
+   
 
 
   getUser() async {
     try {
        userId.value = box.read(USER_ID_KEY);
-       Get.find<FirebaseMessagingController>();
+      
     } catch (e){
      // utils.errorSnackBar("Exception", e.toString());
     }
@@ -46,7 +68,7 @@ class AuthController extends GetxController {
       Map<String, dynamic> model = {
         apiKeys.feCode: feCode.value.text,
         apiKeys.password: password.value.text,
-        apiKeys.deviceToken: box.read("fcm_token") ?? "",
+        apiKeys.deviceToken: box.read(apiKeys.fcmToken) ?? fcmToken,
       };
       var response = await apiProvider
           .postRequest(apiEndPoints.login, model );
