@@ -19,8 +19,7 @@ import 'package:carson_zyppy/app_theme/AppTheme.dart';
 import 'package:upgrader/upgrader.dart';
 
 @pragma('vm:entry-point')
-Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {  
-  
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {   
    //await FirebaseMessagingController.firebaseMessagingBackgroundHandler(message);
 }
 void main() async {
@@ -34,7 +33,6 @@ void main() async {
   );
 
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-
   Get.put(FirebaseMessagingController(), permanent: true);
 
   FlutterError.onError = (errorDetails) {

@@ -268,11 +268,11 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                         height: controller.currentLocationOrders
                             .isNotEmpty
                             ? controller.currentLocationOrders.first
-                            .status == PICKED ? 600.sp : 200.sp
+                            .status == PICKED ? 600.sp : 220.sp
                             : controller
                             .ordersList.first.status == PICKED
                             ? 600.sp
-                            : 200.sp,
+                            : 220.sp,
                         width: controller.currentLocationOrders
                             .isNotEmpty
                             ? controller.currentLocationOrders.first
@@ -708,7 +708,7 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                 Expanded(
                                   flex: 10,
                                   child: SizedBox(
-                                    height: min(400.sp, 450.sp),
+                                    height: min(430.sp, 480.sp),
                                     child: PageView.builder(
                                         scrollDirection: Axis.horizontal,
                                         controller: controller.pageController,
@@ -739,10 +739,10 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                                         .calculateBufferTime(
                                                         DateTime.now(),
                                                         PICKED);
-                                                    if (isTrue) {
+                                                    
                                                       controller.updateOrder(
                                                           PICKED);
-                                                    }
+                                                    
                                                   } else
                                                   if (clickedOrder.status ==
                                                       ASSIGNED ||
@@ -1201,42 +1201,32 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                                                               color: AppColors
                                                                                   .primaryThemeColor)),
                                                                     ),
-                                                                    Obx(() {
-                                                                      return Visibility(
-                                                                        visible: controller
-                                                                            .markUnDelivered
-                                                                            .value ==
-                                                                            true &&
-                                                                            !controller
-                                                                                .markUnDelivered
-                                                                                .value,
-                                                                        child: TextButton
-                                                                            .icon(
-                                                                          onPressed:
-                                                                              () {
-                                                                            controller
-                                                                                .captureImage(
-                                                                                ImageSource
-                                                                                    .gallery,
-                                                                                imageTwo);
-                                                                            Get
-                                                                                .back();
-                                                                          },
-                                                                          icon: const Icon(
-                                                                              Icons
-                                                                                  .image,
-                                                                              color:
-                                                                              AppColors
-                                                                                  .lightBlue),
-                                                                          label: const Text(
-                                                                              "Gallery",
-                                                                              style:
-                                                                              TextStyle(
-                                                                                  color: AppColors
-                                                                                      .lightBlue)),
-                                                                        ),
-                                                                      );
-                                                                    }),
+                                                                     TextButton
+                                                                          .icon(
+                                                                        onPressed:
+                                                                            () {
+                                                                          controller
+                                                                              .captureImage(
+                                                                              ImageSource
+                                                                                  .gallery,
+                                                                              imageTwo);
+                                                                          Get
+                                                                              .back();
+                                                                        },
+                                                                        icon: const Icon(
+                                                                            Icons
+                                                                                .image,
+                                                                            color:
+                                                                            AppColors
+                                                                                .lightBlue),
+                                                                        label: const Text(
+                                                                            "Gallery",
+                                                                            style:
+                                                                            TextStyle(
+                                                                                color: AppColors
+                                                                                    .lightBlue)),
+                                                                      )
+                                                                    
                                                                   ],
                                                                 );
                                                               },
@@ -1306,41 +1296,29 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                                                           color: AppColors
                                                                               .primaryThemeColor)),
                                                                 ),
-                                                                Obx(() {
-                                                                  return Visibility(
-                                                                    visible:
-                                                                    controller
-                                                                        .markUnDelivered
-                                                                        .value ==
-                                                                        true &&
-                                                                        !controller
-                                                                            .markUnDelivered
-                                                                            .value,
-                                                                    child:
-                                                                    TextButton
-                                                                        .icon(
-                                                                      onPressed: () {
-                                                                        controller
-                                                                            .captureImage(
-                                                                            ImageSource
-                                                                                .gallery,
-                                                                            imageTwo);
-                                                                        Get
-                                                                            .back();
-                                                                      },
-                                                                      icon: const Icon(
-                                                                          Icons
-                                                                              .image,
-                                                                          color: AppColors
-                                                                              .lightBlue),
-                                                                      label: const Text(
-                                                                          "Gallery",
-                                                                          style: TextStyle(
-                                                                              color: AppColors
-                                                                                  .lightBlue)),
-                                                                    ),
-                                                                  );
-                                                                }),
+                                                                 TextButton
+                                                                      .icon(
+                                                                    onPressed: () {
+                                                                      controller
+                                                                          .captureImage(
+                                                                          ImageSource
+                                                                              .gallery,
+                                                                          imageTwo);
+                                                                      Get
+                                                                          .back();
+                                                                    },
+                                                                    icon: const Icon(
+                                                                        Icons
+                                                                            .image,
+                                                                        color: AppColors
+                                                                            .lightBlue),
+                                                                    label: const Text(
+                                                                        "Gallery",
+                                                                        style: TextStyle(
+                                                                            color: AppColors
+                                                                                .lightBlue)),
+                                                                  
+                                                                ),
                                                               ],
                                                             );
                                                           },
@@ -1438,8 +1416,7 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                                                   controller:
                                                                   controller
                                                                       .signatureController,
-                                                                  width: Get
-                                                                      .width,
+                                                                  width: 300,
                                                                   height: 180,
                                                                   backgroundColor:
                                                                   Colors

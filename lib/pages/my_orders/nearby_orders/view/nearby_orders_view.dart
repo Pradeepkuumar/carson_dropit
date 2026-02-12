@@ -25,6 +25,7 @@ class _MapPageState extends State<NearbyOrdersView> {
   var acceptView = false.obs;
 final controller = Get.put(PlacedOrdersController());
 
+
 @override
 void initState() {
   super.initState();
@@ -38,6 +39,8 @@ Future<void> fetchOrdersAndInitialize() async {
     controller.getUser();
   // updateMarkers();
 }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +77,7 @@ Future<void> fetchOrdersAndInitialize() async {
                     initialMapType: controller.mapType.value,
                     initialCameraPosition: CameraPosition(
                       target: controller.currentLocation!,
-                      zoom: 18,
+                      zoom: 14,
                     ),
                     onMarkerClicked: (value) {
                       if (value != "current_location") {

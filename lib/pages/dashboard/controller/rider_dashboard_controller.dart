@@ -5,7 +5,9 @@ import 'package:carson_zyppy/local_db/entity/UserData.dart';
 import 'package:carson_zyppy/pages/dashboard/models/dashboard_data.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:in_app_update/in_app_update.dart';
 import 'package:location/location.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../apis/base_api_response.dart';
@@ -56,9 +58,11 @@ class RiderDashboardController extends GetxController {
     if (isNew) {
       getC2CCDashBoardData();
       getDashBoardData();
+      getCurrentLocation();
       firebaseMessagingController.onNewNotification.value = false;
     }
-  });
+   });
+    checkForUpdate();
 
     super.onReady();
   }
@@ -132,6 +136,64 @@ class RiderDashboardController extends GetxController {
   }
 
 
+  Future<void> checkForUpdate() async {
+    try {
+      final updateInfo = await InAppUpdate.checkForUpdate();
+      
+      if (updateInfo.updateAvailability == UpdateAvailability.updateAvailable) {
+        Get.dialog(
+          AlertDialog(
+            title: const Text('Update Available'),
+            content: const Text('A new version of the app is available. Please update to continue.'),
+            actions: [
+              TextButton(
+                onPressed: () => Get.back(),
+                child: const Text('Later'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  Get.back();
+                  await performImmediateUpdate();
+                },
+                child: const Text('Update'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error checking for update: $e');
+    }
+  }
+
+  Future<void> performImmediateUpdate() async {
+    try {
+      await InAppUpdate.performImmediateUpdate();
+    } on FormatException catch (e) {
+      debugPrint('FormatException: $e');
+      utils.errorSnackBar('Update Failed', 'Failed to start update process');
+    } on PlatformException catch (e) {
+      debugPrint('PlatformException: $e');
+      // if (e.code == InAppUpdate.) {
+      //   // User didn't accept the update
+      //   utils.errorSnackBar('Update Cancelled', 'You cancelled the update');
+      // }
+    }
+  }
+
+  // Start flexible update (download in background)
+  Future<void> startFlexibleUpdate() async {
+    try {
+      await InAppUpdate.startFlexibleUpdate();
+      await InAppUpdate.completeFlexibleUpdate();
+      utils.successSnackBar('Update Complete', 'App has been updated successfully');
+    } catch (e) {
+      debugPrint('Error with flexible update: $e');
+    }
+  }
+
+
+
 
   Future<bool> logout() async {
     utils.showLoadingDialog("Logging out...");
@@ -168,8 +230,10 @@ class RiderDashboardController extends GetxController {
       if (result.status_code == 200) {
         dashBoardData.value = DashBoardData.fromJson(result.data);
         if(dashBoardData.value.allOrdersCount?.aSSIGNED != 0 || dashBoardData.value.allOrdersCount?.pICKED != 0 ||
-        dashBoardData.value.allOrdersCount?.oFD != 0) {
+        dashBoardData.value.allOrdersCount?.oFD != 0 || dashBoardData.value.allOrdersCount?.reached != 0) {
           isAnyActiveOrder.value = true;
+        }else{
+           isAnyActiveOrder.value = false;
         }
         utils.closeLoadingDialog();
         update();
@@ -298,6 +362,7 @@ class RiderDashboardController extends GetxController {
       var result = BaseApiResponse.fromJson(response);
       if (result.status_code == 200) {
         driverData.value = DriverData.fromJson(result.data);
+        Future.delayed(const Duration(seconds: 2));
         attendancesList.value = driverData.value.attendances!.reversed.toList();
         // print(driverData.value.toJson().toString());
         await getDashBoardData();
@@ -339,6 +404,7 @@ class RiderDashboardController extends GetxController {
           print(
               "start latlng :- ${startLocation.latitude},${startLocation.longitude}\ncurrent latlng :-${locationData.latitude},${locationData.longitude}");
         }
+        
         print(distance.toString());
         if (distance >= 10) {
           bool isUpdated = await sendDriverLocation(locationData);

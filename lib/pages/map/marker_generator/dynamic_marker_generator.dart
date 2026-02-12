@@ -82,8 +82,8 @@ import 'dart:typed_data';
 // }
 
 Future<ByteData> createCustomMarkerByteData(String title, String subtitle) async {
-  const double width = 90;
-  const double height = 60;
+  const double width = 120;
+  const double height = 100;
   const double pointerHeight = 20;
 
   final ui.PictureRecorder pictureRecorder = ui.PictureRecorder();

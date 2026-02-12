@@ -31,6 +31,7 @@ class TodayOrdersCount {
   int? pICKED;
   int? oFD;
   int? uNDELIVERED;
+  int? reached;
   int? dELIVERED;
 
   TodayOrdersCount(
@@ -39,6 +40,7 @@ class TodayOrdersCount {
         this.pICKED,
         this.oFD,
         this.uNDELIVERED,
+        this.reached,
         this.dELIVERED});
 
   TodayOrdersCount.fromJson(Map<String, dynamic> json) {
@@ -47,6 +49,7 @@ class TodayOrdersCount {
     pICKED = json['PICKED'];
     oFD = json['OFD'];
     uNDELIVERED = json['UNDELIVERED'];
+    reached= json['REACHED'];
     dELIVERED = json['DELIVERED'];
   }
 
@@ -57,6 +60,7 @@ class TodayOrdersCount {
     data['PICKED'] = pICKED;
     data['OFD'] = oFD;
     data['UNDELIVERED'] = uNDELIVERED;
+    data['REACHED'] = reached;
     data['DELIVERED'] = dELIVERED;
     return data;
   }

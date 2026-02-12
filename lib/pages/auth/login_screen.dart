@@ -127,7 +127,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     Get.snackbar('Login Failed', 'Invalid credentials');
                                   }
                                 }else{
-                                  controller.firebaseNotificationController?.getFCMTokenWithRetry();
+                                  controller.getFireBaseToken();
                                 }
                                 
                               }else{

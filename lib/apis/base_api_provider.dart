@@ -27,7 +27,8 @@ class ApiProvider extends GetConnect {
     if (kDebugMode) {
       baseUrl = devBaseUrl;
     } else if (kReleaseMode) {
-      baseUrl = liveBaseUrl;
+    // baseUrl = liveBaseUrl;
+        baseUrl = devBaseUrl;
     }
 
     httpClient.addAuthenticator((Request<dynamic> request) async {
@@ -248,6 +249,7 @@ Future<dynamic> postRequestWithImagesDio(
   try {
     // Create FormData using dio's fromMap method
     final form = FormData.fromMap(data);
+      final token = "Bearer ${box.read(apiKeys.apiToken)}";
 
     if (images != null && images.isNotEmpty) {
       for (final imageMap in images) {
@@ -268,10 +270,17 @@ Future<dynamic> postRequestWithImagesDio(
 
     print('🚀 Making POST request to: $endpoint');
     
-    // Use Dio for the request
     final dio = Dio();
-    
-    // Bypass SSL for development
+   
+
+    if (kDebugMode) {
+      baseUrl = devBaseUrl;
+    } else if (kReleaseMode) {
+     baseUrl = liveBaseUrl;
+      //  baseUrl = devBaseUrl;
+    }
+
+
     (dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
       final HttpClient client = HttpClient();
       client.badCertificateCallback = 
@@ -280,9 +289,14 @@ Future<dynamic> postRequestWithImagesDio(
     };
 
     final response = await dio.post(
-      endpoint,
+      baseUrl!+endpoint,
       data: form,
       options: Options(
+        headers: {
+          "Authorization": token,
+          "Accept": "application/json",
+          "Accept-Encoding": "gzip, deflate, br",
+        },
         receiveTimeout: const Duration(seconds: 30),
         sendTimeout: const Duration(seconds: 30),
       ),
@@ -293,10 +307,10 @@ Future<dynamic> postRequestWithImagesDio(
 
   } on DioException catch (e) {
     print('❌ Dio Error: ${e.type} - ${e.message}');
-    throw Exception('Request failed: ${e.message}');
+    throw Exception('Something went wrong please try again');
   } catch (e) {
     print('❌ Error: $e');
-    throw Exception('Request failed: $e');
+    throw Exception('Something went wrong please try again');
   }
 }
 

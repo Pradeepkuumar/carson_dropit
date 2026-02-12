@@ -421,7 +421,7 @@ class Utils extends GetxController {
                 const SizedBox(height: 25,),
                 IntrinsicWidth(
                   child: utils.iconButton("Go Back", (){
-                    Get.back();
+                    Navigator.of(Get.context!).pop();
                   }, Icons.arrow_back_ios_new_outlined, AppColors.primaryThemeColor, AppColors.white),
                 )
               ],
@@ -992,7 +992,7 @@ class Utils extends GetxController {
             right: 8,
             top: 2,
             child: GestureDetector(
-              onTap: () => Get.back(),
+              onTap: () => Navigator.of(Get.context!).pop(),
               child: const Icon(Icons.close, color: Colors.red),
             ),
           ),
@@ -1081,7 +1081,7 @@ class Utils extends GetxController {
               title: Text(item.toString()),
               onTap: () {
                 onItemSelected(item);
-                Get.back();
+                Navigator.of(Get.context!).pop();
               },
             );
           },

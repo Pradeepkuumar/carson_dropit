@@ -42,11 +42,11 @@ class C2cOrdersTabContainer extends GetView<C2COrdersController> {
                 fontSize: context.isPhone ? 10.sp : 20.sp,
               ),
               colors: [
-                AppColors.primaryLight.withAlpha(200),
-                AppColors.lightBlue.withAlpha(200),
-                AppColors.primaryThemeColor.withAlpha(200),
-                AppColors.lightGreen.withAlpha(200),
-                AppColors.red.withAlpha(200)
+                AppColors.primaryLight.withAlpha(100),
+                AppColors.lightBlue.withAlpha(100),
+                AppColors.primaryThemeColor.withAlpha(100),
+                AppColors.lightGreen.withAlpha(100),
+                AppColors.red.withAlpha(100)
               ],
               tabs: [
                 Text("Assigned(${data?.aSSIGNED ?? 0})", style: TextStyle(fontSize: context.isPhone ? 10 : 20)),
