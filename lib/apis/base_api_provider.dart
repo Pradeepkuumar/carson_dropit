@@ -27,8 +27,8 @@ class ApiProvider extends GetConnect {
     if (kDebugMode) {
       baseUrl = devBaseUrl;
     } else if (kReleaseMode) {
-    // baseUrl = liveBaseUrl;
-        baseUrl = devBaseUrl;
+     baseUrl = liveBaseUrl;
+     //  baseUrl = devBaseUrl;
     }
 
     httpClient.addAuthenticator((Request<dynamic> request) async {
@@ -277,7 +277,7 @@ Future<dynamic> postRequestWithImagesDio(
       baseUrl = devBaseUrl;
     } else if (kReleaseMode) {
      baseUrl = liveBaseUrl;
-      //  baseUrl = devBaseUrl;
+      // baseUrl = devBaseUrl;
     }
 
 

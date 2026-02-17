@@ -35,7 +35,7 @@ class AuthController extends GetxController {
   } 
 
   getFireBaseToken() async{
-    utils.showLoadingDialog("Loading Token wait...");
+    utils.showLoadingDialog("Loading please wait...");
     await  firebaseNotificationController?.getFCMTokenWithRetry();
     await Future.delayed(const Duration(seconds: 5), () async{
        firebaseNotificationController =  Get.find<FirebaseMessagingController>();

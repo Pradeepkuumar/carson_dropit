@@ -213,13 +213,13 @@ Widget customRow(String name, String data) {
         children: [
           Expanded(
             flex: 4,
-            child: utils.tvCustom(name, AppColors.black, 10),
+            child: utils.tvCustom(name, AppColors.black, 10,textAlignment: TextAlign.start),
           ),
           Expanded(
             flex: 2,
             child: utils.tvRegular(":", AppColors.black),
           ),
-          Expanded(flex: 4, child: utils.tvCustom(data, AppColors.black, 10)),
+          Expanded(flex: 4, child: utils.tvCustom(data, AppColors.black, 10,textAlignment: TextAlign.start)),
         ],
       ),
     ),

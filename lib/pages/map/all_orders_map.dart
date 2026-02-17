@@ -708,7 +708,7 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                 Expanded(
                                   flex: 10,
                                   child: SizedBox(
-                                    height: min(430.sp, 480.sp),
+                                    height: 350.sp,
                                     child: PageView.builder(
                                         scrollDirection: Axis.horizontal,
                                         controller: controller.pageController,
@@ -720,7 +720,9 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                             : controller
                                             .currentLocationOrders.length,
                                         itemBuilder: (context, position) {
-                                          return clickedOrderItem(
+                                          return SingleChildScrollView(
+                                            child: 
+                                            Center( child:   clickedOrderItem(
                                               controller.bottomBarListType
                                                   .value == 0
                                                   ? controller
@@ -739,7 +741,6 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                                         .calculateBufferTime(
                                                         DateTime.now(),
                                                         PICKED);
-                                                    
                                                       controller.updateOrder(
                                                           PICKED);
                                                     
@@ -771,7 +772,7 @@ class AllOrdersMapPage extends GetView<AllOrdersMapController> {
                                                   .value ==
                                                   0
                                                   ? 0
-                                                  : 1);
+                                                  : 1)));
                                         }),
                                   ),
                                 ),

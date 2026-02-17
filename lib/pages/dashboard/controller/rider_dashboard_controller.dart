@@ -37,6 +37,7 @@ class RiderDashboardController extends GetxController {
   var checkBoxValue = false.obs;
   RxBool isConsentGiven = RxBool(false);
   late FirebaseMessagingController firebaseMessagingController;
+  var isNewAppUpdateAvailable = false.obs;
   
 
 
@@ -62,7 +63,9 @@ class RiderDashboardController extends GetxController {
       firebaseMessagingController.onNewNotification.value = false;
     }
    });
-    checkForUpdate();
+
+      checkForUpdate();
+   
 
     super.onReady();
   }
@@ -141,25 +144,8 @@ class RiderDashboardController extends GetxController {
       final updateInfo = await InAppUpdate.checkForUpdate();
       
       if (updateInfo.updateAvailability == UpdateAvailability.updateAvailable) {
-        Get.dialog(
-          AlertDialog(
-            title: const Text('Update Available'),
-            content: const Text('A new version of the app is available. Please update to continue.'),
-            actions: [
-              TextButton(
-                onPressed: () => Get.back(),
-                child: const Text('Later'),
-              ),
-              TextButton(
-                onPressed: () async {
-                  Get.back();
-                  await performImmediateUpdate();
-                },
-                child: const Text('Update'),
-              ),
-            ],
-          ),
-        );
+       isNewAppUpdateAvailable.value = true;
+       performImmediateUpdate();
       }
     } catch (e) {
       debugPrint('Error checking for update: $e');
@@ -168,8 +154,12 @@ class RiderDashboardController extends GetxController {
 
   Future<void> performImmediateUpdate() async {
     try {
-      await InAppUpdate.performImmediateUpdate();
-    } on FormatException catch (e) {
+      AppUpdateResult result = await InAppUpdate.performImmediateUpdate();
+      if(result == AppUpdateResult.success){
+         isNewAppUpdateAvailable.value = false;
+      }
+    } 
+    on FormatException catch (e) {
       debugPrint('FormatException: $e');
       utils.errorSnackBar('Update Failed', 'Failed to start update process');
     } on PlatformException catch (e) {
@@ -181,7 +171,7 @@ class RiderDashboardController extends GetxController {
     }
   }
 
-  // Start flexible update (download in background)
+ 
   Future<void> startFlexibleUpdate() async {
     try {
       await InAppUpdate.startFlexibleUpdate();

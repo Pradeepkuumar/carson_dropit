@@ -42,6 +42,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
       body: SafeArea(
         child: Stack(
           children: [
+           
             Obx(() {
               return Visibility(
                 visible: !controller.isAttendanceMarked.value,
@@ -852,6 +853,43 @@ class _RiderDashboardState extends State<RiderDashboard> {
                       ),
                     ),
                   )),
+           Obx(
+              ()=> Visibility(
+                visible: controller.isNewAppUpdateAvailable.value,
+                child: Container(
+                  height: Get.height,
+                  width: Get.width,
+                   decoration:  utils.boxDecorationTransparent(),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: IntrinsicHeight(
+                      child: Card(
+                        elevation: 4,
+                        child: Padding(
+                          padding: const EdgeInsets.all(10.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                            utils.imageView(appLogo, 160, 300),
+                            const SizedBox(height: 10,),
+                            utils.tvCustom("New Update Available", AppColors.black, 18),
+                            const SizedBox(height: 10,),
+
+                            const Text('A new version of the app is available. Please update to continue.'),
+                            const SizedBox(height: 10,),
+                           utils.iconButton("Update", () async{ 
+                             await controller.performImmediateUpdate();
+                           }, Icons.update, AppColors.orange, AppColors.white)
+                          
+                                         ]),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          
           ],
         ),
       ),
