@@ -8,6 +8,7 @@ class ApiEndPoints {
   final String dashBoardDetails = "driver/fetch-dashboard-details";
   final String updateOrderStatus  = "driver/update-order-status";
   final String getReasons  = "get-reasons";
+  final String getProfileData  = "driver/get-profile-details";
   final String fetchPlacedOrders  = "driver/fetch-placed-order";
   final String acceptRejectOrder  = "driver/accept-reject-order";
   final String getDeliveryDirectionData  = "driver/get-delivery-direction-data";

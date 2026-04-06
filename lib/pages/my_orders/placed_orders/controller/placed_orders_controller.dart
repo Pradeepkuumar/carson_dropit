@@ -62,14 +62,11 @@ class PlacedOrdersController extends GetxController {
 
   void connectSocket() {
     try {
-
-      
       channel = WebSocketChannel.connect(
         Uri.parse('wss://zyppy.qa/app/Uzv4VuvaE8TFlVyF4o1howiAtK4Hpt/Vkr3yduLGgac=?protocol=7&client=js&version=8.4.0&flash=false'),
       );
 
       isConnected.value = true;
-
 
       channel.sink.add(jsonEncode({
         "event": "pusher:subscribe",
@@ -289,6 +286,7 @@ class PlacedOrdersController extends GetxController {
               "This order no longer belongs to you");
         }
         utils.closeLoadingDialog();
+        fetchOrders();
         return true;
       } else {
         utils.errorSnackBar("Exception", result.message.toString());
@@ -306,7 +304,7 @@ class PlacedOrdersController extends GetxController {
 
 
   Future<ImageDescriptor?> getOrCreateCustomImageFromAsset(
-      String assetPath, double width, double height) async {
+    String assetPath, double width, double height) async {
     final AssetImage assetImage = AssetImage(assetPath);
     final ImageConfiguration configuration =
     createLocalImageConfiguration(Get.context!);
@@ -314,20 +312,18 @@ class PlacedOrdersController extends GetxController {
     await assetImage.obtainKey(configuration);
     final double imagePixelRatio = assetBundleImageKey.scale;
     final ByteData imageBytes = await rootBundle.load(assetBundleImageKey.name);
-
     return await registerBitmapImage(
-        bitmap: imageBytes, imagePixelRatio: imagePixelRatio, width: width, height: height);
+      bitmap: imageBytes, imagePixelRatio: imagePixelRatio, width: width, height: height);
   }
 
 
   Future<ImageDescriptor> registerDynamicMarker(String ordersCount, String locationName) async {
     final ByteData byteData = await createCustomMarkerByteData(ordersCount, locationName);
-
     final ImageDescriptor descriptor = await registerBitmapImage(
       bitmap: byteData,
-      imagePixelRatio: 1,
-      width: 50,
-      height: 50,
+      imagePixelRatio: 2,
+      width: 120,
+      height: 90,
     );
 
     return descriptor;
@@ -451,7 +447,7 @@ class PlacedOrdersController extends GetxController {
         }
 
         final future = registerDynamicMarker(
-          order.pickupLocationName ?? "location",
+          order.merchantName ?? "location",
           "PICKUP",
         ).then((customIcon) {
           final marker = Marker(

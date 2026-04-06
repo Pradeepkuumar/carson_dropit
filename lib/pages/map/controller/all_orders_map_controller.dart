@@ -25,7 +25,6 @@ class AllOrdersMapController extends GetxController  {
   var isLoading = true.obs;
   var currentHintIndex = 0.obs;
   var selectedOrder = OrdersData().obs;
-
   var user = UserData();
 
   final image = Rxn<File>();
@@ -36,12 +35,9 @@ class AllOrdersMapController extends GetxController  {
 
   var selectedOrderIndex = 0.obs;
 
-
   File? signatureFile;
   Uint8List? signImage;
   var isSignDraw = false.obs;
-
-
 
   var markDelivered = false.obs;
   var markUnDelivered = false.obs;
@@ -51,7 +47,7 @@ class AllOrdersMapController extends GetxController  {
   var selectedOrderAwbId = "".obs;
 
   final Location _locationController = Location();
-  late var  googleMapsNavigator ;
+  late GoogleMapsNavigator  googleMapsNavigator ;
   MapType mapType = MapType.normal;
   var isNavigationRunning = false.obs;
 
@@ -65,7 +61,7 @@ class AllOrdersMapController extends GetxController  {
 
   final List<String> hintTexts = [
     "Fetching Orders...",
-    "Calculating Pick-Up and Drop Locations...",
+    "Calculating Pick-Up and Drop-Off Locations...",
     "Setting Navigation Directions...",
   ];
 
@@ -84,6 +80,7 @@ class AllOrdersMapController extends GetxController  {
   ImageDescriptor?  dropIcon;
   ImageDescriptor?  selectedPickIcon;
   ImageDescriptor?  selectedDropIcon;
+  var currentIndex = 1.obs;
 
 
   var ordersList = <OrdersData>[].obs;
@@ -116,23 +113,13 @@ class AllOrdersMapController extends GetxController  {
 
   var bufferMinutes = "".obs;
 
-
-
-
-
-
-
-
-
   @override
   void onInit() async {
-    googleMapsNavigator  = GoogleMapsNavigator() ;
-   // loadIcons();
     await getLocationUpdates();
     getUser();
-    initializeNavigationSession();
     super.onInit();
   }
+
 
 
   Future<bool>calculateBufferTime(DateTime now, String status) async{
@@ -163,16 +150,21 @@ class AllOrdersMapController extends GetxController  {
   }
 
   @override
-  void onReady() {
+  void onReady()async {
+    googleMapsNavigator  = GoogleMapsNavigator() ;
     Future.delayed(const Duration(seconds: 5), () {
        getReasons();
        getFeAllOrders([ASSIGNED, RE_ASSIGNED,REACHED,PICKED,OFD]);
+    }); 
+    Future.delayed(const Duration(seconds: 1), () {
+      initializeNavigationSession();
     });
-
+    await navigationViewController?.showRouteOverview();
     signatureController.addListener(signatureListner);
     startHintTextTimer();
     pageController.addListener(() {
       double page = pageController.page ?? 0.0;
+      currentIndex.value = page.round()+1;
       int newPageIndex = page.round();
       if (selectedOrder.value != ordersList[newPageIndex]) {
         selectedOrder.value = ordersList[newPageIndex];
@@ -221,11 +213,12 @@ class AllOrdersMapController extends GetxController  {
       if (_lastApiCallTime == null || now.difference(_lastApiCallTime!).inMinutes >= 1) {
         _lastApiCallTime = now;
         if (remainingDistance.value <= 500) {
-
         filterCurrentLocationOrders(500);
        }
      }
   }
+
+
 
   void onArrivalEvent(OnArrivalEvent onArrive){
     NavigationWaypoint arrivedWaypoint = onArrive.waypoint;
@@ -276,18 +269,55 @@ class AllOrdersMapController extends GetxController  {
   }
 
 
-  // Future<void> loadIcons() async {
-  //
-  //   pickIcon = await getOrCreateCustomImageFromAsset(
-  //       'assets/icons/ic_location.png', 48, 48);
-  //   dropIcon = await getOrCreateCustomImageFromAsset(
-  //       'assets/icons/ic_box.png', 48, 48);
-  //
-  //   selectedPickIcon = await getOrCreateCustomImageFromAsset(
-  //       'assets/icons/ic_location.png', 80, 80);
-  //   selectedDropIcon = await getOrCreateCustomImageFromAsset(
-  //       'assets/icons/ic_box.png', 80, 80);
-  // }
+  // Add this method to calculate route before navigation
+    Future<bool> calculateRouteToDestination() async {
+      if (currentLocation == null) {
+        utils.errorSnackBar("Error", "Current location not available");
+        return false;
+      }
+      
+      waypoints.clear();
+      
+      LatLng targetLocation;
+      if (selectedOrder.value.status == PICKED || selectedOrder.value.status == OFD) {
+        targetLocation = LatLng(
+          latitude: double.parse(selectedOrder.value.dropoffLatitude ?? "0.0"),
+          longitude: double.parse(selectedOrder.value.dropoffLongitude ?? "0.0"),
+        );
+      } else {
+        targetLocation = LatLng(
+          latitude: double.parse(selectedOrder.value.pickupLatitude ?? "0.0"),
+          longitude: double.parse(selectedOrder.value.pickupLongitude ?? "0.0"),
+        );
+      }
+      
+      waypoints.add(NavigationWaypoint.withLatLngTarget(
+        title: "Current Location",
+        target: currentLocation!,
+      ));
+      
+      waypoints.add(NavigationWaypoint.withLatLngTarget(
+        title: selectedOrder.value.status == PICKED || selectedOrder.value.status == OFD 
+            ? "Delivery Location" 
+            : "Pickup Location",
+        target: targetLocation,
+      ));
+      
+      await googleMapsNavigator.setDestinations(Destinations(
+        waypoints: waypoints,
+        displayOptions: NavigationDisplayOptions(
+          showDestinationMarkers: true,
+          showStopSigns: true,
+          showTrafficLights: true,
+        ),
+        routingOptions: RoutingOptions(
+          travelMode: NavigationTravelMode.driving,
+          alternateRoutesStrategy: NavigationAlternateRoutesStrategy.all,
+        ),
+      ));
+      
+      return true;
+    }
 
 
   initializeNavigationSession() async {
@@ -302,25 +332,39 @@ class AllOrdersMapController extends GetxController  {
     });
   }
 
+
   getUser() async {
     await userRepository.getUser().then((value) => {user = value!});
   }
 
-  Future<void> startGuidedNavigation() async {
-    if(!isNavigationRunning.value) {
-      await googleMapsNavigator.startGuidance();
-      await navigationViewController?.followMyLocation(
-          CameraPerspective.tilted);
-      isNavigationRunning.value = true;
-      //await navigationViewController?.showRouteOverview();
+
+
+Future<void> startGuidedNavigation() async {
+  if (!isNavigationRunning.value) {
+    bool routeCalculated = await calculateRouteToDestination();
+    if (!routeCalculated) {
+      utils.errorSnackBar("Error", "Failed to calculate route");
+      return;
     }
-
+    
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    await googleMapsNavigator.startGuidance();
+    
+    await navigationViewController?.followMyLocation(CameraPerspective.tilted);
+    
+    await navigationViewController?.showRouteOverview();
+    
+    isNavigationRunning.value = true;
   }
-  Future<void> stopGuidedNavigation() async {
-    googleMapsNavigator.stopGuidance();
+}
+
+Future<void> stopGuidedNavigation() async {
+  if (isNavigationRunning.value) {
+    await googleMapsNavigator.stopGuidance();
     isNavigationRunning.value = false;
-
   }
+}
 
 
   void signatureListner() {
@@ -341,14 +385,14 @@ class AllOrdersMapController extends GetxController  {
       if (ordersList[i].awbNo.toString() == selectedOrderAwbId.value) {
         selectedOrder.value = ordersList[i];
         selectedOrderIndex.value = i;
-        // updateSelectedMarker(  LatLng(
-        //   latitude: selectedOrder.value.status == PICKED || selectedOrder.value.status == OFD
-        //       ? double.parse(selectedOrder.value.dropoffLatitude ?? "0.0")
-        //       : double.parse(selectedOrder.value.pickupLatitude ?? "0.0"),
-        //   longitude: selectedOrder.value.status == PICKED || selectedOrder.value.status == OFD
-        //       ? double.parse(selectedOrder.value.dropoffLongitude ?? "0.0")
-        //       : double.parse(selectedOrder.value.pickupLongitude ?? "0.0"),
-        // ));
+        updateSelectedMarker(  LatLng(
+          latitude: selectedOrder.value.status == PICKED || selectedOrder.value.status == OFD
+              ? double.parse(selectedOrder.value.dropoffLatitude ?? "0.0")
+              : double.parse(selectedOrder.value.pickupLatitude ?? "0.0"),
+          longitude: selectedOrder.value.status == PICKED || selectedOrder.value.status == OFD
+              ? double.parse(selectedOrder.value.dropoffLongitude ?? "0.0")
+              : double.parse(selectedOrder.value.pickupLongitude ?? "0.0"),
+        ));
         break;
       }
     }
@@ -360,19 +404,13 @@ class AllOrdersMapController extends GetxController  {
   void updateSelectedMarker(LatLng selectedLocation) {
     // Find the index of the selected location in the waypoints list
     int index = waypoints.indexWhere((waypoint) => waypoint.target == selectedLocation);
-    // If the selected location is found in the waypoints list
     if (index != -1) {
-      // Remove the selected location from its current position
       NavigationWaypoint selectedWaypoint = waypoints.removeAt(index);
-
-      // Insert the selected location at the top of the waypoints list
       waypoints.insert(0, selectedWaypoint);
     } else {
-      // If the selected location is not found, add it as a new waypoint at the top
       waypoints.insert(0, NavigationWaypoint.withLatLngTarget(title: "current", target: selectedLocation));
     }
 
-    // Update the destinations in the Google Maps Navigator
     googleMapsNavigator.setDestinations(Destinations(
       waypoints: waypoints,
       displayOptions: NavigationDisplayOptions(
@@ -514,7 +552,7 @@ class AllOrdersMapController extends GetxController  {
       if (response['status_code'] == 200) {
         var order = OrdersData.fromJson(result.data);
         // selectedOrder.value.status = order.status;
-        // updateExistingOrder(order);
+       // updateExistingOrder(order);
         isUpdateCardVisibleForUpdate.value =  false;
 
         getFeAllOrders([ASSIGNED,RE_ASSIGNED,REACHED,PICKED,OFD]);
@@ -524,6 +562,7 @@ class AllOrdersMapController extends GetxController  {
           paymentProof.value = null;
           signatureFile = null;
           image.value = null;
+         // googleMapsNavigator.continueToNextDestination();
         }
         utils.closeLoadingDialog();
         update();
@@ -736,36 +775,18 @@ class AllOrdersMapController extends GetxController  {
           travelMode: NavigationTravelMode.driving,
         ),
       ));
-
-      //startGuidedNavigation();
     }
   }
 
-
-
-
-  // Future<ImageDescriptor?> getOrCreateCustomImageFromAsset(
-  //     String assetPath, double width, double height) async {
-  //   final AssetImage assetImage = AssetImage(assetPath);
-  //   final ImageConfiguration configuration =
-  //   createLocalImageConfiguration(Get.context!);
-  //   final AssetBundleImageKey assetBundleImageKey =
-  //   await assetImage.obtainKey(configuration);
-  //   final double imagePixelRatio = assetBundleImageKey.scale;
-  //   final ByteData imageBytes = await rootBundle.load(assetBundleImageKey.name);
-  //
-  //   return await registerBitmapImage(
-  //       bitmap: imageBytes, imagePixelRatio: imagePixelRatio, width: width, height: height);
-  // }
 
   Future<ImageDescriptor> registerDynamicMarker(String ordersCount, String locationName) async {
     final ByteData byteData = await createCustomMarkerByteData(ordersCount, locationName);
 
     final ImageDescriptor descriptor = await registerBitmapImage(
       bitmap: byteData,
-      imagePixelRatio: 1,
-      width: 50,
-      height: 50,
+      imagePixelRatio: 2,
+      width: 120,
+      height: 90,
     );
 
     return descriptor;
@@ -799,7 +820,7 @@ class AllOrdersMapController extends GetxController  {
       final LatLng position = LatLng(latitude: latitude, longitude: longitude);
 
       final ImageDescriptor customIcon = await registerDynamicMarker(
-        order.awbNo.toString(),
+        "${order.awbNo}\n${order.merchantName}",
         (order.status == PICKED || order.status == OFD) ? "DELIVERY" : "PICKUP",
       );
 
@@ -825,13 +846,11 @@ class AllOrdersMapController extends GetxController  {
       tempLatLngList.add(position);
     }
 
-    // Commit everything to actual shared state
     markers.addAll(tempMarkers);
     markerMap.addAll(tempMarkerMap);
     waypoints.addAll(tempWaypoints);
     markerLatLangList.addAll(tempLatLngList);
 
-    // Set all waypoints at once
     googleMapsNavigator.setDestinations(
       Destinations(
         waypoints: waypoints,
@@ -847,7 +866,6 @@ class AllOrdersMapController extends GetxController  {
       ),
     );
 
-    // Add all markers in a single batch
     await navigationViewController?.addMarkers(tempMarkers);
 
     return true;
@@ -893,138 +911,6 @@ class AllOrdersMapController extends GetxController  {
       //         onRemainingTimeOrDistanceChangedEvent, remainingDistanceThresholdMeters: 50);
     });
   }
-
-
-
-
-
-
-  // double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-  //   return Geolocator.distanceBetween(lat1, lon1, lat2, lon2);
-  // }
-
-
-  // LatLng? findNearestDestination(
-  //     LatLng currentLocation, List<LatLng> destinations) {
-  //   if (destinations.isEmpty) return null;
-  //
-  //   LatLng nearestDestination = destinations[0];
-  //   double nearestDistance = calculateDistance(
-  //     currentLocation.latitude,
-  //     currentLocation.longitude,
-  //     nearestDestination.latitude,
-  //     nearestDestination.longitude,
-  //   );
-  //
-  //   for (var destination in destinations) {
-  //     double distance = calculateDistance(
-  //       currentLocation.latitude,
-  //       currentLocation.longitude,
-  //       destination.latitude,
-  //       destination.longitude,
-  //     );
-  //
-  //     if (distance < nearestDistance) {
-  //       nearestDestination = destination;
-  //       nearestDistance = distance;
-  //     }
-  //   }
-  //
-  //   return nearestDestination;
-  // }
-
-
-
-
-  // sortOrdersByDistanceAndRemainingTime(LatLng currentLocation, List<OrdersData> ordersList) async {
-  //   // Step 1: Calculate distance for each order and store it in a list
-  //   final ordersWithDistance = ordersList.map((order) {
-  //     final latLng = LatLng(
-  //       latitude: order.status == PICKED || order.status == OFD  ? double.parse(order.dropoffLatitude ?? "0.0") : double.parse(order.pickupLatitude ?? "0.0"),
-  //       longitude: order.status == PICKED || order.status == OFD   ? double.parse(order.dropoffLongitude ?? "0.0") : double.parse(order.pickupLongitude ?? "0.0"),
-  //     );
-  //     final distance = order.status == PICKED || order.status == OFD  ? order.current_dropoff_distance_value: order.current_pickup_distance_value;
-  //     return {
-  //       'order': order,
-  //       'distance': distance,
-  //     };
-  //   }).toList();
-  //
-  //   // Step 2: Sort orders by distance
-  //   ordersWithDistance.sort((a, b) {
-  //     return (a['distance'] as double).compareTo(b['distance'] as double);
-  //   });
-  //
-  //   // Step 3: Calculate remaining time for each order
-  //   final now = DateTime.now();
-  //   final ordersWithRemainingTime = ordersWithDistance.map((entry) {
-  //     final order = entry['order'] as OrdersData;
-  //     final createdTime = DateTime.parse(order.createdAt!);
-  //     final deadline = createdTime.add(Duration(hours: int.tryParse(order.sla_in_hours ?? "0")!));
-  //     final remainingTime = deadline.difference(now);
-  //
-  //     String remainingTimeFormatted;
-  //     if (remainingTime.inMinutes < 60) {
-  //       remainingTimeFormatted = '${remainingTime.inMinutes} mins';
-  //     } else {
-  //       remainingTimeFormatted = '${remainingTime.inHours} hours ${remainingTime.inMinutes.remainder(60)} mins';
-  //     }
-  //
-  //     return {
-  //       'order': order,
-  //       'distance': entry['distance'],
-  //       'remainingTime': remainingTime,
-  //       'remainingTimeFormatted': remainingTimeFormatted,
-  //     };
-  //   }).toList();
-  //
-  //   // Step 4: Apply the custom sorting logic
-  //   ordersWithRemainingTime.sort((a, b) {
-  //     final distanceA = a['distance'] as double;
-  //     final distanceB = b['distance'] as double;
-  //     final remainingTimeA = a['remainingTime'] as Duration;
-  //     final remainingTimeB = b['remainingTime'] as Duration;
-  //     final statusA = (a['order'] as OrdersData).status;
-  //     final statusB = (b['order'] as OrdersData).status;
-  //
-  //     // Check if the orders are nearby (e.g., within 2 km of each other)
-  //     if ((distanceA - distanceB).abs() <= 2000) {
-  //       // Check if the 2nd order is within 5 km
-  //       if (distanceB <= 5000) {
-  //         // Check if one of the orders is critical (status is OFD or PICKED || order.status == OFD)
-  //         final isACritical = statusA == OFD || statusA == PICKED ;
-  //         final isBCritical = statusB == OFD || statusB == PICKED ;
-  //
-  //         // If both are critical, prioritize the one with less remaining time
-  //         if (isACritical && isBCritical) {
-  //           return remainingTimeA.compareTo(remainingTimeB);
-  //         }
-  //         // If only one is critical, prioritize it
-  //         else if (isACritical) {
-  //           return -1;
-  //         } else if (isBCritical) {
-  //           return 1;
-  //         }
-  //       }
-  //     }
-  //
-  //     // Default sorting by distance
-  //     return distanceA.compareTo(distanceB);
-  //   });
-  //
-  //   // Step 5: Update the orders with the caslculated remaining time
-  //   sortedOrders.value = ordersWithRemainingTime.map((entry) {
-  //     final order = entry['order'] as OrdersData;
-  //     order.distanceInKms = (entry['distance'] as double) < 1000
-  //         ? '${(entry['distance'] as double).toStringAsFixed(0)} m'
-  //         : '${((entry['distance'] as double) / 1000).toStringAsFixed(2)} km';
-  //     order.remainingTime = entry['remainingTimeFormatted'] as String;
-  //     return order;
-  //   }).toList();
-  //
-  //
-  //
-  // }
 
 
 

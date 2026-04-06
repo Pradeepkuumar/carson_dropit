@@ -7,6 +7,8 @@ import 'package:carson_zyppy/pages/my_orders/c2c_orders/orders/signature_images/
 import 'package:carson_zyppy/pages/my_orders/c2c_orders/orders/view/c2c_orders_tab_container.dart';
 import 'package:carson_zyppy/pages/my_orders/nearby_orders/view/nearby_orders_view.dart';
 import 'package:carson_zyppy/pages/my_orders/placed_orders/view/placed_orders_list_view.dart';
+import 'package:carson_zyppy/pages/osrm/OSMMapPage.dart';
+import 'package:carson_zyppy/pages/osrm/osrm_binding.dart';
 import 'package:get/get.dart';
 import '../pages/map/all_orders_binding.dart';
 import '../pages/my_orders/c2c_orders/orders/c2c_orders_binding.dart';
@@ -61,6 +63,11 @@ class AppPages {
       page: () => C2cImageSignatureView(),
       binding: C2cImageSignatureBinding(),
     ),
+    GetPage(
+          name: _Paths.osrmMaps,
+          page: () => OSMMapPage(),
+          binding: MapBinding(),
+        ),
 
   ];
 }
@@ -77,6 +84,7 @@ abstract class Routes {
   static const allOrdersMapScreen = _Paths.allOrdersMapScreen;
   static const c2cOrders = _Paths.c2cOrders;
   static const c2cImageSign = _Paths.c2cImageSign;
+  static const osrmMaps = _Paths.osrmMaps;
 }
 
 abstract class _Paths {
@@ -90,4 +98,5 @@ abstract class _Paths {
   static const allOrdersMapScreen = '/all_orders_map_screen';
   static const c2cOrders = '/c2c_orders';
   static const c2cImageSign = '/c2c_ImageSign';
+  static const osrmMaps = '/osrmMaps';
 }

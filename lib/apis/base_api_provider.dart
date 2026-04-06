@@ -9,7 +9,7 @@ import 'package:get/get_connect/http/src/request/request.dart';
 
 import '../global/global.dart';
 import 'package:http/http.dart' as http;
- import 'package:dio/dio.dart' show FormData, Dio, DioException, Options,MultipartFile,IOHttpClientAdapter;
+ import 'package:dio/dio.dart' show FormData, Dio, DioException, Options,MultipartFile;
 
 class ApiProvider extends GetConnect {
   final String acceptEncoding = 'gzip, deflate';
@@ -25,10 +25,9 @@ class ApiProvider extends GetConnect {
     maxAuthRetries = 3;
 
     if (kDebugMode) {
-      baseUrl = devBaseUrl;
+     baseUrl = devBaseUrl;
     } else if (kReleaseMode) {
      baseUrl = liveBaseUrl;
-     //  baseUrl = devBaseUrl;
     }
 
     httpClient.addAuthenticator((Request<dynamic> request) async {
@@ -267,17 +266,13 @@ Future<dynamic> postRequestWithImagesDio(
         }
       }
     }
-
-    print('🚀 Making POST request to: $endpoint');
     
     final dio = Dio();
    
-
     if (kDebugMode) {
       baseUrl = devBaseUrl;
     } else if (kReleaseMode) {
-     baseUrl = liveBaseUrl;
-      // baseUrl = devBaseUrl;
+      baseUrl = liveBaseUrl;
     }
 
 

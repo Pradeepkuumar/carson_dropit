@@ -326,8 +326,9 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                       padding: const EdgeInsets.all(8.0),
                                                       child: InkWell(
                                                         onTap: () {
-                                                          Get.toNamed(
-                                                              Routes.allOrdersMapScreen);
+                                                          Get.toNamed( Routes.allOrdersMapScreen);
+                                                        //  Get.toNamed(Routes.osrmMaps);
+
                                                         },
                                                         child: Row(
                                                           mainAxisAlignment:
@@ -451,12 +452,14 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                                   ],
                                                 )
                     ],),
+
                     Obx(() {
                       return Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: InkWell(
                           onTap: () {
                             showMenu.value = true;
+                            controller.getUserData();
                             controller.fetchWalletAmount();
                           },
                           child: AnimatedContainer(
@@ -506,17 +509,23 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                             ),
                                             Row(
                                               children: [
-                                                CircleAvatar(
-                                                  radius: 25,
-                                                  backgroundColor:
-                                                      AppColors.primaryThemeColor,
-                                                  child: Image.asset(
-                                                    "assets/icons/ic_rider.png",
-                                                    fit: BoxFit.cover,
-                                                    width: 45,
-                                                    alignment: Alignment.center,
-                                                  ),
-                                                ),
+                                               Obx(() => InkWell(
+                                                onTap: (){
+                                                  controller.updateProfileDialog.value = true;
+                                                },
+                                                 child: CircleAvatar(
+                                                      radius: 25,
+                                                      backgroundColor: Colors.grey[200],
+                                                      backgroundImage: controller.avatar.value != null
+                                                          ? FileImage(controller.avatar.value!)
+                                                          : (controller.userData.avatar != null 
+                                                              ? NetworkImage(controller.userData.avatar!) 
+                                                              : null) as ImageProvider?,
+                                                      child: controller.avatar.value == null && controller.userData.avatar == null
+                                                          ? Icon(Icons.person, size: 30, color: Colors.grey[400])
+                                                          : null,
+                                                    ),
+                                               )),
                                                 const SizedBox(
                                                   width: 5,
                                                 ),
@@ -667,6 +676,219 @@ class _RiderDashboardState extends State<RiderDashboard> {
                         ),
                       );
                     }),
+                Visibility(
+                  visible: controller.updateProfileDialog.value,
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Container(
+                        decoration: utils.boxDecorationWhite(),
+                        child:     Container(
+                      width: double.maxFinite,
+                      padding: const EdgeInsets.all(20),
+                      child: SingleChildScrollView(
+                        child: Form(
+                          key: controller.profileFormKey,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Header
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    "Update Profile",
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.close),
+                                    onPressed: () => controller.updateProfileDialog.value = false
+                                  ),
+                                ],
+                              ),
+                              const Divider(),
+                              const SizedBox(height: 16),
+                              
+                              // Avatar Section
+                              Center(
+                                child: Stack(
+                                  children: [
+                                    Obx(() => CircleAvatar(
+                                      radius: 60,
+                                      backgroundColor: Colors.grey[200],
+                                      backgroundImage: controller.avatar.value != null
+                                          ? FileImage(controller.avatar.value!)
+                                          : (controller.userData.avatar != null 
+                                              ? NetworkImage(controller.userData.avatar!) 
+                                              : null) as ImageProvider?,
+                                      child: controller.avatar.value == null && controller.userData.avatar == null
+                                          ? Icon(Icons.person, size: 50, color: Colors.grey[400])
+                                          : null,
+                                    )),
+                                    Positioned(
+                                      bottom: 0,
+                                      right: 0,
+                                      child: GestureDetector(
+                                        onTap: controller.showImageSourceDialog,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primaryThemeColor,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(color: Colors.white, width: 2),
+                                          ),
+                                          child: const Icon(
+                                            Icons.camera_alt,
+                                            color: Colors.white,
+                                            size: 20,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              
+                              // Address Field
+                              Text(
+                                "Address",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.grey[700],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              TextFormField(
+                                controller: controller.address,
+                                maxLines: 3,
+                                minLines: 1,
+                                decoration: InputDecoration(
+                                  focusColor: AppColors.primaryThemeColor,
+                                  hintText: "Enter your complete address",
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    
+                                  ),
+                                  prefixIcon: const Icon(Icons.location_on, color: Colors.grey),
+                                  enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(
+                                    color: Colors.grey.shade400,
+                                    width: 1,
+                                  ),
+                                ),
+
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(
+                                    color: AppColors.primaryThemeColor, 
+                                    width: 2,
+                                  ),
+                                ),
+                                
+                                ),
+                                cursorColor: AppColors.primaryThemeColor,
+                                validator: controller.validateAddress,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                "Phone Number",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.grey[700],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              TextFormField(
+                                controller: controller.phone,
+                                keyboardType: TextInputType.phone,
+                                decoration: InputDecoration(
+                                  hintText: "Enter your phone number",
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  prefixIcon: const Icon(Icons.phone, color: Colors.grey),
+                                  enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: BorderSide(
+                                        color: Colors.grey.shade400,
+                                        width: 1,
+                                      ),
+                                    ),
+
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: const BorderSide(
+                                        color: AppColors.primaryThemeColor, 
+                                        width: 2,
+                                      ),
+                                    ),
+                                ),
+                                cursorColor: AppColors.primaryThemeColor,
+                                validator: controller.validatePhone,
+                              ),
+                              const SizedBox(height: 10),                  
+                              // Buttons
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: OutlinedButton(
+                                      onPressed: () => controller.updateProfileDialog.value = false,
+                                      style: OutlinedButton.styleFrom(
+                                      
+                                        padding: const EdgeInsets.symmetric(vertical: 12),
+                                        side: BorderSide(color: Colors.grey[300]!),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                          
+                                        ),
+                                      ),
+                                      child: const Text(
+                                        "Cancel",
+                                        style: TextStyle(color: Colors.black54),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: ElevatedButton(
+                                      onPressed: () async {
+                                        bool success = await controller.updateProfileDetails();
+                                        if (success) {
+                                         controller.updateProfileDialog.value = false;
+                                        }
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(vertical: 12),
+                                        backgroundColor: AppColors.primaryThemeColor,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                      child: const Text(
+                                        "Update",
+                                        style: TextStyle(color: Colors.white),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                              ),
+                            ),
+                    ),
+                  ),
+                )
                   ],
                 ),
               );

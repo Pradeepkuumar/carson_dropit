@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math';
 
 import 'package:carson_zyppy/firebase_notifications/firebase_notifiction_controller.dart';
@@ -7,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:in_app_update/in_app_update.dart';
 import 'package:location/location.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -14,6 +16,7 @@ import '../../../apis/base_api_response.dart';
 import '../../../global/global.dart';
 import '../../../global/location_service.dart';
 import '../models/driver_data.dart';
+
 
 class RiderDashboardController extends GetxController {
   var isLoading = true.obs;
@@ -38,12 +41,23 @@ class RiderDashboardController extends GetxController {
   RxBool isConsentGiven = RxBool(false);
   late FirebaseMessagingController firebaseMessagingController;
   var isNewAppUpdateAvailable = false.obs;
-  
 
+  // Profile fields for update
+  var avatar = Rx<File?>(null);
+  var address = TextEditingController();
+  var phone = TextEditingController();
+  var feCode = TextEditingController();
+  
+  final picker = ImagePicker();
+  
+  // Form key for validation
+  final profileFormKey = GlobalKey<FormState>();
+  var updateProfileDialog = false.obs;
 
   @override
   void onInit() {
     getUser();
+    loadUserDetails();
     super.onInit();
   }
 
@@ -53,36 +67,173 @@ class RiderDashboardController extends GetxController {
     if(isConsentGiven.value){
       updateLocation();
       requestBackgroundPermission();
+      getUserData();
     }
     firebaseMessagingController = Get.find<FirebaseMessagingController>();
-     ever(firebaseMessagingController.onNewNotification, (bool isNew) {
-    if (isNew) {
-      getC2CCDashBoardData();
-      getDashBoardData();
-      getCurrentLocation();
-      firebaseMessagingController.onNewNotification.value = false;
-    }
-   });
-
-      checkForUpdate();
-   
-
+    ever(firebaseMessagingController.onNewNotification, (bool isNew) {
+      if (isNew) {
+        getC2CCDashBoardData();
+        getDashBoardData();
+        getCurrentLocation();
+        firebaseMessagingController.onNewNotification.value = false;
+      }
+    });
+    checkForUpdate();
     super.onReady();
   }
 
-  // final listener = InternetConnection().onStatusChange.listen((InternetStatus status) {
-  //   switch (status) {
-  //     case InternetStatus.connected:
-  //       break;
-  //     case InternetStatus.disconnected:
-  //       utils.nonCancellableDialog("Please Enable Internet");
-  //       break;
-  //   }
-  // });
+  // Load user details into controllers
+  void loadUserDetails() {
+    address.text = userData.address ?? "";
+    phone.text = userData.phone ?? "";
+    feCode.text = userData.code ?? "";
+  }
+  
+  // Pick avatar from gallery
+  Future<void> pickAvatar() async {
+    try {
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 100,
+      );
+      if (pickedFile != null) {
+        avatar.value = File(pickedFile.path);
+        update();
+      }
+    } catch (e) {
+      utils.errorSnackBar("Error", "Failed to pick image: $e");
+    }
+  }
+  
+  // Pick avatar from camera
+  Future<void> pickAvatarFromCamera() async {
+    try {
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 100,
+      );
+      if (pickedFile != null) {
+        avatar.value = File(pickedFile.path);
+        update();
+      }
+    } catch (e) {
+      utils.errorSnackBar("Error", "Failed to capture image: $e");
+    }
+  }
+  
+  void showImageSourceDialog() {
+    Get.dialog(
+      AlertDialog(
+        title: const Text("Select Image Source"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text("Gallery"),
+              onTap: () {
+                Navigator.of(Get.context!).pop();
+                pickAvatar();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text("Camera"),
+              onTap: () {
+                Navigator.of(Get.context!).pop();
+                pickAvatarFromCamera();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  // Validate phone number
+  String? validatePhone(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Phone number is required';
+    }
+    if (!value.isPhoneNumber) {
+      return 'Enter a valid phone number';
+    }
+    return null;
+  }
+  
+  // Validate address
+  String? validateAddress(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Address is required';
+    }
+    if (value.length < 5) {
+      return 'Address must be at least 5 characters';
+    }
+    return null;
+  }
+  
 
-
-
-
+  
+  // Update profile details
+  Future<bool> updateProfileDetails() async {
+    if (!profileFormKey.currentState!.validate()) {
+      return false;
+    }
+    
+    try {
+      utils.showLoadingDialog("Updating profile...");
+      
+      List<Map<String, dynamic>> images = [];
+      
+      if (avatar.value != null) {
+        images.add({
+          'key': 'avatar',
+          'file': avatar.value,
+        });
+      }
+      
+      Map<String, dynamic> data = {
+        'address': address.text.trim(),
+        'phone': phone.text.trim(),
+        'fe_code': userData.code
+      };
+      
+      if (kDebugMode) {
+        print("Profile Update Data: $data");
+        print("Images count: ${images.length}");
+      }
+      
+      var response = await apiProvider.postRequestWithImagesDio(
+        'driver/update-profile-details',
+        data, 
+        images
+      );
+      
+      var result = BaseApiResponse.fromJson(response);
+      
+      if (response['status_code'] == 200) {
+        utils.closeLoadingDialog();
+        utils.successSnackBar("Success", "Profile updated successfully");
+        userData =  UserData.fromJson(result.data);
+        await userRepository.updateUser(userData);
+        update();
+        return true;
+      } else {
+        utils.closeLoadingDialog();
+        utils.errorSnackBar("Error", result.message.toString());
+        return false;
+      }
+    } catch (e) {
+      utils.closeLoadingDialog();
+      utils.errorDialog("Failed to update profile: $e");
+      return false;
+    }
+  }
+  
   updateLocation() async {
     await getCurrentLocation();
     checkAttendance();
@@ -118,34 +269,30 @@ class RiderDashboardController extends GetxController {
     }
   }
 
-
-
   getUser() async {
     try {
-
       var value = await userRepository.getUser();
       if (value != null) {
         userData = value;
         riderName.value = userData.name ?? "";
-        WidgetsBinding.instance.addPostFrameCallback((_) async{
-        await getDashBoardData();
-        await getC2CCDashBoardData();
+        loadUserDetails(); // Reload details when user data changes
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          await getDashBoardData();
+          await getC2CCDashBoardData();
         });
-       
       }
     } catch (e) {
-      //  utils.errorSnackBar("Exception", e.toString());
+      // utils.errorSnackBar("Exception", e.toString());
     }
   }
-
 
   Future<void> checkForUpdate() async {
     try {
       final updateInfo = await InAppUpdate.checkForUpdate();
       
       if (updateInfo.updateAvailability == UpdateAvailability.updateAvailable) {
-       isNewAppUpdateAvailable.value = true;
-       performImmediateUpdate();
+        isNewAppUpdateAvailable.value = true;
+        performImmediateUpdate();
       }
     } catch (e) {
       debugPrint('Error checking for update: $e');
@@ -164,14 +311,9 @@ class RiderDashboardController extends GetxController {
       utils.errorSnackBar('Update Failed', 'Failed to start update process');
     } on PlatformException catch (e) {
       debugPrint('PlatformException: $e');
-      // if (e.code == InAppUpdate.) {
-      //   // User didn't accept the update
-      //   utils.errorSnackBar('Update Cancelled', 'You cancelled the update');
-      // }
     }
   }
 
- 
   Future<void> startFlexibleUpdate() async {
     try {
       await InAppUpdate.startFlexibleUpdate();
@@ -181,9 +323,6 @@ class RiderDashboardController extends GetxController {
       debugPrint('Error with flexible update: $e');
     }
   }
-
-
-
 
   Future<bool> logout() async {
     utils.showLoadingDialog("Logging out...");
@@ -204,7 +343,6 @@ class RiderDashboardController extends GetxController {
       }
     } catch (e) {
       utils.closeLoadingDialog();
-      //  utils.errorSnackBar("Exception", e.toString());
       return false;
     }
   }
@@ -222,8 +360,8 @@ class RiderDashboardController extends GetxController {
         if(dashBoardData.value.allOrdersCount?.aSSIGNED != 0 || dashBoardData.value.allOrdersCount?.pICKED != 0 ||
         dashBoardData.value.allOrdersCount?.oFD != 0 || dashBoardData.value.allOrdersCount?.reached != 0) {
           isAnyActiveOrder.value = true;
-        }else{
-           isAnyActiveOrder.value = false;
+        } else {
+          isAnyActiveOrder.value = false;
         }
         utils.closeLoadingDialog();
         update();
@@ -235,7 +373,6 @@ class RiderDashboardController extends GetxController {
       }
     } catch (e) {
       utils.closeLoadingDialog();
-      //   utils.errorSnackBar("Exception", e.toString());
       return false;
     }
   }
@@ -250,10 +387,6 @@ class RiderDashboardController extends GetxController {
       var result = BaseApiResponse.fromJson(response);
       if (result.status_code == 200) {
         c2cDashBoardData.value = DashBoardData.fromJson(result.data);
-        // if(dashBoardData.value.allOrdersCount?.aSSIGNED != 0 || dashBoardData.value.allOrdersCount?.pICKED != 0 ||
-        // dashBoardData.value.allOrdersCount?.oFD != 0) {
-        //   isAnyActiveOrder.value = true;
-        // }
         utils.closeLoadingDialog();
         update();
         return true;
@@ -264,12 +397,9 @@ class RiderDashboardController extends GetxController {
       }
     } catch (e) {
       utils.closeLoadingDialog();
-      //   utils.errorSnackBar("Exception", e.toString());
       return false;
     }
   }
-
-
 
   Future<bool> fetchWalletAmount() async {
     try {
@@ -281,6 +411,30 @@ class RiderDashboardController extends GetxController {
       var result = BaseApiResponse.fromJson(response);
       if (result.status_code == 200) {
         walletAmount.value = result.data;
+        utils.closeLoadingDialog();
+        update();
+        return true;
+      } else {
+        utils.closeLoadingDialog();
+        update();
+        return false;
+      }
+    } catch (e) {
+      utils.closeLoadingDialog();
+      return false;
+    }
+  }
+  Future<bool> getUserData() async {
+    try {
+      Map<String, dynamic> model = {
+        apiKeys.feCode: userData.code,
+      };
+      var response = await apiProvider.getRequestWithQueryParams(
+          apiEndPoints.getProfileData, model);
+      var result = BaseApiResponse.fromJson(response);
+      if (result.status_code == 200) {
+        userData = UserData.fromJson(result.data);
+        await userRepository.updateUser(userData);
         utils.closeLoadingDialog();
         update();
         return true;
@@ -318,7 +472,6 @@ class RiderDashboardController extends GetxController {
         return false;
       }
     } catch (e) {
-      //utils.errorSnackBar("Exception", e.toString());
       return false;
     }
   }
@@ -354,9 +507,7 @@ class RiderDashboardController extends GetxController {
         driverData.value = DriverData.fromJson(result.data);
         Future.delayed(const Duration(seconds: 2));
         attendancesList.value = driverData.value.attendances!.reversed.toList();
-        // print(driverData.value.toJson().toString());
         await getDashBoardData();
-        utils.closeLoadingDialog();
         update();
         return true;
       } else {
@@ -365,22 +516,15 @@ class RiderDashboardController extends GetxController {
         return false;
       }
     } catch (e) {
-      // utils.errorSnackBar("Exception", e.toString());
       return false;
     }
   }
 
-  // @override
-  // void onClose() {
-  //   listener.cancel();
-  // }
-
   getCurrentLocation() async {
     startLocation = (await locationUtils.getCurrentLocation())!;
     await sendDriverLocation(startLocation);
-    print(
-        'Current Location: ${startLocation.latitude}, ${startLocation.longitude}');
-    }
+    print('Current Location: ${startLocation.latitude}, ${startLocation.longitude}');
+  }
 
   getCountinuesLocation() {
     locationUtils.startListeningToLocationUpdates(
@@ -391,10 +535,8 @@ class RiderDashboardController extends GetxController {
             locationData.latitude!,
             locationData.longitude!);
         if (kDebugMode) {
-          print(
-              "start latlng :- ${startLocation.latitude},${startLocation.longitude}\ncurrent latlng :-${locationData.latitude},${locationData.longitude}");
+          print("start latlng :- ${startLocation.latitude},${startLocation.longitude}\ncurrent latlng :-${locationData.latitude},${locationData.longitude}");
         }
-        
         print(distance.toString());
         if (distance >= 10) {
           bool isUpdated = await sendDriverLocation(locationData);
@@ -405,4 +547,22 @@ class RiderDashboardController extends GetxController {
       },
     );
   }
+
+  // Clear profile fields
+  void clearProfileFields() {
+    avatar.value = null;
+    address.clear();
+    phone.clear();
+    feCode.clear();
+  }
+  
+  @override
+  void onClose() {
+    address.dispose();
+    phone.dispose();
+    feCode.dispose();
+    super.onClose();
+  }
+
+
 }

@@ -1,14 +1,11 @@
 import 'package:carson_zyppy/local_db/entity/UserData.dart';
 import 'package:carson_zyppy/pages/auth/login_screen.dart';
 import 'package:carson_zyppy/pages/dashboard/view/rider_dashboard.dart';
-import 'package:carson_zyppy/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lottie/lottie.dart';
-
 import '../global/consts.dart';
 import '../global/global.dart';
-import '../utils/bio_metric_login/biometric_login.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
