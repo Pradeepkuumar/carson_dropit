@@ -261,9 +261,9 @@ class OSMMapPage extends GetView<OSMMapController> {
                       ? controller.ordersList[index]
                       : controller.currentLocationOrders[index];
                       
-                  return clickedOrderItem(
-                    order,
-                    (clickedOrder, type) async {
+                  return ClickedOrderItem(
+                    orderData: order,
+                    onClick: (clickedOrder, type) async {
                       controller.selectedOrder.value = clickedOrder;
                       await controller.setMarkers();
                       
@@ -274,7 +274,7 @@ class OSMMapPage extends GetView<OSMMapController> {
                         controller.isUpdateCardVisibleForUpdate.value = true;
                       }
                     },
-                    controller.bottomBarListType.value == 0 ? 0 : 1,
+                    listType: controller.bottomBarListType.value == 0 ? 0 : 1,
                   );
                 },
               ),

@@ -27,7 +27,8 @@ class ApiProvider extends GetConnect {
     if (kDebugMode) {
      baseUrl = devBaseUrl;
     } else if (kReleaseMode) {
-     baseUrl = liveBaseUrl;
+      // baseUrl = devBaseUrl;
+      baseUrl = liveBaseUrl;
     }
 
     httpClient.addAuthenticator((Request<dynamic> request) async {
@@ -237,7 +238,6 @@ dynamic returnHttpResponse(http.Response response) {
   }
 }
 
-
    
 
 Future<dynamic> postRequestWithImagesDio(
@@ -246,9 +246,8 @@ Future<dynamic> postRequestWithImagesDio(
   List<Map<String, dynamic>>? images,
 ) async {
   try {
-    // Create FormData using dio's fromMap method
     final form = FormData.fromMap(data);
-      final token = "Bearer ${box.read(apiKeys.apiToken)}";
+    final token = "Bearer ${box.read(apiKeys.apiToken)}";
 
     if (images != null && images.isNotEmpty) {
       for (final imageMap in images) {

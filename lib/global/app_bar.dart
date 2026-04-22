@@ -25,8 +25,6 @@ class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
         centerTitle: true,
         actions: actions,
         toolbarHeight: 0,
-      
-      
         //if we want add menu drwaer on home screen after thiis below code add 
         // drawer: Drawer(
           //   child: Center(child: InkWell(

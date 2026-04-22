@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:math';
-
 import 'package:carson_zyppy/firebase_notifications/firebase_notifiction_controller.dart';
 import 'package:carson_zyppy/local_db/entity/UserData.dart';
 import 'package:carson_zyppy/pages/dashboard/models/dashboard_data.dart';
@@ -81,6 +80,7 @@ class RiderDashboardController extends GetxController {
     checkForUpdate();
     super.onReady();
   }
+  
 
   // Load user details into controllers
   void loadUserDetails() {
@@ -304,13 +304,27 @@ class RiderDashboardController extends GetxController {
       AppUpdateResult result = await InAppUpdate.performImmediateUpdate();
       if(result == AppUpdateResult.success){
          isNewAppUpdateAvailable.value = false;
+      } else {
+         // Forcefully ask again if the user denies or if it fails
+         performImmediateUpdate();
       }
     } 
     on FormatException catch (e) {
       debugPrint('FormatException: $e');
       utils.errorSnackBar('Update Failed', 'Failed to start update process');
+      Future.delayed(const Duration(seconds: 1), () {
+        performImmediateUpdate();
+      });
     } on PlatformException catch (e) {
       debugPrint('PlatformException: $e');
+      Future.delayed(const Duration(seconds: 1), () {
+        performImmediateUpdate();
+      });
+    } catch (e) {
+      debugPrint('Exception: $e');
+      Future.delayed(const Duration(seconds: 1), () {
+        performImmediateUpdate();
+      });
     }
   }
 

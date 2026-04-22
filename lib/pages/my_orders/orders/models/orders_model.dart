@@ -47,7 +47,7 @@ class OrdersData {
   String? current_pickup_distance;
   String? current_pickup_duration;
   double? current_pickup_distance_value;
-  String ? current_dropoff_distance;
+  String? current_dropoff_distance;
   String? current_dropoff_duration;
   double? current_dropoff_distance_value;
   String? pickup_buffer_time_in_minutes;

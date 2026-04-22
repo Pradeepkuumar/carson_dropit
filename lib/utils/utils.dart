@@ -580,11 +580,11 @@ class Utils extends GetxController {
   boxDecorationWhite() {
     return BoxDecoration(
       borderRadius: BorderRadius.circular(10),
-      color: Get.isDarkMode ? AppColors.greyColor10 : Colors.white,
+      color: Get.isDarkMode ? const Color.fromARGB(255, 107, 105, 105) : Colors.white,
       boxShadow: const [
         BoxShadow(
           color: Color.fromARGB(103, 0, 0, 0),
-          blurRadius: 3,
+          blurRadius: 1,
           offset: Offset(1, 1),
         )
       ],

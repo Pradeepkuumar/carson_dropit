@@ -1,3 +1,4 @@
+import 'package:carson_zyppy/apis/base_api_provider.dart';
 import 'package:carson_zyppy/global/consts.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -6,11 +7,70 @@ import '../../../../../utils/calculate_sla.dart';
 import '../../../../../utils/colors.dart';
 import '../../../../../utils/utils.dart';
 import '../../my_orders/orders/models/orders_model.dart';
+import '../controller/all_orders_map_controller.dart';
 
-clickedOrderItem(
-    OrdersData orderData, void Function(OrdersData,String) onClick,int listType) {
-   Utils utils = Utils();
-  return Card(
+class ClickedOrderItem extends StatefulWidget {
+  final OrdersData orderData;
+  final void Function(OrdersData, String) onClick;
+  final int listType;
+
+  const ClickedOrderItem({
+    Key? key,
+    required this.orderData,
+    required this.onClick,
+    required this.listType,
+  }) : super(key: key);
+
+  @override
+  _ClickedOrderItemState createState() => _ClickedOrderItemState();
+}
+
+class _ClickedOrderItemState extends State<ClickedOrderItem> with WidgetsBindingObserver {
+  Utils utils = Utils();
+  final controller = Get.find<AllOrdersMapController>();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Handle app resume if needed
+    }
+  }
+
+  void _startCall(String phoneNumber, String type) {
+    if (controller.hasOngoingCall.value) {
+      utils.errorSnackBar("Ongoing Call", "Cannot initiate another call while a call is in progress");
+      return;
+    }
+    controller.callType = type;
+    controller.hasOngoingCall.value = true;
+    controller.ongoingCallAwbNo.value = widget.orderData.awbNo ?? "";
+    controller.callStartTime.value = DateTime.now();
+    utils.openDialPad(phoneNumber);
+  }
+
+  void _handleCallEnd() {
+    if (controller.hasOngoingCall.value && controller.ongoingCallAwbNo.value == widget.orderData.awbNo) {
+      controller.callStartTime.value = null;
+      controller.hasOngoingCall.value = false;
+      controller.ongoingCallAwbNo.value = "";
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
       elevation: 4,
       shadowColor: Colors.black,
       child: Padding(
@@ -30,21 +90,19 @@ clickedOrderItem(
                       "Order No.",
                       style: TextStyle(
                         fontSize: Get.context!.isPhone ? 12 : 15,
-                        color:Get.isDarkMode ? AppColors.white : Colors.black,
+                        color: Get.isDarkMode ? AppColors.white : Colors.black,
                       ),
                     ),
                     Text(
-                      orderData.awbNo.toString(),
-                      style:  TextStyle(
+                      widget.orderData.awbNo.toString(),
+                      style: TextStyle(
                         fontSize: Get.context!.isPhone ? 12 : 15,
-                        color:Get.isDarkMode ? AppColors.white : AppColors.black,
+                        color: Get.isDarkMode ? AppColors.white : AppColors.black,
                       ),
                     ),
-              
                   ],
                 ),
-                slaTimer(50, 50 ,orderData.createdAt ?? "", int.tryParse(orderData.sla_in_hours.toString()) ?? 0,10),
-              
+                slaTimer(50, 50, widget.orderData.createdAt ?? "", int.tryParse(widget.orderData.sla_in_hours.toString()) ?? 0, 10),
               ],
             ),
             const SizedBox(
@@ -65,58 +123,65 @@ clickedOrderItem(
                 children: [
                   Column(
                     children: [
-                      customRow("Item","${orderData.itemName!}(${orderData.quantity})" ?? ""),
-                      customRow("Order Amount",orderData.orderAmount ?? ""),
-                      customRow("Order Weight",orderData.weight ?? ""),
-                      customRow("Location", orderData.status == OFD ? orderData.contact_person_name ?? "":orderData.pickupLocationName ?? ""),
-                      customRow("Zone", orderData.consigneeZone ?? ""),
-                      customRow("Street", orderData.consigneeStreetNumber ?? ""),
-                      customRow("Building", orderData.consigneeBuildingNo ?? ""),
+                      customRow("Item","${widget.orderData.itemName!}(${widget.orderData.quantity})"),
+                      customRow("Order Amount", widget.orderData.orderAmount ?? ""),
+                      customRow("Order Weight", widget.orderData.weight ?? ""),
+                      customRow("Location", widget.orderData.status == OFD ? widget.orderData.contact_person_name ?? "" : widget.orderData.pickupLocationName ?? ""),
+                      customRow("Zone", widget.orderData.consigneeZone ?? ""),
+                      customRow("Street", widget.orderData.consigneeStreetNumber ?? ""),
+                      customRow("Building", widget.orderData.consigneeBuildingNo ?? ""),
                     ],
                   ),
                   const SizedBox(height: 10,),
                   Column(
                     children: [
                       const SizedBox(height: 10,),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          utils.clickableImageVertical("Call Pickup", Get.isDarkMode ? AppColors.white :AppColors.black, AppColors.lightBlue, icTelephone, 30, 30, (){
-                            utils.openDialPad(
-                                orderData.pickupPhoneNo.toString());
-                          }),
-                          const SizedBox(width:5,),
-                          utils.clickableImageVertical("Pickup", Get.isDarkMode ? AppColors.white :AppColors.black, AppColors.green, icWhatsApp,30, 30, (){
-                            utils.openWhtsApp(
-                                orderData.pickupPhoneNo.toString());
-                          }),
-                          const SizedBox(width:5,),
-                          utils.clickableImageVertical("Call Consignee", Get.isDarkMode ? AppColors.white :AppColors.black, AppColors.blue, icTelephone, 30, 30, (){
-                            utils.openDialPad(
-                                orderData.consigneeMobileNo.toString());
-                          }),
-                          const SizedBox(width:5,),
-                          utils.clickableImageVertical("Consignee", Get.isDarkMode ? AppColors.white :AppColors.black, AppColors.green, icWhatsApp,30, 30, (){
-                            utils.openWhtsApp(
-                                orderData.pickupPhoneNo.toString());
-                          }),
-              
-                        ],
-                      ),
+                      Obx(() {
+                        bool isThisOrderOnCall = controller.hasOngoingCall.value &&
+                            controller.ongoingCallAwbNo.value == widget.orderData.awbNo;
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            if (isThisOrderOnCall) ...[
+                              utils.clickableImageVertical("End Call", Get.isDarkMode ? AppColors.white : AppColors.black, AppColors.red, icTelephone, 30, 30, () {
+                                _handleCallEnd();
+                              }),
+                            ] else if (controller.hasOngoingCall.value) ...[
+                              utils.clickableImageVertical("Call Active", Get.isDarkMode ? AppColors.white : AppColors.black, AppColors.greyColor4, icTelephone, 30, 30, () {
+                                utils.errorSnackBar("Ongoing Call", "Cannot initiate another call");
+                              }),
+                            ] else ...[
+                              utils.clickableImageVertical("Call Pickup", Get.isDarkMode ? AppColors.white : AppColors.black, AppColors.lightBlue, icTelephone, 30, 30, () {
+                                _startCall(widget.orderData.pickupPhoneNo.toString(), 'pickup');
+                              }),
+                              const SizedBox(width: 5,),
+                              utils.clickableImageVertical("Pickup", Get.isDarkMode ? AppColors.white : AppColors.black, AppColors.green, icWhatsApp, 30, 30, () {
+                                utils.openWhtsApp(widget.orderData.pickupPhoneNo.toString());
+                              }),
+                              const SizedBox(width: 5,),
+                              utils.clickableImageVertical("Call Consignee", Get.isDarkMode ? AppColors.white : AppColors.black, AppColors.blue, icTelephone, 30, 30, () {
+                                _startCall(widget.orderData.consigneeMobileNo.toString(), 'consignee');
+                              }),
+                              const SizedBox(width: 5,),
+                              utils.clickableImageVertical("Consignee", Get.isDarkMode ? AppColors.white : AppColors.black, AppColors.green, icWhatsApp, 30, 30, () {
+                                utils.openWhtsApp(widget.orderData.pickupPhoneNo.toString());
+                              }),
+                            ],
+                          ],
+                        );
+                      }),
                       const SizedBox(height: 10,),
                     ],
                   ),
                   Visibility(
-                    visible: listType == 1,
-                      child: utils.iconButton(orderData.status == ASSIGNED|| orderData.status == RE_ASSIGNED ? REACHED :orderData.status == REACHED? "PICK": orderData.status == PICKED ? "MARK OFD":orderData.status == OFD ? "UPDATE" : "",(){
-                        orderData.status == OFD ?
-                        onClick(orderData,updateOrder)
-                            :
-                    onClick(orderData,updateStatus);
-              
-                  }, Icons.update,orderData.status == ASSIGNED|| orderData.status == RE_ASSIGNED?AppColors.blue : orderData.status == RE_ASSIGNED?AppColors.orange : orderData.status == PICKED ?
-                      AppColors.primaryThemeColor :AppColors.greenLight, AppColors.white)
+                    visible: widget.listType == 1,
+                    child: utils.iconButton(widget.orderData.status == ASSIGNED || widget.orderData.status == RE_ASSIGNED ? REACHED : widget.orderData.status == REACHED ? "PICK" : widget.orderData.status == PICKED ? "MARK OFD" : widget.orderData.status == OFD ? "UPDATE" : "", () {
+                      widget.orderData.status == OFD ?
+                      widget.onClick(widget.orderData, updateOrder) :
+                      widget.onClick(widget.orderData, updateStatus);
+                    }, Icons.update, widget.orderData.status == ASSIGNED || widget.orderData.status == RE_ASSIGNED ? AppColors.blue : widget.orderData.status == RE_ASSIGNED ? AppColors.orange : widget.orderData.status == PICKED ?
+                    AppColors.primaryThemeColor : AppColors.greenLight, AppColors.white)
                   )
                 ],
               ),
@@ -124,11 +189,8 @@ clickedOrderItem(
           ],
         ),
       ));
+  }
 }
-
-
-
-
 
 Widget customRow(String name, String data) {
   return Padding(
@@ -141,13 +203,13 @@ Widget customRow(String name, String data) {
         children: [
           Expanded(
             flex: 4,
-            child: utils.tvCustom(name, Get.isDarkMode ? AppColors.white :AppColors.black, 10,textAlignment: TextAlign.start),
+            child: utils.tvCustom(name, Get.isDarkMode ? AppColors.white : AppColors.black, 10, textAlignment: TextAlign.start),
           ),
           Expanded(
             flex: 2,
-            child: utils.tvRegular(":", Get.isDarkMode ? AppColors.white :AppColors.black),
+            child: utils.tvRegular(":", Get.isDarkMode ? AppColors.white : AppColors.black),
           ),
-          Expanded(flex: 4, child: utils.tvCustom(data, Get.isDarkMode ? AppColors.white :AppColors.black, 10,textAlignment: TextAlign.start)),
+          Expanded(flex: 4, child: utils.tvCustom(data, Get.isDarkMode ? AppColors.white : AppColors.black, 10, textAlignment: TextAlign.start)),
         ],
       ),
     ),
@@ -163,21 +225,21 @@ Widget customColumn(String name, String data) {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          Icon(Icons.location_on_sharp,color: name == "Drop-Off Location" ?AppColors.green : AppColors.blue),
+          Icon(Icons.location_on_sharp, color: name == "Drop-Off Location" ? AppColors.green : AppColors.blue),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                utils.tvCustom(name, Get.isDarkMode ? AppColors.white :AppColors.black, 13),
+                utils.tvCustom(name, Get.isDarkMode ? AppColors.white : AppColors.black, 13),
                 utils.tvRegular(
                   data,
-                  Get.isDarkMode ? AppColors.white :AppColors.black,
+                  Get.isDarkMode ? AppColors.white : AppColors.black,
                 ),
               ],
             ),
           ),
-           utils.imageView("assets/icons/maps_logo.png", 30, 30)
+          utils.imageView("assets/icons/maps_logo.png", 30, 30)
         ],
       ),
     ),

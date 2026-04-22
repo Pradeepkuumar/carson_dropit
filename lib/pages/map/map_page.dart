@@ -119,7 +119,7 @@ class _MapPageState extends State<MapPage> {
     await googleMapsNavigator.setDestinations(Destinations(
       waypoints: _waypoints,
       displayOptions: NavigationDisplayOptions(
-        showDestinationMarkers: true,
+        showDestinationMarkers: false,
         showStopSigns: true,
         showTrafficLights: true,
       ),

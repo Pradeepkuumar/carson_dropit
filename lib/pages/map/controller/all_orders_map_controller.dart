@@ -25,6 +25,7 @@ class AllOrdersMapController extends GetxController  {
   var isLoading = true.obs;
   var currentHintIndex = 0.obs;
   var selectedOrder = OrdersData().obs;
+  var selectedCallOrder = OrdersData().obs;
   var user = UserData();
 
   final image = Rxn<File>();
@@ -43,6 +44,7 @@ class AllOrdersMapController extends GetxController  {
   var markUnDelivered = false.obs;
   var selectedReason = "".obs;
   var viewAcceptView = false.obs;
+  var minimizeOrderView = false.obs;
   var orderAcceptWaitView = false.obs;
   var selectedOrderAwbId = "".obs;
 
@@ -107,11 +109,18 @@ class AllOrdersMapController extends GetxController  {
   DateTime? updateDriverLocationInterval;
 
   var bottomBarListType = 0.obs;
+
   Timer? _hintTextTimer;
   Timer? _nearbyOrdersTimer;
   DateTime? startTime;
+  String? callType;
 
   var bufferMinutes = "".obs;
+  var callDuration = "".obs;
+  var showCallConfirmation = false.obs;
+  var hasOngoingCall = false.obs;
+  var ongoingCallAwbNo = "".obs;
+  var callStartTime = Rx<DateTime?>(null);
 
   @override
   void onInit() async {
@@ -147,6 +156,18 @@ class AllOrdersMapController extends GetxController  {
     final remainingSeconds = totalSeconds.toInt() % 60;
 
     return '${totalMinutes}:${remainingSeconds.toString().padLeft(2, '0')}';
+  }
+
+  void startCall(String awbNo) {
+    hasOngoingCall.value = true;
+    ongoingCallAwbNo.value = awbNo;
+    callStartTime.value = DateTime.now();
+  }
+
+  void endCall() {
+    callStartTime.value = null;
+    hasOngoingCall.value = false;
+    ongoingCallAwbNo.value = "";
   }
 
   @override
@@ -212,8 +233,8 @@ class AllOrdersMapController extends GetxController  {
       DateTime now = DateTime.now();
       if (_lastApiCallTime == null || now.difference(_lastApiCallTime!).inMinutes >= 1) {
         _lastApiCallTime = now;
-        if (remainingDistance.value <= 500) {
-        filterCurrentLocationOrders(500);
+        if (remainingDistance.value <= 300) {
+        filterCurrentLocationOrders(300);
        }
      }
   }
@@ -222,7 +243,7 @@ class AllOrdersMapController extends GetxController  {
 
   void onArrivalEvent(OnArrivalEvent onArrive){
     NavigationWaypoint arrivedWaypoint = onArrive.waypoint;
-    filterCurrentLocationOrders(500);
+    filterCurrentLocationOrders(300);
   }
 
 
@@ -231,7 +252,7 @@ class AllOrdersMapController extends GetxController  {
       remainingTimeOrDistanceChangedSubscription =
           googleMapsNavigator.setOnRemainingTimeOrDistanceChangedListener(
             _onRemainingTimeOrDistanceChangedEvent,
-            remainingDistanceThresholdMeters: 500,
+            remainingDistanceThresholdMeters: 300,
           );
       googleMapsNavigator.setOnArrivalListener(onArrivalEvent);
     }
@@ -240,6 +261,9 @@ class AllOrdersMapController extends GetxController  {
   filterCurrentLocationOrders(double distanceThresholdInMeters) async {
     currentLocationOrders.clear();
     if (currentLocation == null || ordersList.isEmpty) return;
+    OrdersData? nearestNearbyOrder;
+    double nearestDistance = double.infinity;
+
     final nearbyOrders = ordersList.where((order) {
       final orderLatLng = LatLng(
        latitude:  order.status == PICKED || order.status == OFD
@@ -255,12 +279,23 @@ class AllOrdersMapController extends GetxController  {
         orderLatLng.latitude,
         orderLatLng.longitude,
       );
+      if (distance <= distanceThresholdInMeters && distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestNearbyOrder = order;
+      }
       return distance <= distanceThresholdInMeters;
     }).toList();
     currentLocationOrders.addAll(nearbyOrders);
     if(currentLocationOrders.isNotEmpty) {
       bottomBarListType.value = 1;
       viewAcceptView.value = true;
+      if (nearestNearbyOrder != null) {
+        selectedOrder.value = nearestNearbyOrder!;
+        selectedOrderAwbId.value = nearestNearbyOrder?.awbNo ?? "";
+        if(selectedOrder.value.status == "OFD"){
+        isUpdateCardVisibleForUpdate.value = true;
+        }
+      }
     }else{
       viewAcceptView.value = false;
       bottomBarListType.value = 0;
@@ -306,7 +341,7 @@ class AllOrdersMapController extends GetxController  {
       await googleMapsNavigator.setDestinations(Destinations(
         waypoints: waypoints,
         displayOptions: NavigationDisplayOptions(
-          showDestinationMarkers: true,
+          showDestinationMarkers: false,
           showStopSigns: true,
           showTrafficLights: true,
         ),
@@ -381,28 +416,53 @@ Future<void> stopGuidedNavigation() async {
 
 
   selectedLocationOrders() async {
+    OrdersData? foundOrder;
+    LatLng? orderLatLng;
+
     for (int i = 0; i < ordersList.length; i++) {
       if (ordersList[i].awbNo.toString() == selectedOrderAwbId.value) {
-        selectedOrder.value = ordersList[i];
+        foundOrder = ordersList[i];
         selectedOrderIndex.value = i;
-        updateSelectedMarker(  LatLng(
-          latitude: selectedOrder.value.status == PICKED || selectedOrder.value.status == OFD
-              ? double.parse(selectedOrder.value.dropoffLatitude ?? "0.0")
-              : double.parse(selectedOrder.value.pickupLatitude ?? "0.0"),
-          longitude: selectedOrder.value.status == PICKED || selectedOrder.value.status == OFD
-              ? double.parse(selectedOrder.value.dropoffLongitude ?? "0.0")
-              : double.parse(selectedOrder.value.pickupLongitude ?? "0.0"),
-        ));
+        orderLatLng = LatLng(
+          latitude: foundOrder.status == PICKED || foundOrder.status == OFD
+              ? double.parse(foundOrder.dropoffLatitude ?? "0.0")
+              : double.parse(foundOrder.pickupLatitude ?? "0.0"),
+          longitude: foundOrder.status == PICKED || foundOrder.status == OFD
+              ? double.parse(foundOrder.dropoffLongitude ?? "0.0")
+              : double.parse(foundOrder.pickupLongitude ?? "0.0"),
+        );
+        updateSelectedMarker(orderLatLng);
         break;
       }
     }
-    update();
-    viewAcceptView.value = true;
 
+    if (foundOrder == null || currentLocation == null) {
+      update();
+      return;
+    }
+
+    final distance = calculateDistance(
+      currentLocation!.latitude,
+      currentLocation!.longitude,
+      orderLatLng!.latitude,
+      orderLatLng.longitude,
+    );
+
+    selectedOrder.value = foundOrder;
+
+    if (distance <= 300) {
+      viewAcceptView.value = false;
+       if(selectedOrder.value.status == "OFD"){
+        isUpdateCardVisibleForUpdate.value = true;
+       }
+    } else {
+      viewAcceptView.value = true;
+      isUpdateCardVisibleForUpdate.value = false;
+    }
+    update();
   }
 
   void updateSelectedMarker(LatLng selectedLocation) {
-    // Find the index of the selected location in the waypoints list
     int index = waypoints.indexWhere((waypoint) => waypoint.target == selectedLocation);
     if (index != -1) {
       NavigationWaypoint selectedWaypoint = waypoints.removeAt(index);
@@ -445,7 +505,7 @@ Future<void> stopGuidedNavigation() async {
                 final match = RegExp(r'\d+(\.\d+)?').firstMatch(distance);
                 return match != null ? double.parse(match.group(0)!) : double.infinity;
               }
-              return extractDistance(a.distance!).compareTo(extractDistance(b.distance!));
+              return extractDistance(a.distance!).compareTo(extractDistance(b.distance ?? "0 km"));
         });
 
         if(ordersList.isEmpty) {
@@ -462,15 +522,10 @@ Future<void> stopGuidedNavigation() async {
       }
     } catch (e) {
       utils.closeLoadingDialog();
+      utils.nonCancellableDialog("Something went wrong pls try again");
     }
     return null;
   }
-
-
-
-
-
-
 
   Future<bool?> getReasons() async {
     utils.showLoadingDialog("Loading...");
@@ -628,11 +683,11 @@ Future<void> stopGuidedNavigation() async {
           apiEndPoints.driverCurrentLocation, model);
       var result = BaseApiResponse.fromJson(response);
       if (result.status_code == 200) {
-        utils.closeLoadingDialog();
+       // utils.closeLoadingDialog();
         update();
         return true;
       } else {
-        utils.closeLoadingDialog();
+       // utils.closeLoadingDialog();
         update();
         return false;
       }
