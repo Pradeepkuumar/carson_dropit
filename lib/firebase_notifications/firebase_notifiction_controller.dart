@@ -11,6 +11,7 @@ class FirebaseMessagingController extends GetxController {
   String? fcm_token;
   bool isInitialized = false;
   var onNewNotification = false.obs;
+  var onNewAssignedOrder = 0.obs;
 
   @override
   void onInit() {
@@ -39,6 +40,11 @@ class FirebaseMessagingController extends GetxController {
         final title = message.notification?.title ?? message.data['title'] ?? 'Notification';
         final body = message.notification?.body ?? message.data['body'] ?? '';
         final type = message.data['type'] ?? '';
+        
+        if (type != 'NearByOrders') {
+          onNewAssignedOrder.value++;
+        }
+
         final sound = message.data['sound'] ?? (type == 'NearByOrders' ? 'nearby_order' : 'new_order');
         final channelId = type == 'NearByOrders'
             ? 'nearby_orders_channel'

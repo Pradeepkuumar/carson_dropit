@@ -918,6 +918,9 @@ class Utils extends GetxController {
       void Function() clickListenerCancelButton) {
     return Get.defaultDialog(
       title: title,
+      titleStyle: TextStyle(
+        fontSize: 15.sp
+      ),  
       middleText: middleText,
       buttonColor: AppColors.primaryThemeColor,
       onConfirm: clickListener,
@@ -929,6 +932,9 @@ class Utils extends GetxController {
       void Function() clickListenerCancelButton,Widget content) {
     return Get.defaultDialog(
       title: title,
+      titleStyle: TextStyle(
+        fontSize: 15.sp
+      ),
       middleText: middleText,
       buttonColor: AppColors.primaryThemeColor,
       onConfirm: clickListener,

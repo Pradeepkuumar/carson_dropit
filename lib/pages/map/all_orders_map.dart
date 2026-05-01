@@ -395,7 +395,7 @@ class _AllOrdersMapPageState extends State<AllOrdersMapPage> with WidgetsBinding
             actions: [
               Showcase(
                 key: menuShowcaseKey,
-                description: 'Tap to update order from right panel',
+                description: 'Update order from right panel',
                 child: IconButton(
                   icon: const Icon(Icons.menu),
                   onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
@@ -505,8 +505,8 @@ class _AllOrdersMapPageState extends State<AllOrdersMapPage> with WidgetsBinding
               final bool hasCurrent =
                   controller.currentLocationOrders.isNotEmpty;
               final order = hasCurrent
-                  ? controller.currentLocationOrders.first
-                  : controller.ordersList.first;
+                  ? controller.currentLocationOrders.firstWhere((e)=> e.awbNo == controller.selectedOrderAwbId.value)
+                  : controller.ordersList.firstWhere((e)=> e.awbNo == controller.selectedOrderAwbId.value);
               final bool isPicked = order.status == PICKED;
 
               return Container(
@@ -1112,16 +1112,28 @@ class _AllOrdersMapPageState extends State<AllOrdersMapPage> with WidgetsBinding
                 ),
                 onMarkerClicked: (value) async {
                   if (value != "current_location") {
-                    controller.selectedOrderAwbId.value = value;
-                    await controller.selectedLocationOrders();
-                    controller.viewAcceptView.value = true;
-                    controller.bottomBarListType.value = 0;
+                    Get.defaultDialog(
+                      title: "Confirm Destination",
+                      middleText: "Do you want to set this order as your current active destination?",
+                      textConfirm: "Yes",
+                      textCancel: "No",
+                      confirmTextColor: Colors.white,
+                      buttonColor: AppColors.primaryThemeColor,
+                      onConfirm: () async {
+                        Get.back(); 
+                        controller.selectedOrderAwbId.value = value;
+                        await controller.selectedLocationOrders();
+                        controller.viewAcceptView.value = true;
+                        controller.bottomBarListType.value = 0;
+                      },
+                    );
                   } else {
                     if (kDebugMode) {
                       print("Marker not found in map.");
                     }
                   }
                 },
+                
               )
                   : Center(
                 child: utils.iosProgressIndicator(

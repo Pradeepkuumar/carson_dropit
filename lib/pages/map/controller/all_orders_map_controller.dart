@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:carson_zyppy/firebase_notifications/firebase_notifiction_controller.dart';
 import 'package:carson_zyppy/firebase_notifications/notification_model/notification.dart';
 import 'package:carson_zyppy/local_db/entity/UserData.dart';
 import 'package:carson_zyppy/pages/my_orders/orders/models/reason_data.dart';
@@ -27,6 +28,8 @@ class AllOrdersMapController extends GetxController  {
   var selectedOrder = OrdersData().obs;
   var selectedCallOrder = OrdersData().obs;
   var user = UserData();
+
+  late FirebaseMessagingController firebaseMessagingController;
 
   final image = Rxn<File>();
   final paymentProof = Rxn<File>();
@@ -173,6 +176,14 @@ class AllOrdersMapController extends GetxController  {
   @override
   void onReady()async {
     googleMapsNavigator  = GoogleMapsNavigator() ;
+
+    firebaseMessagingController = Get.find<FirebaseMessagingController>();
+    ever(firebaseMessagingController.onNewAssignedOrder, (int count) {
+      if (count > 0) {
+        getFeAllOrders([ASSIGNED, RE_ASSIGNED, REACHED, PICKED, OFD]);
+      }
+    });
+
     Future.delayed(const Duration(seconds: 5), () {
        getReasons();
        getFeAllOrders([ASSIGNED, RE_ASSIGNED,REACHED,PICKED,OFD]);
@@ -312,31 +323,40 @@ class AllOrdersMapController extends GetxController  {
       }
       
       waypoints.clear();
-      
-      LatLng targetLocation;
-      if (selectedOrder.value.status == PICKED || selectedOrder.value.status == OFD) {
-        targetLocation = LatLng(
-          latitude: double.parse(selectedOrder.value.dropoffLatitude ?? "0.0"),
-          longitude: double.parse(selectedOrder.value.dropoffLongitude ?? "0.0"),
-        );
-      } else {
-        targetLocation = LatLng(
-          latitude: double.parse(selectedOrder.value.pickupLatitude ?? "0.0"),
-          longitude: double.parse(selectedOrder.value.pickupLongitude ?? "0.0"),
-        );
+
+      var currentOrdersList = currentLocationOrders.isNotEmpty
+          ? currentLocationOrders
+          : ordersList;
+
+      for (var order in currentOrdersList) {
+        final double lat = (order.status == PICKED || order.status == OFD)
+            ? double.tryParse(order.dropoffLatitude ?? "0.0") ?? 0.0
+            : double.tryParse(order.pickupLatitude ?? "0.0") ?? 0.0;
+        final double lng = (order.status == PICKED || order.status == OFD)
+            ? double.tryParse(order.dropoffLongitude ?? "0.0") ?? 0.0
+            : double.tryParse(order.pickupLongitude ?? "0.0") ?? 0.0;
+        
+        waypoints.add(NavigationWaypoint.withLatLngTarget(
+          title: order.consigneeAddress?.toString() ?? "Destination",
+          target: LatLng(latitude: lat, longitude: lng),
+        ));
       }
-      
-      waypoints.add(NavigationWaypoint.withLatLngTarget(
-        title: "Current Location",
-        target: currentLocation!,
-      ));
-      
-      waypoints.add(NavigationWaypoint.withLatLngTarget(
-        title: selectedOrder.value.status == PICKED || selectedOrder.value.status == OFD 
-            ? "Delivery Location" 
-            : "Pickup Location",
-        target: targetLocation,
-      ));
+
+      if (selectedOrder.value.awbNo != null && waypoints.isNotEmpty) {
+        final double lat = (selectedOrder.value.status == PICKED || selectedOrder.value.status == OFD)
+            ? double.tryParse(selectedOrder.value.dropoffLatitude ?? "0.0") ?? 0.0
+            : double.tryParse(selectedOrder.value.pickupLatitude ?? "0.0") ?? 0.0;
+        final double lng = (selectedOrder.value.status == PICKED || selectedOrder.value.status == OFD)
+            ? double.tryParse(selectedOrder.value.dropoffLongitude ?? "0.0") ?? 0.0
+            : double.tryParse(selectedOrder.value.pickupLongitude ?? "0.0") ?? 0.0;
+        LatLng selectedLoc = LatLng(latitude: lat, longitude: lng);
+        
+        int index = waypoints.indexWhere((wp) => wp.target == selectedLoc);
+        if (index != -1) {
+          NavigationWaypoint selectedWp = waypoints.removeAt(index);
+          waypoints.insert(0, selectedWp);
+        }
+      }
       
       await googleMapsNavigator.setDestinations(Destinations(
         waypoints: waypoints,
@@ -463,12 +483,35 @@ Future<void> stopGuidedNavigation() async {
   }
 
   void updateSelectedMarker(LatLng selectedLocation) {
-    int index = waypoints.indexWhere((waypoint) => waypoint.target == selectedLocation);
+    waypoints.clear();
+
+    var currentOrdersList = currentLocationOrders.isNotEmpty
+        ? currentLocationOrders
+        : ordersList;
+
+    for (var order in currentOrdersList) {
+      final double lat = (order.status == PICKED || order.status == OFD)
+          ? double.tryParse(order.dropoffLatitude ?? "0.0") ?? 0.0
+          : double.tryParse(order.pickupLatitude ?? "0.0") ?? 0.0;
+      final double lng = (order.status == PICKED || order.status == OFD)
+          ? double.tryParse(order.dropoffLongitude ?? "0.0") ?? 0.0
+          : double.tryParse(order.pickupLongitude ?? "0.0") ?? 0.0;
+      
+      waypoints.add(NavigationWaypoint.withLatLngTarget(
+        title: order.consigneeAddress?.toString() ?? "Destination",
+        target: LatLng(latitude: lat, longitude: lng),
+      ));
+    }
+
+    int index = waypoints.indexWhere((wp) => wp.target == selectedLocation);
     if (index != -1) {
-      NavigationWaypoint selectedWaypoint = waypoints.removeAt(index);
-      waypoints.insert(0, selectedWaypoint);
+      NavigationWaypoint selectedWp = waypoints.removeAt(index);
+      waypoints.insert(0, selectedWp);
     } else {
-      waypoints.insert(0, NavigationWaypoint.withLatLngTarget(title: "current", target: selectedLocation));
+      waypoints.insert(0, NavigationWaypoint.withLatLngTarget(
+        title: "Selected Destination", 
+        target: selectedLocation
+      ));
     }
 
     googleMapsNavigator.setDestinations(Destinations(
@@ -510,6 +553,8 @@ Future<void> stopGuidedNavigation() async {
 
         if(ordersList.isEmpty) {
          Get.back();
+        }else{
+          selectedOrderAwbId.value = ordersList.first.awbNo ?? "";
         }
         await filterCurrentLocationOrders(100);
         await setMarkers();
@@ -522,7 +567,7 @@ Future<void> stopGuidedNavigation() async {
       }
     } catch (e) {
       utils.closeLoadingDialog();
-      utils.nonCancellableDialog("Something went wrong pls try again");
+      //utils.nonCancellableDialog("Something went wrong pls try again");
     }
     return null;
   }
@@ -905,6 +950,22 @@ Future<void> stopGuidedNavigation() async {
     markerMap.addAll(tempMarkerMap);
     waypoints.addAll(tempWaypoints);
     markerLatLangList.addAll(tempLatLngList);
+
+    if (selectedOrder.value.awbNo != null && waypoints.isNotEmpty) {
+      final double lat = (selectedOrder.value.status == PICKED || selectedOrder.value.status == OFD)
+          ? double.tryParse(selectedOrder.value.dropoffLatitude ?? "0.0") ?? 0.0
+          : double.tryParse(selectedOrder.value.pickupLatitude ?? "0.0") ?? 0.0;
+      final double lng = (selectedOrder.value.status == PICKED || selectedOrder.value.status == OFD)
+          ? double.tryParse(selectedOrder.value.dropoffLongitude ?? "0.0") ?? 0.0
+          : double.tryParse(selectedOrder.value.pickupLongitude ?? "0.0") ?? 0.0;
+      LatLng selectedLoc = LatLng(latitude: lat, longitude: lng);
+      
+      int index = waypoints.indexWhere((wp) => wp.target == selectedLoc);
+      if (index != -1) {
+        NavigationWaypoint selectedWp = waypoints.removeAt(index);
+        waypoints.insert(0, selectedWp);
+      }
+    }
 
     googleMapsNavigator.setDestinations(
       Destinations(
