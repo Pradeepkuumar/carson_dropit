@@ -35,7 +35,9 @@ class PlacedOrdersController extends GetxController {
   ];
 
   LatLng? currentLocation;
-  final Map<String, MarkerOptions> markerMap = {};
+  // markerMap is not needed; google_navigation_flutter marker APIs expect MarkerOptions lists.
+  // We won't store options to avoid Marker/MarkerOptions mismatch.
+  // final Map<String, MarkerOptions> markerMap = {};
 
   List<Marker> markers = [];
   List<CircleOptions> circle = [];
@@ -182,10 +184,12 @@ class PlacedOrdersController extends GetxController {
   void selectedLocationOrders() async {
     selectedMerchantOrdersList.clear();
     for (var order in ordersList) {
-      if (order.locationId.toString() == selectedLocationId.value &&
+      if (order.pickupLocationName.toString() == selectedLocationId.value &&
           !selectedMerchantOrdersList.any((existingOrder) =>
           existingOrder.awbNo == order.awbNo)) {
         selectedMerchantOrdersList.add(order);
+      }else{
+         selectedMerchantOrdersList.add(order);
       }
     }
     update();
@@ -397,7 +401,7 @@ class PlacedOrdersController extends GetxController {
     try {
       // Clear existing markers
       markers.clear();
-      markerMap.clear();
+      // markerMap.clear();
       
       // Clear markers from map if it's initialized
       if (navigationViewController != null) {
@@ -428,7 +432,7 @@ class PlacedOrdersController extends GetxController {
         );
         
         markers.add(currentLocationMarker);
-        markerMap[currentLocationMarker.markerId] = currentLocationMarker.options;
+        // markerMap[currentLocationMarker.markerId] = currentLocationMarker.options;
         
         // Add circle
         addCircle();
@@ -451,7 +455,7 @@ class PlacedOrdersController extends GetxController {
           "PICKUP",
         ).then((customIcon) {
           final marker = Marker(
-            markerId: order.locationId.toString(),
+            markerId: order.pickupLocationName.toString(),
             options: MarkerOptions(
               position: LatLng(
                 latitude: double.parse(order.pickupLatitude!),
@@ -463,7 +467,7 @@ class PlacedOrdersController extends GetxController {
           );
 
           markers.add(marker);
-          markerMap[marker.markerId] = marker.options;
+          // markerMap[marker.markerId] = marker.options;
         }).catchError((e) {
           print("Error creating marker for order ${order.awbNo}: $e");
         });
@@ -476,7 +480,8 @@ class PlacedOrdersController extends GetxController {
 
       // Add markers to map if it's initialized
       if (navigationViewController != null && markers.isNotEmpty) {
-        await navigationViewController!.addMarkers(markers);
+        // google_navigation_flutter expects List<MarkerOptions>.
+        await navigationViewController!.addMarkers(markers.map((m) => m.options).toList());
       }
 
       markersInitialized.value = true;

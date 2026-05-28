@@ -89,7 +89,7 @@ class _MapPageState extends State<MapPage> {
           (_) =>
       {
           remainingTimeOrDistanceChangedSubscription =
-          googleMapsNavigator.setOnRemainingTimeOrDistanceChangedListener(
+          GoogleMapsNavigator.setOnRemainingTimeOrDistanceChangedListener(
           _onRemainingTimeOrDistanceChangedEvent,
           remainingDistanceThresholdMeters: 10)
       },
@@ -99,13 +99,13 @@ class _MapPageState extends State<MapPage> {
   }
 
   Future<void> _initializeNavigationSession() async {
-    if (!await googleMapsNavigator.areTermsAccepted()) {
-      await googleMapsNavigator.showTermsAndConditionsDialog(
+    if (!await GoogleMapsNavigator.areTermsAccepted()) {
+      await GoogleMapsNavigator.showTermsAndConditionsDialog(
         'Carson Zyppy',
         'Logistics solutions',
       );
     }
-    await googleMapsNavigator.initializeNavigationSession();
+    await GoogleMapsNavigator.initializeNavigationSession();
     setState(() {
       _navigationSessionInitialized = true;
     });
@@ -116,7 +116,7 @@ class _MapPageState extends State<MapPage> {
     navigationViewController = controller;
     await controller.setMyLocationEnabled(true);
     await controller.setTrafficIncidentCardsEnabled(true);
-    await googleMapsNavigator.setDestinations(Destinations(
+    await GoogleMapsNavigator.setDestinations(Destinations(
       waypoints: _waypoints,
       displayOptions: NavigationDisplayOptions(
         showDestinationMarkers: false,
@@ -132,7 +132,7 @@ class _MapPageState extends State<MapPage> {
     await navigationViewController?.setNavigationUIEnabled(true);
     await navigationViewController?.setTrafficIncidentCardsEnabled(true);
     await navigationViewController?.setSpeedometerEnabled(true);
-    await googleMapsNavigator.startGuidance();
+    await GoogleMapsNavigator.startGuidance();
     await navigationViewController?.followMyLocation(CameraPerspective.tilted);
   }
 
@@ -1312,7 +1312,6 @@ class _MapPageState extends State<MapPage> {
   @override
   void dispose() async {
     _locationSubscription.cancel();
-    await googleMapsNavigator.cleanup();
     _navigationSessionInitialized = false;
     await navigationViewController?.clear();
     super.dispose();

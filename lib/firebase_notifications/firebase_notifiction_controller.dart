@@ -127,7 +127,7 @@ class FirebaseMessagingController extends GetxController {
       );
 
       await _notificationsPlugin.initialize(
-        initializationSettings,
+        settings: initializationSettings,
         onDidReceiveNotificationResponse: (NotificationResponse response) {
           print("🔔 Notification tapped: ${response.payload}");
           _handleNotificationTap(response);
@@ -233,10 +233,10 @@ class FirebaseMessagingController extends GetxController {
       );
 
       await _notificationsPlugin.show(
-        DateTime.now().millisecondsSinceEpoch.remainder(100000),
-        title,
-        body,
-        platformChannelSpecifics,
+        id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
+        title:  title,
+        body:  body,
+        notificationDetails: platformChannelSpecifics,
         payload: payload,
       );
 

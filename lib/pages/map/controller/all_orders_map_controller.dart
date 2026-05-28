@@ -80,7 +80,10 @@ class AllOrdersMapController extends GetxController  {
   var isUpdateCardVisibleForUpdate = false.obs;
 
 
-  final Map<String, MarkerOptions> markerMap = {};
+// markerMap is not needed for addMarkers; keep map of marker ids if you later need it.
+  // markerMap previously stored MarkerOptions, but in google_navigation_flutter Marker.options is not assignable.
+  // Keeping only marker id -> Marker (if needed later).
+  final Map<String, Marker> markerMap = {};
   ImageDescriptor?  pickIcon;
   ImageDescriptor?  dropIcon;
   ImageDescriptor?  selectedPickIcon;
@@ -261,11 +264,11 @@ class AllOrdersMapController extends GetxController  {
   void checkForLocationUpdate() async {
     if (currentLocation?.longitude != null) {
       remainingTimeOrDistanceChangedSubscription =
-          googleMapsNavigator.setOnRemainingTimeOrDistanceChangedListener(
+          GoogleMapsNavigator.setOnRemainingTimeOrDistanceChangedListener(
             _onRemainingTimeOrDistanceChangedEvent,
             remainingDistanceThresholdMeters: 300,
           );
-      googleMapsNavigator.setOnArrivalListener(onArrivalEvent);
+      GoogleMapsNavigator.setOnArrivalListener(onArrivalEvent);
     }
   }
 
@@ -358,7 +361,7 @@ class AllOrdersMapController extends GetxController  {
         }
       }
       
-      await googleMapsNavigator.setDestinations(Destinations(
+      await GoogleMapsNavigator.setDestinations(Destinations(
         waypoints: waypoints,
         displayOptions: NavigationDisplayOptions(
           showDestinationMarkers: false,
@@ -376,13 +379,13 @@ class AllOrdersMapController extends GetxController  {
 
 
   initializeNavigationSession() async {
-    if (!await googleMapsNavigator.areTermsAccepted()) {
-      await googleMapsNavigator.showTermsAndConditionsDialog(
+    if (!await GoogleMapsNavigator.areTermsAccepted()) {
+      await GoogleMapsNavigator.showTermsAndConditionsDialog(
         'Carson Zyppy',
         'Logistics solutions',
       );
     }
-    await googleMapsNavigator.initializeNavigationSession().then((value){
+    await GoogleMapsNavigator.initializeNavigationSession().then((value){
       initializeNavigation.value = true;
     });
   }
@@ -404,7 +407,7 @@ Future<void> startGuidedNavigation() async {
     
     await Future.delayed(const Duration(milliseconds: 500));
     
-    await googleMapsNavigator.startGuidance();
+    await GoogleMapsNavigator.startGuidance();
     
     await navigationViewController?.followMyLocation(CameraPerspective.tilted);
     
@@ -416,7 +419,7 @@ Future<void> startGuidedNavigation() async {
 
 Future<void> stopGuidedNavigation() async {
   if (isNavigationRunning.value) {
-    await googleMapsNavigator.stopGuidance();
+    await GoogleMapsNavigator.stopGuidance();
     isNavigationRunning.value = false;
   }
 }
@@ -514,7 +517,7 @@ Future<void> stopGuidedNavigation() async {
       ));
     }
 
-    googleMapsNavigator.setDestinations(Destinations(
+    GoogleMapsNavigator.setDestinations(Destinations(
       waypoints: waypoints,
       displayOptions: NavigationDisplayOptions(
         showDestinationMarkers: false,
@@ -864,7 +867,7 @@ Future<void> stopGuidedNavigation() async {
         target: nearestDestination,
       ));
 
-      googleMapsNavigator.setDestinations(Destinations(
+      GoogleMapsNavigator.setDestinations(Destinations(
         waypoints: waypoints,
         displayOptions: NavigationDisplayOptions(
           showDestinationMarkers: false,
@@ -903,8 +906,8 @@ Future<void> stopGuidedNavigation() async {
         ? currentLocationOrders
         : ordersList;
 
-    final List<Marker> tempMarkers = [];
-    final Map<String, MarkerOptions> tempMarkerMap = {};
+final List<Marker> tempMarkers = [];
+    final Map<String, Marker> tempMarkerMap = {};
     final List<NavigationWaypoint> tempWaypoints = [];
     final List<LatLng> tempLatLngList = [];
 
@@ -938,7 +941,7 @@ Future<void> stopGuidedNavigation() async {
       );
 
       tempMarkers.add(marker);
-      tempMarkerMap[marker.markerId] = marker.options;
+tempMarkerMap[marker.markerId] = marker;
       tempWaypoints.add(NavigationWaypoint.withLatLngTarget(
         title: order.consigneeAddress?.toString() ?? "Destination",
         target: position,
@@ -947,7 +950,7 @@ Future<void> stopGuidedNavigation() async {
     }
 
     markers.addAll(tempMarkers);
-    markerMap.addAll(tempMarkerMap);
+markerMap.addAll(tempMarkerMap);
     waypoints.addAll(tempWaypoints);
     markerLatLangList.addAll(tempLatLngList);
 
@@ -967,7 +970,7 @@ Future<void> stopGuidedNavigation() async {
       }
     }
 
-    googleMapsNavigator.setDestinations(
+    GoogleMapsNavigator.setDestinations(
       Destinations(
         waypoints: waypoints,
         displayOptions: NavigationDisplayOptions(
@@ -982,7 +985,8 @@ Future<void> stopGuidedNavigation() async {
       ),
     );
 
-    await navigationViewController?.addMarkers(tempMarkers);
+    // google_navigation_flutter expects List<MarkerOptions>.
+    await navigationViewController?.addMarkers(tempMarkers.map((m) => m.options).toList());
 
     return true;
   }
@@ -1035,8 +1039,8 @@ Future<void> stopGuidedNavigation() async {
   void onClose() {
     remainingTimeOrDistanceChangedSubscription?.cancel();
     locationSubscription?.cancel();
-    googleMapsNavigator.stopGuidance();
-    googleMapsNavigator.cleanup();
+    GoogleMapsNavigator.stopGuidance();
+    GoogleMapsNavigator.cleanup();
     initializeNavigation.value = false;
     navigationViewController?.clear();
     _hintTextTimer?.cancel();

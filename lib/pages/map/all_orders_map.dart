@@ -355,9 +355,10 @@ class _AllOrdersMapPageState extends State<AllOrdersMapPage> with WidgetsBinding
     controller.navigationViewController = mapController;
     await mapController.setMyLocationEnabled(true);
     for (var marker in controller.markers) {
-      mapController.addMarkers([marker]);
+      // google_navigation_flutter expects List<MarkerOptions>.
+      mapController.addMarkers([marker.options]);
     }
-    await controller.googleMapsNavigator.setDestinations(Destinations(
+    await GoogleMapsNavigator.setDestinations(Destinations(
       waypoints: controller.waypoints,
       displayOptions: NavigationDisplayOptions(
         showDestinationMarkers: false,

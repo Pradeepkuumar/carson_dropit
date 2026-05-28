@@ -70,8 +70,7 @@ class AuthController extends GetxController {
         apiKeys.password: password.value.text,
         apiKeys.deviceToken: box.read(apiKeys.fcmToken) ?? fcmToken,
       };
-      var response = await apiProvider
-          .postRequest(apiEndPoints.login, model );
+      var response = await apiProvider.postRequest(apiEndPoints.login, model );
       var result = BaseApiResponse.fromJson(response);
       if (result.status_code == 200) {
         userData = UserData.fromJson(result.data);

@@ -68,8 +68,9 @@ Future<void> fetchOrdersAndInitialize() async {
                     onViewCreated: (GoogleMapViewController mapController) {
                       controller.navigationViewController = mapController;
                       // mapController.updateMarkers(controller.markers);
+// google_navigation_flutter expects List<MarkerOptions> for addMarkers
                       for (var marker in controller.markers) {
-                        mapController.addMarkers([marker]);
+                        mapController.addMarkers([marker.options]);
                       }
                       //mapController.addCircles(controller.circle);
                       // _mapController.complete(mapController);
@@ -142,9 +143,7 @@ Future<void> fetchOrdersAndInitialize() async {
                                 flex: 20,
                                 child: SizedBox(
                                   height: context.isPhone ? 580.sp : 800.sp,
-                                  child: Obx(() => controller
-                                      .selectedMerchantOrdersList.isEmpty ?
-                                      utils.noDataFoundWidget("There is no order for this location \n Please check another pickup location"):
+                                  child: Obx(() =>
                                       PageView.builder(
                                         scrollDirection: Axis.horizontal,
                                         controller: PageController(
