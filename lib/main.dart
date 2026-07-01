@@ -7,70 +7,93 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
-
-import 'package:carson_zyppy/firebase_options.dart';
-import 'package:carson_zyppy/firebase_notifications/firebase_notifiction_controller.dart';
-import 'package:carson_zyppy/local_db/dataBase/database.dart';
-import 'package:carson_zyppy/local_db/userRepository/db/floor_database.dart';
-import 'package:carson_zyppy/local_db/user_repo.dart';
-import 'package:carson_zyppy/splash_screen/splash_screen.dart';
 import 'package:carson_zyppy/app_pages/app_pages.dart';
 import 'package:carson_zyppy/app_theme/AppTheme.dart';
+import 'package:carson_zyppy/firebase_notifications/firebase_notifiction_controller.dart';
+import 'package:carson_zyppy/firebase_options.dart';
+import 'package:carson_zyppy/local_db/dataBase/database.dart';
+import 'package:carson_zyppy/local_db/user_repo.dart';
+import 'package:carson_zyppy/local_db/userRepository/db/floor_database.dart';
+import 'package:carson_zyppy/splash_screen/splash_screen.dart';
 import 'package:upgrader/upgrader.dart';
 
 @pragma('vm:entry-point')
-Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {   
-   //await FirebaseMessagingController.firebaseMessagingBackgroundHandler(message);
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // await FirebaseMessagingController.firebaseMessagingBackgroundHandler(message);
 }
-void main() async {
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await GetStorage.init();
-
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-  Get.put(FirebaseMessagingController(), permanent: true);
+  FirebaseMessaging.onBackgroundMessage(
+    firebaseMessagingBackgroundHandler,
+  );
 
-  FlutterError.onError = (errorDetails) {
+  Get.put(
+    FirebaseMessagingController(),
+    permanent: true,
+  );
+
+  FlutterError.onError = (FlutterErrorDetails errorDetails) {
     FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
   };
 
   PlatformDispatcher.instance.onError = (error, stack) {
-    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    FirebaseCrashlytics.instance.recordError(
+      error,
+      stack,
+      fatal: true,
+    );
     return true;
   };
 
-  await Get.putAsync<UserRepository>(permanent: true, () async {
-    final db = await $FloorAppDatabase
-        .databaseBuilder('app_database.db')
-        .build();
-    return FloorUserRepository(db);
-  });
+  await Get.putAsync<UserRepository>(
+        () async {
+      final db = await $FloorAppDatabase
+          .databaseBuilder('app_database.db')
+          .build();
+
+      return FloorUserRepository(db);
+    },
+    permanent: true,
+  );
 
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
   ]);
 
-  runApp(
-  ScreenUtilInit(
-    designSize: const Size(375, 812),
-    builder: (context, child) => GetMaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Carson Drop-it',
-      themeMode: ThemeMode.light,
-      theme: AppThemes.light,
-      getPages: AppPages.routes,
-      home:  UpgradeAlert(
-        barrierDismissible: false,
-        dialogStyle: UpgradeDialogStyle.material,
-        showIgnore: false,
-        showLater: false,
-        child: const SplashScreen()),
-    ),
-  ),
-);
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ScreenUtilInit(
+      designSize: const Size(375, 812),
+      builder: (context, child) {
+        return GetMaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'Carson Drop-it',
+          themeMode: ThemeMode.light,
+          theme: AppThemes.light,
+          getPages: AppPages.routes,
+          home: UpgradeAlert(
+            barrierDismissible: false,
+            dialogStyle: UpgradeDialogStyle.material,
+            showIgnore: false,
+            showLater: false,
+            child: const SplashScreen(),
+          ),
+        );
+      },
+    );
+  }
 }

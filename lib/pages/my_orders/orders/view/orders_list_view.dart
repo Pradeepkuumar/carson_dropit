@@ -42,7 +42,7 @@ class OrdersListViewState extends State<OrdersListView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: AppColors.transparent,
+       // backgroundColor: AppColors.transparent,
         body: Obx(() {
           return Stack(
             children: [

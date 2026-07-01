@@ -17,7 +17,8 @@ class RiderDashboard extends StatefulWidget {
   State<RiderDashboard> createState() => _RiderDashboardState();
 }
 
-class _RiderDashboardState extends State<RiderDashboard> with WidgetsBindingObserver {
+class _RiderDashboardState extends State<RiderDashboard>
+    with WidgetsBindingObserver {
   final RiderDashboardController controller =
       Get.put(RiderDashboardController());
 
@@ -30,16 +31,13 @@ class _RiderDashboardState extends State<RiderDashboard> with WidgetsBindingObse
     super.initState();
   }
 
-
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if(state == AppLifecycleState.resumed){
+    if (state == AppLifecycleState.resumed) {
       controller.checkForUpdate();
     }
     super.didChangeAppLifecycleState(state);
   }
-
- 
 
   @override
   Widget build(BuildContext context) {
@@ -60,8 +58,9 @@ class _RiderDashboardState extends State<RiderDashboard> with WidgetsBindingObse
                       height: 200,
                       width: Get.width - 50,
                       child: Image.asset(appLogo,
-                          color:
-                              Get.isDarkMode ? AppColors.primaryThemeColor : null),
+                          color: Get.isDarkMode
+                              ? AppColors.primaryThemeColor
+                              : null),
                     ),
                   ),
                 ),
@@ -79,8 +78,8 @@ class _RiderDashboardState extends State<RiderDashboard> with WidgetsBindingObse
                         child: Container(
                           width: Get.width - 20,
                           decoration: BoxDecoration(
-                            border: Border.all(
-                                color: AppColors.primaryThemeColor),
+                            border:
+                                Border.all(color: AppColors.primaryThemeColor),
                             borderRadius: BorderRadius.circular(10),
                             color: AppColors.primaryThemeColor.withOpacity(0.1),
                           ),
@@ -94,15 +93,15 @@ class _RiderDashboardState extends State<RiderDashboard> with WidgetsBindingObse
                                   controller.getC2CCDashBoardData();
                                 },
                                 child: SingleChildScrollView(
-                                  physics: const AlwaysScrollableScrollPhysics(),
+                                  physics:
+                                      const AlwaysScrollableScrollPhysics(),
                                   scrollDirection: Axis.vertical,
                                   child: Padding(
                                     padding: const EdgeInsets.all(8.0),
                                     child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-          
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
-                                        
                                         const SizedBox(
                                           height: 5,
                                         ),
@@ -111,7 +110,8 @@ class _RiderDashboardState extends State<RiderDashboard> with WidgetsBindingObse
                                           child: Container(
                                             margin: const EdgeInsets.symmetric(
                                                 horizontal: 15),
-                                            decoration: utils.boxDecorationWhite(),
+                                            decoration:
+                                                utils.boxDecorationWhite(),
                                             child: Padding(
                                               padding: EdgeInsets.all(
                                                   utils.isMobileScreen(context)
@@ -119,23 +119,32 @@ class _RiderDashboardState extends State<RiderDashboard> with WidgetsBindingObse
                                                       : 20),
                                               child: Column(
                                                 mainAxisAlignment:
-                                                    MainAxisAlignment.spaceEvenly,
+                                                    MainAxisAlignment
+                                                        .spaceEvenly,
                                                 children: [
                                                   Padding(
-                                                    padding: const EdgeInsets.all(8.0),
+                                                    padding:
+                                                        const EdgeInsets.all(
+                                                            8.0),
                                                     child: Row(
                                                       children: [
                                                         utils.imageView(
                                                             myOrdersImage,
-                                                            utils.isMobileScreen(context)
+                                                            utils.isMobileScreen(
+                                                                    context)
                                                                 ? 35
                                                                 : 60,
-                                                            utils.isMobileScreen(context)
+                                                            utils.isMobileScreen(
+                                                                    context)
                                                                 ? 35
                                                                 : 50),
-                                                        const SizedBox(width: 10),
-                                                        utils.tvCustom("My Orders",
-                                                            AppColors.primaryThemeColor, 15)
+                                                        const SizedBox(
+                                                            width: 10),
+                                                        utils.tvCustom(
+                                                            "My Orders",
+                                                            AppColors
+                                                                .primaryThemeColor,
+                                                            15)
                                                       ],
                                                     ),
                                                   ),
@@ -143,13 +152,18 @@ class _RiderDashboardState extends State<RiderDashboard> with WidgetsBindingObse
                                                     mainAxisAlignment:
                                                         MainAxisAlignment.start,
                                                     crossAxisAlignment:
-                                                        CrossAxisAlignment.start,
+                                                        CrossAxisAlignment
+                                                            .start,
                                                     children: [
-                                                      utils.tvCustom("Today's Orders",
-                                                          AppColors.primaryThemeColor, 14),
+                                                      utils.tvCustom(
+                                                          "Today's Orders",
+                                                          AppColors
+                                                              .primaryThemeColor,
+                                                          14),
                                                       Row(
                                                         mainAxisAlignment:
-                                                            MainAxisAlignment.spaceBetween,
+                                                            MainAxisAlignment
+                                                                .spaceBetween,
                                                         children: [
                                                           utils.tvCustom(
                                                               "Assigned : ${((controller.dashBoardData.value.todayOrdersCount?.aSSIGNED ?? 0) + (controller.c2cDashBoardData.value.todayOrdersCount?.aSSIGNED ?? 0))}",
@@ -163,7 +177,8 @@ class _RiderDashboardState extends State<RiderDashboard> with WidgetsBindingObse
                                                       ),
                                                       Row(
                                                         mainAxisAlignment:
-                                                            MainAxisAlignment.spaceBetween,
+                                                            MainAxisAlignment
+                                                                .spaceBetween,
                                                         children: [
                                                           utils.tvCustom(
                                                               "OFD : ${((controller.dashBoardData.value.todayOrdersCount?.oFD ?? 0) + (controller.c2cDashBoardData.value.todayOrdersCount?.oFD ?? 0))}",
@@ -181,16 +196,21 @@ class _RiderDashboardState extends State<RiderDashboard> with WidgetsBindingObse
                                                     mainAxisAlignment:
                                                         MainAxisAlignment.start,
                                                     crossAxisAlignment:
-                                                        CrossAxisAlignment.start,
+                                                        CrossAxisAlignment
+                                                            .start,
                                                     children: [
-                                                      utils.tvCustom("All Orders",
-                                                          AppColors.primaryThemeColor, 14),
+                                                      utils.tvCustom(
+                                                          "All Orders",
+                                                          AppColors
+                                                              .primaryThemeColor,
+                                                          14),
                                                       Row(
                                                         mainAxisAlignment:
-                                                            MainAxisAlignment.spaceBetween,
+                                                            MainAxisAlignment
+                                                                .spaceBetween,
                                                         children: [
                                                           utils.tvCustom(
-                                                              "Assigned : ${((controller.dashBoardData.value.allOrdersCount?.aSSIGNED ?? 0 ) + (controller.c2cDashBoardData.value.allOrdersCount?.aSSIGNED ?? 0))}",
+                                                              "Assigned : ${((controller.dashBoardData.value.allOrdersCount?.aSSIGNED ?? 0) + (controller.c2cDashBoardData.value.allOrdersCount?.aSSIGNED ?? 0))}",
                                                               AppColors.black,
                                                               12),
                                                           utils.tvCustom(
@@ -201,7 +221,8 @@ class _RiderDashboardState extends State<RiderDashboard> with WidgetsBindingObse
                                                       ),
                                                       Row(
                                                         mainAxisAlignment:
-                                                            MainAxisAlignment.spaceBetween,
+                                                            MainAxisAlignment
+                                                                .spaceBetween,
                                                         children: [
                                                           utils.tvCustom(
                                                               "OFD : ${((controller.dashBoardData.value.allOrdersCount?.oFD ?? 0) + (controller.c2cDashBoardData.value.allOrdersCount?.oFD ?? 0))}",
@@ -225,7 +246,8 @@ class _RiderDashboardState extends State<RiderDashboard> with WidgetsBindingObse
                                         ),
                                         InkWell(
                                           onTap: () {
-                                            Get.toNamed(Routes.nearByOrders)?.then((value) {
+                                            Get.toNamed(Routes.nearByOrders)
+                                                ?.then((value) {
                                               controller.getC2CCDashBoardData();
                                               controller.getDashBoardData();
                                             });
@@ -233,28 +255,40 @@ class _RiderDashboardState extends State<RiderDashboard> with WidgetsBindingObse
                                           child: Container(
                                             margin: const EdgeInsets.symmetric(
                                                 horizontal: 15),
-                                            decoration: utils.boxDecorationWhite(),
+                                            decoration:
+                                                utils.boxDecorationWhite(),
                                             child: Padding(
-                                              padding: const EdgeInsets.all(8.0),
+                                              padding:
+                                                  const EdgeInsets.all(8.0),
                                               child: Column(
                                                 mainAxisAlignment:
-                                                    MainAxisAlignment.spaceEvenly,
+                                                    MainAxisAlignment
+                                                        .spaceEvenly,
                                                 children: [
                                                   Padding(
-                                                    padding: const EdgeInsets.all(8.0),
+                                                    padding:
+                                                        const EdgeInsets.all(
+                                                            8.0),
                                                     child: Row(
-                                                      mainAxisAlignment: MainAxisAlignment.start,
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .start,
                                                       children: [
                                                         utils.imageView(
                                                             nearByImage,
-                                                            context.isPhone ? 50 : 60,
-                                                            context.isPhone ? 50 : 50),
+                                                            context.isPhone
+                                                                ? 50
+                                                                : 60,
+                                                            context.isPhone
+                                                                ? 50
+                                                                : 50),
                                                         const SizedBox(
                                                           width: 10,
                                                         ),
                                                         utils.tvCustom(
                                                             "Find Nearby \n B2C Pickup Orders",
-                                                            AppColors.primaryThemeColor,
+                                                            AppColors
+                                                                .primaryThemeColor,
                                                             16)
                                                       ],
                                                     ),
@@ -269,31 +303,41 @@ class _RiderDashboardState extends State<RiderDashboard> with WidgetsBindingObse
                                         ),
                                         Obx(() {
                                           return Visibility(
-                                            visible: controller.isAnyActiveOrder.value,
+                                            visible: controller
+                                                .isAnyActiveOrder.value,
                                             child: Container(
-                                              margin: const EdgeInsets.symmetric(
-                                                  horizontal: 15),
-                                              decoration: utils.boxDecorationWhite(),
+                                              margin:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 15),
+                                              decoration:
+                                                  utils.boxDecorationWhite(),
                                               child: Padding(
-                                                padding: const EdgeInsets.all(8.0),
+                                                padding:
+                                                    const EdgeInsets.all(8.0),
                                                 child: Column(
                                                   mainAxisAlignment:
-                                                      MainAxisAlignment.spaceEvenly,
+                                                      MainAxisAlignment
+                                                          .spaceEvenly,
                                                   children: [
                                                     Padding(
-                                                      padding: const EdgeInsets.all(8.0),
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                              8.0),
                                                       child: InkWell(
                                                         onTap: () {
-                                                          Get.toNamed( Routes.allOrdersMapScreen);
-                                                        //  Get.toNamed(Routes.osrmMaps);
-
+                                                          Get.toNamed(Routes
+                                                              .allOrdersMapScreen);
+                                                          //  Get.toNamed(Routes.osrmMaps);
                                                         },
                                                         child: Row(
                                                           mainAxisAlignment:
-                                                              MainAxisAlignment.start,
+                                                              MainAxisAlignment
+                                                                  .start,
                                                           children: [
                                                             Row(
-                                                              mainAxisAlignment: MainAxisAlignment.start,
+                                                              mainAxisAlignment:
+                                                                  MainAxisAlignment
+                                                                      .start,
                                                               children: [
                                                                 utils.imageView(
                                                                     icDropOrders,
@@ -327,35 +371,50 @@ class _RiderDashboardState extends State<RiderDashboard> with WidgetsBindingObse
                                               onTap: () {
                                                 Get.toNamed(Routes.c2cOrders)
                                                     ?.then((_) async {
-                                                  await controller.getC2CCDashBoardData();
-                                                  await controller.getDashBoardData();
+                                                  await controller
+                                                      .getC2CCDashBoardData();
+                                                  await controller
+                                                      .getDashBoardData();
                                                 });
                                               },
                                               child: Container(
-                                                margin: const EdgeInsets.symmetric(
-                                                    horizontal: 15),
-                                                decoration: utils.boxDecorationWhite(),
+                                                margin:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 15),
+                                                decoration:
+                                                    utils.boxDecorationWhite(),
                                                 child: Padding(
-                                                  padding: const EdgeInsets.all(8.0),
+                                                  padding:
+                                                      const EdgeInsets.all(8.0),
                                                   child: Column(
                                                     mainAxisAlignment:
-                                                        MainAxisAlignment.spaceEvenly,
+                                                        MainAxisAlignment
+                                                            .spaceEvenly,
                                                     children: [
                                                       Padding(
-                                                        padding: const EdgeInsets.all(8.0),
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .all(8.0),
                                                         child: Row(
-                                                          mainAxisAlignment: MainAxisAlignment.start,
+                                                          mainAxisAlignment:
+                                                              MainAxisAlignment
+                                                                  .start,
                                                           children: [
                                                             utils.imageView(
                                                                 'assets/images/interaction.png',
-                                                                context.isPhone ? 50 : 60,
-                                                                context.isPhone ? 50 : 50),
+                                                                context.isPhone
+                                                                    ? 50
+                                                                    : 60,
+                                                                context.isPhone
+                                                                    ? 50
+                                                                    : 50),
                                                             const SizedBox(
                                                               width: 10,
                                                             ),
                                                             utils.tvCustom(
                                                                 "C2C Orders(${controller.c2cDashBoardData.value.allOrdersCount?.aLLORDER.toString() ?? 0})",
-                                                                AppColors.primaryThemeColor,
+                                                                AppColors
+                                                                    .primaryThemeColor,
                                                                 16)
                                                           ],
                                                         ),
@@ -381,36 +440,33 @@ class _RiderDashboardState extends State<RiderDashboard> with WidgetsBindingObse
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                      Column(
-                                                  children: [ 
-                                                    Transform.scale(
-                                                        scale: 0.8,
-                                                        child: Switch(
-                                                            value: true,
-                                                            activeTrackColor:
-                                                                AppColors.greenLight,
-                                                            onChanged: (value) async {
-                                                              utils.simpleDialog("Attention!", "Do you want to Sign-Off this session ?", () async{
-                                                                     bool isSignIn =
-                                                                  await controller
-                                                                      .markAttendance(
-                                                                          false);
-                                                              if (isSignIn) {
-                                                                controller
-                                                                    .isAttendanceMarked
-                                                                    .value = false;
-                                                              }
-                                                              }, (){
-                                                                Navigator.of(Get.context!).pop(); 
-                                                              });
-                                                             
-                                                            })),
-                                                    utils.tvCustom("Sign-Off",
-                                                        AppColors.primaryThemeColor, 8)
-                                                  ],
-                                                )
-                    ],),
-
+                        Column(
+                          children: [
+                            Transform.scale(
+                                scale: 0.8,
+                                child: Switch(
+                                    value: true,
+                                    activeTrackColor: AppColors.greenLight,
+                                    onChanged: (value) async {
+                                      utils.simpleDialog("Attention!",
+                                          "Do you want to Sign-Off this session ?",
+                                          () async {
+                                        bool isSignIn = await controller
+                                            .markAttendance(false);
+                                        if (isSignIn) {
+                                          controller.isAttendanceMarked.value =
+                                              false;
+                                        }
+                                      }, () {
+                                        Navigator.of(Get.context!).pop();
+                                      });
+                                    })),
+                            utils.tvCustom(
+                                "Sign-Off", AppColors.primaryThemeColor, 8)
+                          ],
+                        )
+                      ],
+                    ),
                     Obx(() {
                       return Padding(
                         padding: const EdgeInsets.all(8.0),
@@ -431,8 +487,9 @@ class _RiderDashboardState extends State<RiderDashboard> with WidgetsBindingObse
                                     ? 460.sp
                                     : 650.sp
                                 : 45.0.sp,
-                            decoration:
-                                showMenu.value ? utils.boxDecorationWhite() : null,
+                            decoration: showMenu.value
+                                ? utils.boxDecorationWhite()
+                                : null,
                             duration: const Duration(milliseconds: 200),
                             curve: Curves.linearToEaseOut,
                             child: Padding(
@@ -467,23 +524,47 @@ class _RiderDashboardState extends State<RiderDashboard> with WidgetsBindingObse
                                             ),
                                             Row(
                                               children: [
-                                               Obx(() => InkWell(
-                                                onTap: (){
-                                                  controller.updateProfileDialog.value = true;
-                                                },
-                                                 child: CircleAvatar(
-                                                      radius: 25,
-                                                      backgroundColor: Colors.grey[200],
-                                                      backgroundImage: controller.avatar.value != null
-                                                          ? FileImage(controller.avatar.value!)
-                                                          : (controller.userData.avatar != null 
-                                                              ? NetworkImage(controller.userData.avatar!) 
-                                                              : null) as ImageProvider?,
-                                                      child: controller.avatar.value == null && controller.userData.avatar == null
-                                                          ? Icon(Icons.person, size: 30, color: Colors.grey[400])
-                                                          : null,
-                                                    ),
-                                               )),
+                                                Obx(() => InkWell(
+                                                      onTap: () {
+                                                        controller
+                                                            .updateProfileDialog
+                                                            .value = true;
+                                                      },
+                                                      child: CircleAvatar(
+                                                        radius: 25,
+                                                        backgroundColor:
+                                                            Colors.grey[200],
+                                                        backgroundImage: controller
+                                                                    .avatar
+                                                                    .value !=
+                                                                null
+                                                            ? FileImage(
+                                                                controller
+                                                                    .avatar
+                                                                    .value!)
+                                                            : (controller
+                                                                        .userData
+                                                                        .avatar !=
+                                                                    null
+                                                                ? NetworkImage(
+                                                                    controller
+                                                                        .userData
+                                                                        .avatar!)
+                                                                : null) as ImageProvider?,
+                                                        child: controller.avatar
+                                                                        .value ==
+                                                                    null &&
+                                                                controller
+                                                                        .userData
+                                                                        .avatar ==
+                                                                    null
+                                                            ? Icon(Icons.person,
+                                                                size: 30,
+                                                                color: Colors
+                                                                    .grey[400])
+                                                            : null,
+                                                      ),
+                                                    )),
                                                 const SizedBox(
                                                   width: 5,
                                                 ),
@@ -494,11 +575,13 @@ class _RiderDashboardState extends State<RiderDashboard> with WidgetsBindingObse
                                                       CrossAxisAlignment.start,
                                                   children: [
                                                     utils.tvCustom(
-                                                        controller.userData.name,
+                                                        controller
+                                                            .userData.name,
                                                         AppColors.black,
                                                         15),
                                                     utils.tvCustom(
-                                                        controller.userData.email,
+                                                        controller
+                                                            .userData.email,
                                                         AppColors.black,
                                                         10)
                                                   ],
@@ -510,14 +593,16 @@ class _RiderDashboardState extends State<RiderDashboard> with WidgetsBindingObse
                                             ),
                                             Row(
                                               mainAxisAlignment:
-                                                  MainAxisAlignment.spaceBetween,
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
                                               children: [
                                                 Obx(() {
                                                   return Column(
                                                     mainAxisAlignment:
                                                         MainAxisAlignment.start,
                                                     crossAxisAlignment:
-                                                        CrossAxisAlignment.start,
+                                                        CrossAxisAlignment
+                                                            .start,
                                                     children: [
                                                       Row(
                                                         children: [
@@ -530,9 +615,12 @@ class _RiderDashboardState extends State<RiderDashboard> with WidgetsBindingObse
                                                             width: 5,
                                                           ),
                                                           utils.tvCustom(
-                                                              controller.walletAmount.value
+                                                              controller
+                                                                  .walletAmount
+                                                                  .value
                                                                   .toString(),
-                                                              AppColors.primaryThemeColor,
+                                                              AppColors
+                                                                  .primaryThemeColor,
                                                               16)
                                                         ],
                                                       ),
@@ -570,22 +658,19 @@ class _RiderDashboardState extends State<RiderDashboard> with WidgetsBindingObse
                                             const SizedBox(
                                               height: 10,
                                             ),
-                                            utils.iconButton(
-                                                "MY ORDERS",
-                                                () {
-                                                  Get.toNamed(Routes.ordersScreen);
-                                                },
+                                            utils.iconButton("MY ORDERS", () {
+                                              Get.toNamed(Routes.ordersScreen);
+                                            },
                                                 Icons.outbound_rounded,
                                                 AppColors.primaryThemeColor,
                                                 AppColors.white),
                                             const SizedBox(
                                               height: 10,
                                             ),
-                                            utils.iconButton(
-                                                "NEARBY ORDERS",
+                                            utils.iconButton("NEARBY ORDERS",
                                                 () {
-                                                  Get.toNamed(Routes.nearByOrders);
-                                                },
+                                              Get.toNamed(Routes.nearByOrders);
+                                            },
                                                 Icons.near_me,
                                                 AppColors.primaryThemeColor,
                                                 AppColors.white),
@@ -601,29 +686,27 @@ class _RiderDashboardState extends State<RiderDashboard> with WidgetsBindingObse
                                             const SizedBox(
                                               height: 130,
                                             ),
-                                            utils.iconButton(
-                                                "LOGOUT",
+                                            utils.iconButton("LOGOUT",
                                                 () async {
-                                                  bool isLoggedOut =
+                                              bool isLoggedOut =
+                                                  await controller.logout();
+                                              if (isLoggedOut) {
+                                                utils.simpleDialog(
+                                                    "Do you want to Logout from app?",
+                                                    "", () async {
+                                                  var isLoggedOut =
                                                       await controller.logout();
                                                   if (isLoggedOut) {
-                                                    utils.simpleDialog(
-                                                        "Do you want to Logout from app?",
-                                                        "", () async {
-                                                      var isLoggedOut =
-                                                          await controller.logout();
-                                                      if (isLoggedOut) {
-                                                        userRepository.deleteUser();
-                                                        Get.offAllNamed(Routes.auth);
-                                                      }
-                                                    }, () {
-                                                      Get.back();
-                                                    });
+                                                    userRepository.deleteUser();
+                                                    Get.offAllNamed(
+                                                        Routes.auth);
                                                   }
-                                                },
-                                                Icons.arrow_forward,
-                                                AppColors.red,
-                                                AppColors.white),
+                                                }, () {
+                                                  Get.back();
+                                                });
+                                              }
+                                            }, Icons.arrow_forward,
+                                                AppColors.red, AppColors.white),
                                           ],
                                         ),
                                       )),
@@ -634,219 +717,268 @@ class _RiderDashboardState extends State<RiderDashboard> with WidgetsBindingObse
                         ),
                       );
                     }),
-                Visibility(
-                  visible: controller.updateProfileDialog.value,
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Container(
-                        decoration: utils.boxDecorationWhite(),
-                        child:     Container(
-                      width: double.maxFinite,
-                      padding: const EdgeInsets.all(20),
-                      child: SingleChildScrollView(
-                        child: Form(
-                          key: controller.profileFormKey,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Header
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text(
-                                    "Update Profile",
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.close),
-                                    onPressed: () => controller.updateProfileDialog.value = false
-                                  ),
-                                ],
-                              ),
-                              const Divider(),
-                              const SizedBox(height: 16),
-                              
-                              // Avatar Section
-                              Center(
-                                child: Stack(
-                                  children: [
-                                    Obx(() => CircleAvatar(
-                                      radius: 60,
-                                      backgroundColor: Colors.grey[200],
-                                      backgroundImage: controller.avatar.value != null
-                                          ? FileImage(controller.avatar.value!)
-                                          : (controller.userData.avatar != null 
-                                              ? NetworkImage(controller.userData.avatar!) 
-                                              : null) as ImageProvider?,
-                                      child: controller.avatar.value == null && controller.userData.avatar == null
-                                          ? Icon(Icons.person, size: 50, color: Colors.grey[400])
-                                          : null,
-                                    )),
-                                    Positioned(
-                                      bottom: 0,
-                                      right: 0,
-                                      child: GestureDetector(
-                                        onTap: controller.showImageSourceDialog,
-                                        child: Container(
-                                          padding: const EdgeInsets.all(8),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.primaryThemeColor,
-                                            shape: BoxShape.circle,
-                                            border: Border.all(color: Colors.white, width: 2),
+                    Visibility(
+                      visible: controller.updateProfileDialog.value,
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Container(
+                            decoration: utils.boxDecorationWhite(),
+                            child: Container(
+                              width: double.maxFinite,
+                              padding: const EdgeInsets.all(20),
+                              child: SingleChildScrollView(
+                                child: Form(
+                                  key: controller.profileFormKey,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // Header
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          const Text(
+                                            "Update Profile",
+                                            style: TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
-                                          child: const Icon(
-                                            Icons.camera_alt,
-                                            color: Colors.white,
-                                            size: 20,
+                                          IconButton(
+                                              icon: const Icon(Icons.close),
+                                              onPressed: () => controller
+                                                  .updateProfileDialog
+                                                  .value = false),
+                                        ],
+                                      ),
+                                      const Divider(),
+                                      const SizedBox(height: 16),
+
+                                      // Avatar Section
+                                      Center(
+                                        child: Stack(
+                                          children: [
+                                            Obx(() => CircleAvatar(
+                                                  radius: 60,
+                                                  backgroundColor:
+                                                      Colors.grey[200],
+                                                  backgroundImage: controller
+                                                              .avatar.value !=
+                                                          null
+                                                      ? FileImage(controller
+                                                          .avatar.value!)
+                                                      : (controller.userData
+                                                                      .avatar !=
+                                                                  null
+                                                              ? NetworkImage(
+                                                                  controller
+                                                                      .userData
+                                                                      .avatar!)
+                                                              : null)
+                                                          as ImageProvider?,
+                                                  child: controller.avatar
+                                                                  .value ==
+                                                              null &&
+                                                          controller.userData
+                                                                  .avatar ==
+                                                              null
+                                                      ? Icon(Icons.person,
+                                                          size: 50,
+                                                          color:
+                                                              Colors.grey[400])
+                                                      : null,
+                                                )),
+                                            Positioned(
+                                              bottom: 0,
+                                              right: 0,
+                                              child: GestureDetector(
+                                                onTap: controller
+                                                    .showImageSourceDialog,
+                                                child: Container(
+                                                  padding:
+                                                      const EdgeInsets.all(8),
+                                                  decoration: BoxDecoration(
+                                                    color: AppColors
+                                                        .primaryThemeColor,
+                                                    shape: BoxShape.circle,
+                                                    border: Border.all(
+                                                        color: Colors.white,
+                                                        width: 2),
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons.camera_alt,
+                                                    color: Colors.white,
+                                                    size: 20,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 24),
+
+                                      // Address Field
+                                      Text(
+                                        "Address",
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.grey[700],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      TextFormField(
+                                        controller: controller.address,
+                                        maxLines: 3,
+                                        minLines: 1,
+                                        decoration: InputDecoration(
+                                          focusColor:
+                                              AppColors.primaryThemeColor,
+                                          hintText:
+                                              "Enter your complete address",
+                                          border: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                          prefixIcon: const Icon(
+                                              Icons.location_on,
+                                              color: Colors.grey),
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                            borderSide: BorderSide(
+                                              color: Colors.grey.shade400,
+                                              width: 1,
+                                            ),
+                                          ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                            borderSide: BorderSide(
+                                              color:
+                                                  AppColors.primaryThemeColor,
+                                              width: 2,
+                                            ),
                                           ),
                                         ),
+                                        cursorColor:
+                                            AppColors.primaryThemeColor,
+                                        validator: controller.validateAddress,
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-                              
-                              // Address Field
-                              Text(
-                                "Address",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.grey[700],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              TextFormField(
-                                controller: controller.address,
-                                maxLines: 3,
-                                minLines: 1,
-                                decoration: InputDecoration(
-                                  focusColor: AppColors.primaryThemeColor,
-                                  hintText: "Enter your complete address",
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    
-                                  ),
-                                  prefixIcon: const Icon(Icons.location_on, color: Colors.grey),
-                                  enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: BorderSide(
-                                    color: Colors.grey.shade400,
-                                    width: 1,
-                                  ),
-                                ),
-
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: BorderSide(
-                                    color: AppColors.primaryThemeColor, 
-                                    width: 2,
-                                  ),
-                                ),
-                                
-                                ),
-                                cursorColor: AppColors.primaryThemeColor,
-                                validator: controller.validateAddress,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                "Phone Number",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.grey[700],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              TextFormField(
-                                controller: controller.phone,
-                                keyboardType: TextInputType.phone,
-                                decoration: InputDecoration(
-                                  hintText: "Enter your phone number",
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  prefixIcon: const Icon(Icons.phone, color: Colors.grey),
-                                  enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(
-                                        color: Colors.grey.shade400,
-                                        width: 1,
-                                      ),
-                                    ),
-
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                      borderSide: const BorderSide(
-                                        color: AppColors.primaryThemeColor, 
-                                        width: 2,
-                                      ),
-                                    ),
-                                ),
-                                cursorColor: AppColors.primaryThemeColor,
-                                validator: controller.validatePhone,
-                              ),
-                              const SizedBox(height: 10),                  
-                              // Buttons
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: OutlinedButton(
-                                      onPressed: () => controller.updateProfileDialog.value = false,
-                                      style: OutlinedButton.styleFrom(
-                                      
-                                        padding: const EdgeInsets.symmetric(vertical: 12),
-                                        side: BorderSide(color: Colors.grey[300]!),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(8),
-                                          
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        "Phone Number",
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.grey[700],
                                         ),
                                       ),
-                                      child: const Text(
-                                        "Cancel",
-                                        style: TextStyle(color: Colors.black54),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: ElevatedButton(
-                                      onPressed: () async {
-                                        bool success = await controller.updateProfileDetails();
-                                        if (success) {
-                                         controller.updateProfileDialog.value = false;
-                                        }
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(vertical: 12),
-                                        backgroundColor: AppColors.primaryThemeColor,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(8),
+                                      const SizedBox(height: 8),
+                                      TextFormField(
+                                        controller: controller.phone,
+                                        keyboardType: TextInputType.phone,
+                                        decoration: InputDecoration(
+                                          hintText: "Enter your phone number",
+                                          border: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                          prefixIcon: const Icon(Icons.phone,
+                                              color: Colors.grey),
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                            borderSide: BorderSide(
+                                              color: Colors.grey.shade400,
+                                              width: 1,
+                                            ),
+                                          ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                            borderSide: const BorderSide(
+                                              color:
+                                                  AppColors.primaryThemeColor,
+                                              width: 2,
+                                            ),
+                                          ),
                                         ),
+                                        cursorColor:
+                                            AppColors.primaryThemeColor,
+                                        validator: controller.validatePhone,
                                       ),
-                                      child: const Text(
-                                        "Update",
-                                        style: TextStyle(color: Colors.white),
+                                      const SizedBox(height: 10),
+                                      // Buttons
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: OutlinedButton(
+                                              onPressed: () => controller
+                                                  .updateProfileDialog
+                                                  .value = false,
+                                              style: OutlinedButton.styleFrom(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        vertical: 12),
+                                                side: BorderSide(
+                                                    color: Colors.grey[300]!),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                              ),
+                                              child: const Text(
+                                                "Cancel",
+                                                style: TextStyle(
+                                                    color: Colors.black54),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: ElevatedButton(
+                                              onPressed: () async {
+                                                bool success = await controller
+                                                    .updateProfileDetails();
+                                                if (success) {
+                                                  controller.updateProfileDialog
+                                                      .value = false;
+                                                }
+                                              },
+                                              style: ElevatedButton.styleFrom(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        vertical: 12),
+                                                backgroundColor:
+                                                    AppColors.primaryThemeColor,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                              ),
+                                              child: const Text(
+                                                "Update",
+                                                style: TextStyle(
+                                                    color: Colors.white),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                    ),
+                                    ],
                                   ),
-                                ],
+                                ),
                               ),
-                            ],
+                            ),
                           ),
                         ),
                       ),
-                              ),
-                            ),
-                    ),
-                  ),
-                )
+                    )
                   ],
                 ),
               );
@@ -904,17 +1036,18 @@ class _RiderDashboardState extends State<RiderDashboard> with WidgetsBindingObse
                                       horizontal: 50,
                                     ),
                                     child: utils.iconButtonWithRoundedBorder(
-                                        "Sign-In",
-                                        45, () async {
+                                        "Sign-In", 45, () async {
                                       bool isSignIn =
                                           await controller.markAttendance(true);
                                       if (isSignIn) {
                                         controller.isAttendanceMarked.value =
                                             true;
                                       }
-                                    }, Icons.start,
+                                    },
+                                        Icons.start,
                                         AppColors.primaryThemeColor,
-                                        Icons.electric_bike, 2.0,
+                                        Icons.electric_bike,
+                                        2.0,
                                         AppColors.primaryThemeColor),
                                   ),
                                   const Spacer(),
@@ -995,8 +1128,7 @@ class _RiderDashboardState extends State<RiderDashboard> with WidgetsBindingObse
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
-                              utils.iconButton(
-                                  "Agree ", () async {
+                              utils.iconButton("Agree ", () async {
                                 if (controller.checkBoxValue.value) {
                                   await box.write("isConsentGiven", true);
                                   controller.isConsentGiven.value = true;
@@ -1006,12 +1138,12 @@ class _RiderDashboardState extends State<RiderDashboard> with WidgetsBindingObse
                                   utils.errorSnackBar("Error !",
                                       "Pls accept terms & conditions before proceed");
                                 }
-                              }, Icons.done, AppColors.greenLight, AppColors.white),
+                              }, Icons.done, AppColors.greenLight,
+                                  AppColors.white),
                               utils.iconButton("Disagree", () async {
                                 bool isLoggedOut = await controller.logout();
                                 if (isLoggedOut) {
-                                  utils.simpleDialog(
-                                      "Action",
+                                  utils.simpleDialog("Action",
                                       "If you disagree with our location policy, you will be logged out of the app.",
                                       () async {
                                     var isLoggedOut = await controller.logout();
@@ -1023,17 +1155,14 @@ class _RiderDashboardState extends State<RiderDashboard> with WidgetsBindingObse
                                     Get.back();
                                   });
                                 }
-                              },
-                                  Icons.cancel_presentation_outlined,
-                                  AppColors.red,
-                                  AppColors.white)
+                              }, Icons.cancel_presentation_outlined,
+                                  AppColors.red, AppColors.white)
                             ],
                           )
                         ],
                       ),
                     ),
                   )),
-          
           ],
         ),
       ),

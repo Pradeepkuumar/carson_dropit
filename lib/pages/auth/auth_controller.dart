@@ -79,7 +79,6 @@ class AuthController extends GetxController {
         await userRepository.deleteUser();
         await userRepository.saveUser(userData);
         utils.closeLoadingDialog();
-        update();
         return true;
       } else {
         utils.closeLoadingDialog();

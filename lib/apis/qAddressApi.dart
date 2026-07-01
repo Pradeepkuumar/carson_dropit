@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:carson_zyppy/pages/map/qAddressModel/QDeliveryAddress.dart';
+import 'package:carson_zyppy/pages/b2c_pickup_delivery_orders/qAddressModel/QDeliveryAddress.dart';
 import 'package:get/get.dart';
 
 class Qaddressapi extends GetConnect {

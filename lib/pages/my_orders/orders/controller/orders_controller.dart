@@ -17,7 +17,7 @@ import '../../../../global/consts.dart';
 import '../../../../global/global.dart';
 import '../../../../utils/colors.dart';
 import '../../../dashboard/controller/rider_dashboard_controller.dart';
-import '../../../map/reasonsItem.dart';
+import '../../../b2c_pickup_delivery_orders/reasonsItem.dart';
 import 'package:signature/signature.dart';
 
 import '../models/orders_model.dart';

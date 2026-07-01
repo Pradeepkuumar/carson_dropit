@@ -17,7 +17,7 @@ class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 35,
+      height: 50,
       color: AppColors.primaryLight,
       child: AppBar(
         title: utils.tvCustom("", AppColors.white, 16),
