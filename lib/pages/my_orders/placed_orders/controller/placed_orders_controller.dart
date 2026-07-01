@@ -12,7 +12,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import '../../../../apis/base_api_response.dart';
 import '../../../../global/global.dart';
 import '../../../../utils/colors.dart';
-import '../../../map/marker_generator/dynamic_marker_generator.dart';
+import '../../../b2c_pickup_delivery_orders/marker_generator/dynamic_marker_generator.dart';
 import '../../orders/models/orders_model.dart';
 
 class PlacedOrdersController extends GetxController {

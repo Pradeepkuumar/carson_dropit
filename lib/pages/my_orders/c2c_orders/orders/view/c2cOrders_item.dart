@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import '../../../../../global/global.dart';
 import '../../../../../utils/colors.dart';
 import '../../../../../utils/utils.dart';
-import '../../../../map/orderItem/clickedOrderItem.dart';
+import '../../../../b2c_pickup_delivery_orders/orderItem/clickedOrderItem.dart';
 import '../../model/c2cOrdersModel.dart';
 
 

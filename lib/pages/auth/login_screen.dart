@@ -131,7 +131,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 }
                                 
                               }else{
-                                utils.errorDialog("Pls Enter Credentials");
+                                utils.errorDialog("Please Enter Credentials");
                               }
 
                             },

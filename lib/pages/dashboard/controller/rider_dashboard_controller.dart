@@ -62,7 +62,7 @@ class RiderDashboardController extends GetxController {
 
   @override
   void onReady() {
-    isConsentGiven.value = box.read("isConsentGiven");
+    isConsentGiven.value = box.read("isConsentGiven") ?? false;
     if(isConsentGiven.value){
       updateLocation();
       requestBackgroundPermission();

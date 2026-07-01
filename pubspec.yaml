@@ -14,9 +14,9 @@ dependencies:
   permission_handler: ^11.0.0
   location: ^7.0.0
   flutter_polyline_points: ^2.0.0
-  change_app_package_name: ^1.4.0
+  #change_app_package_name: ^1.4.0
   tab_container: ^3.5.3  
-  rename_app: ^1.6.1
+  #rename_app: ^1.6.1
   image_picker: ^1.0.7
   lottie: ^3.1.0
   intl: ^0.19.0
@@ -26,8 +26,10 @@ dependencies:
   path_provider: ^2.1.4
   url_launcher: ^6.3.1
   google_fonts: ^8.0.2
+
+
   flutter_tts: ^4.2.0
-  internet_connection_checker_plus: ^2.6.0
+  #internet_connection_checker_plus: ^2.6.0
   flutter_sales_graph: ^0.0.1
   circular_countdown_timer: ^0.2.4
   google_navigation_flutter: ^0.8.4
@@ -50,7 +52,7 @@ dependencies:
   flutter_local_notifications: ^21.0.0
   floor: ^1.5.0
   http: ^1.5.0
-  dio: ^5.9.0
+  #dio: ^5.9.0
   local_auth: 2.3.0
   local_auth_android: ^1.0.52
   local_auth_darwin: ^1.6.0

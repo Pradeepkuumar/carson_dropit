@@ -80,9 +80,6 @@ class AllOrdersMapController extends GetxController  {
   var isUpdateCardVisibleForUpdate = false.obs;
 
 
-// markerMap is not needed for addMarkers; keep map of marker ids if you later need it.
-  // markerMap previously stored MarkerOptions, but in google_navigation_flutter Marker.options is not assignable.
-  // Keeping only marker id -> Marker (if needed later).
   final Map<String, Marker> markerMap = {};
   ImageDescriptor?  pickIcon;
   ImageDescriptor?  dropIcon;
@@ -242,83 +239,83 @@ class AllOrdersMapController extends GetxController  {
 
 
 
-  void _onRemainingTimeOrDistanceChangedEvent(RemainingTimeOrDistanceChangedEvent event) {
-    remainingDistance.value = event.remainingDistance;
-      DateTime now = DateTime.now();
-      if (_lastApiCallTime == null || now.difference(_lastApiCallTime!).inMinutes >= 1) {
-        _lastApiCallTime = now;
-        if (remainingDistance.value <= 300) {
-        filterCurrentLocationOrders(300);
-       }
-     }
-  }
-
-
-
-  void onArrivalEvent(OnArrivalEvent onArrive){
-    NavigationWaypoint arrivedWaypoint = onArrive.waypoint;
-    filterCurrentLocationOrders(300);
-  }
-
-
-  void checkForLocationUpdate() async {
-    if (currentLocation?.longitude != null) {
-      remainingTimeOrDistanceChangedSubscription =
-          GoogleMapsNavigator.setOnRemainingTimeOrDistanceChangedListener(
-            _onRemainingTimeOrDistanceChangedEvent,
-            remainingDistanceThresholdMeters: 300,
-          );
-      GoogleMapsNavigator.setOnArrivalListener(onArrivalEvent);
-    }
-  }
-
-  filterCurrentLocationOrders(double distanceThresholdInMeters) async {
-    currentLocationOrders.clear();
-    if (currentLocation == null || ordersList.isEmpty) return;
-    OrdersData? nearestNearbyOrder;
-    double nearestDistance = double.infinity;
-
-    final nearbyOrders = ordersList.where((order) {
-      final orderLatLng = LatLng(
-       latitude:  order.status == PICKED || order.status == OFD
-            ? double.parse(order.dropoffLatitude ?? "0.0")
-            : double.parse(order.pickupLatitude ?? "0.0"),
-        longitude:  order.status == PICKED || order.status == OFD
-            ? double.parse(order.dropoffLongitude ?? "0.0")
-            : double.parse(order.pickupLongitude ?? "0.0"),
-      );
-      final distance = calculateDistance(
-        currentLocation!.latitude,
-        currentLocation!.longitude,
-        orderLatLng.latitude,
-        orderLatLng.longitude,
-      );
-      if (distance <= distanceThresholdInMeters && distance < nearestDistance) {
-        nearestDistance = distance;
-        nearestNearbyOrder = order;
-      }
-      return distance <= distanceThresholdInMeters;
-    }).toList();
-    currentLocationOrders.addAll(nearbyOrders);
-    if(currentLocationOrders.isNotEmpty) {
-      bottomBarListType.value = 1;
-      viewAcceptView.value = true;
-      if (nearestNearbyOrder != null) {
-        selectedOrder.value = nearestNearbyOrder!;
-        selectedOrderAwbId.value = nearestNearbyOrder?.awbNo ?? "";
-        if(selectedOrder.value.status == "OFD"){
-        isUpdateCardVisibleForUpdate.value = true;
+    void _onRemainingTimeOrDistanceChangedEvent(RemainingTimeOrDistanceChangedEvent event) {
+      remainingDistance.value = event.remainingDistance;
+        DateTime now = DateTime.now();
+        if (_lastApiCallTime == null || now.difference(_lastApiCallTime!).inMinutes >= 1) {
+          _lastApiCallTime = now;
+          if (remainingDistance.value <= 300) {
+          filterCurrentLocationOrders(300);
         }
       }
-    }else{
-      viewAcceptView.value = false;
-      bottomBarListType.value = 0;
     }
-    update();
-  }
 
 
-  // Add this method to calculate route before navigation
+
+    void onArrivalEvent(OnArrivalEvent onArrive){
+      NavigationWaypoint arrivedWaypoint = onArrive.waypoint;
+      filterCurrentLocationOrders(300);
+    }
+
+
+    void checkForLocationUpdate() async {
+      if (currentLocation?.longitude != null) {
+        remainingTimeOrDistanceChangedSubscription =
+            GoogleMapsNavigator.setOnRemainingTimeOrDistanceChangedListener(
+              _onRemainingTimeOrDistanceChangedEvent,
+              remainingDistanceThresholdMeters: 300,
+            );
+        GoogleMapsNavigator.setOnArrivalListener(onArrivalEvent);
+      }
+    }
+
+    filterCurrentLocationOrders(double distanceThresholdInMeters) async {
+      currentLocationOrders.clear();
+      if (currentLocation == null || ordersList.isEmpty) return;
+      OrdersData? nearestNearbyOrder;
+      double nearestDistance = double.infinity;
+
+      final nearbyOrders = ordersList.where((order) {
+        final orderLatLng = LatLng(
+        latitude:  order.status == PICKED || order.status == OFD
+              ? double.parse(order.dropoffLatitude ?? "0.0")
+              : double.parse(order.pickupLatitude ?? "0.0"),
+          longitude:  order.status == PICKED || order.status == OFD
+              ? double.parse(order.dropoffLongitude ?? "0.0")
+              : double.parse(order.pickupLongitude ?? "0.0"),
+        );
+        final distance = calculateDistance(
+          currentLocation!.latitude,
+          currentLocation!.longitude,
+          orderLatLng.latitude,
+          orderLatLng.longitude,
+        );
+        if (distance <= distanceThresholdInMeters && distance < nearestDistance) {
+          nearestDistance = distance;
+          nearestNearbyOrder = order;
+        }
+        return distance <= distanceThresholdInMeters;
+      }).toList();
+      currentLocationOrders.addAll(nearbyOrders);
+      if(currentLocationOrders.isNotEmpty) {
+        bottomBarListType.value = 1;
+        viewAcceptView.value = true;
+        if(nearestNearbyOrder != null){
+          selectedOrder.value = nearestNearbyOrder!;
+          selectedOrderAwbId.value = nearestNearbyOrder?.awbNo ?? "";
+          if(selectedOrder.value.status == "OFD"){
+          isUpdateCardVisibleForUpdate.value = true;
+          }
+        }
+      }else{
+        viewAcceptView.value = false;
+        bottomBarListType.value = 0;
+      }
+      update();
+    }
+
+
+    // Add this method to calculate route before navigation
     Future<bool> calculateRouteToDestination() async {
       if (currentLocation == null) {
         utils.errorSnackBar("Error", "Current location not available");
@@ -397,32 +394,32 @@ class AllOrdersMapController extends GetxController  {
 
 
 
-Future<void> startGuidedNavigation() async {
-  if (!isNavigationRunning.value) {
-    bool routeCalculated = await calculateRouteToDestination();
-    if (!routeCalculated) {
-      utils.errorSnackBar("Error", "Failed to calculate route");
-      return;
+  Future<void> startGuidedNavigation() async {
+    if (!isNavigationRunning.value) {
+      bool routeCalculated = await calculateRouteToDestination();
+      if (!routeCalculated) {
+        utils.errorSnackBar("Error", "Failed to calculate route");
+        return;
+      }
+      
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      await GoogleMapsNavigator.startGuidance();
+      
+      await navigationViewController?.followMyLocation(CameraPerspective.tilted);
+      
+      await navigationViewController?.showRouteOverview();
+      
+      isNavigationRunning.value = true;
     }
-    
-    await Future.delayed(const Duration(milliseconds: 500));
-    
-    await GoogleMapsNavigator.startGuidance();
-    
-    await navigationViewController?.followMyLocation(CameraPerspective.tilted);
-    
-    await navigationViewController?.showRouteOverview();
-    
-    isNavigationRunning.value = true;
   }
-}
 
-Future<void> stopGuidedNavigation() async {
-  if (isNavigationRunning.value) {
-    await GoogleMapsNavigator.stopGuidance();
-    isNavigationRunning.value = false;
+  Future<void> stopGuidedNavigation() async {
+    if (isNavigationRunning.value) {
+      await GoogleMapsNavigator.stopGuidance();
+      isNavigationRunning.value = false;
+    }
   }
-}
 
 
   void signatureListner() {
@@ -941,7 +938,7 @@ final List<Marker> tempMarkers = [];
       );
 
       tempMarkers.add(marker);
-tempMarkerMap[marker.markerId] = marker;
+      tempMarkerMap[marker.markerId] = marker;
       tempWaypoints.add(NavigationWaypoint.withLatLngTarget(
         title: order.consigneeAddress?.toString() ?? "Destination",
         target: position,
@@ -950,7 +947,7 @@ tempMarkerMap[marker.markerId] = marker;
     }
 
     markers.addAll(tempMarkers);
-markerMap.addAll(tempMarkerMap);
+    markerMap.addAll(tempMarkerMap);
     waypoints.addAll(tempWaypoints);
     markerLatLangList.addAll(tempLatLngList);
 

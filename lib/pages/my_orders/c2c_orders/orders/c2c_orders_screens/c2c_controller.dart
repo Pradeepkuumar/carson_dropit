@@ -20,7 +20,7 @@ import '../../../../../apis/base_api_response.dart';
 import '../../../../../global/consts.dart';
 import '../../../../../global/global.dart';
 import '../../../../dashboard/controller/rider_dashboard_controller.dart';
-import '../../../../map/reasonsItem.dart';
+import '../../../../b2c_pickup_delivery_orders/reasonsItem.dart';
 import '../../../orders/models/orders_model.dart';
 
 class C2COrdersController extends GetxController with GetTickerProviderStateMixin {
