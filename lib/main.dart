@@ -82,8 +82,9 @@ class MyApp extends StatelessWidget {
         return GetMaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'Carson Drop-it',
-          themeMode: ThemeMode.light,
+          themeMode: ThemeMode.system,
           theme: AppThemes.light,
+          darkTheme: AppThemes.dark,
           getPages: AppPages.routes,
           home: UpgradeAlert(
             barrierDismissible: false,

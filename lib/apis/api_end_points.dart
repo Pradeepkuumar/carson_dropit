@@ -1,4 +1,4 @@
-class ApiEndPoints {
+  class ApiEndPoints {
 
   final String login = "login";
   final String logout = "logout";
@@ -17,10 +17,6 @@ class ApiEndPoints {
   final String driverC2CGetOrders = "driver/fetch-c2c-orders-list";
   final String updateC2COrderStatus  = "driver/update-c2c-order-status";
   final String c2cDashBoardDetails = "driver/fetch-c2c-order-dashboard-details";
-    
-  
-
-
-
+  final String whatsAppDashBoardDetails = "driver/whatsapp/dashboard-details";
 
 }

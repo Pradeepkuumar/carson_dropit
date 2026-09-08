@@ -57,8 +57,6 @@ class Utils extends GetxController {
         colorText: Colors.white);
   }
 
-
-
    bool _isSnackbarActive = false;
 
    void errorSnackBar(String title, String message) {
@@ -1192,48 +1190,75 @@ class Utils extends GetxController {
     );
   }
 
-  tvRegular(String? text, Color textColor) {
+  // Scales a base font size up on tablets so the tv* text helpers below
+  // stay readable/proportional on larger screens instead of a fixed jump.
+  double responsiveFontSize(double size) {
+    return context!.isTablet ? size * 1.35 : size;
+  }
+
+  tvRegular(String? text, Color textColor, {double? size, int? maxLines}) {
+    final baseStyle =
+        AppTextStyle.tsRegular(Get.isDarkMode ? AppColors.white : textColor);
     return Text(
       text!.tr,
       softWrap: true,
-      style: AppTextStyle.tsRegular(Get.isDarkMode? AppColors.white : textColor),
+      maxLines: maxLines,
+      overflow: maxLines != null ? TextOverflow.ellipsis : null,
+      style: baseStyle.copyWith(
+          fontSize: responsiveFontSize(size?.sp ?? baseStyle.fontSize?.sp ?? 10.sp)),
     );
   }
 
-  tvCustom(String? text, Color textColor, double fontSize, {TextAlign textAlignment = TextAlign.center}) {
+  tvCustom(String? text, Color textColor, double fontSize,
+      {TextAlign textAlignment = TextAlign.center, int? maxLines}) {
     return Text(
       text ?? "",
       softWrap: true,
-      style: AppTextStyle.tsCustom(Get.isDarkMode? AppColors.white : textColor, context!.isTablet ? 20:fontSize),
-      textAlign: textAlignment ,
+      maxLines: maxLines,
+      overflow: maxLines != null ? TextOverflow.ellipsis : null,
+      style: AppTextStyle.tsCustom(
+          Get.isDarkMode ? AppColors.white : textColor,
+          responsiveFontSize(fontSize.sp)),
+      textAlign: textAlignment,
     );
   }
 
-  tvMedium(String? text) {
+  tvMedium(String? text, {Color? color, double? size, int? maxLines}) {
     return Text(text!.tr,
         softWrap: true,
+        maxLines: maxLines,
+        overflow: maxLines != null ? TextOverflow.ellipsis : null,
         style: TextStyle(
-          color: Get.isDarkMode? AppColors.white : Colors.black,
-          fontSize: context!.isPhone ?10:20,
+          color: Get.isDarkMode ? AppColors.white : (color ?? Colors.black),
+          fontSize: responsiveFontSize(size?.sp?? 10.sp),
         ));
   }
 
-  tvLarge(String? text, Color color) {
+  tvLarge(String? text, Color color, {double? size, int? maxLines}) {
+    final baseStyle =
+        AppTextStyle.tsBoldLarge(Get.isDarkMode ? AppColors.white : color);
     return Align(
       alignment: Alignment.center,
       child: Text(
         text!.tr,
         softWrap: true,
-        style: AppTextStyle.tsBoldLarge(Get.isDarkMode? AppColors.white : color),
+        maxLines: maxLines,
+        overflow: maxLines != null ? TextOverflow.ellipsis : null,
+        style: baseStyle.copyWith(
+            fontSize: responsiveFontSize(size ?? baseStyle.fontSize ?? 20)),
       ),
     );
   }
 
-  tvHeading(String? text, Color color) {
+  tvHeading(String? text, Color color, {double? size, int? maxLines}) {
+    final baseStyle = AppTextStyle.tsHeading(color);
     return Text(
       text!.tr,
       softWrap: true,
-      style: AppTextStyle.tsHeading(color),
+      maxLines: maxLines,
+      overflow: maxLines != null ? TextOverflow.ellipsis : null,
+      style: baseStyle.copyWith(
+          fontSize: responsiveFontSize(size ?? baseStyle.fontSize ?? 34)),
     );
   }
 

@@ -11,6 +11,8 @@ import '../global/global.dart';
 import 'package:http/http.dart' as http;
  import 'package:dio/dio.dart' show FormData, Dio, DioException, Options,MultipartFile;
 
+import 'api_exceptions.dart';
+
 class ApiProvider extends GetConnect {
   final String acceptEncoding = 'gzip, deflate';
   final String accept = '*/*';
@@ -40,7 +42,23 @@ class ApiProvider extends GetConnect {
       request.headers['accept-encoding'] = acceptEncoding;
       request.headers['accept'] = accept;
       request.headers.remove('content-length');
+      debugPrint("========== REQUEST ==========");
+      debugPrint("URL      : ${request.url}");
+      debugPrint("METHOD   : ${request.method}");
+      debugPrint("HEADERS  : ${request.headers}");
+      debugPrint("QUERY    : ${request.url.query}");
+      debugPrint("=============================");
+
       return request;
+    });
+    httpClient.addResponseModifier((request, response) {
+      debugPrint("========== RESPONSE ==========");
+      debugPrint("URL         : ${request.url}");
+      debugPrint("STATUS CODE : ${response.statusCode}");
+      debugPrint("BODY        : ${response.body}");
+      debugPrint("HEADERS     : ${response.headers}");
+      debugPrint("==============================");
+      return response;
     });
   }
 
@@ -53,6 +71,7 @@ class ApiProvider extends GetConnect {
           'content-type': 'application/json; charset=UTF-8',
         },
       );
+
       responseJson = returnResponse(response);
     } on SocketException {
      // throw FetchDataException("internal server error");
@@ -80,6 +99,7 @@ class ApiProvider extends GetConnect {
   Future<dynamic> postRequest(String endpoint, Map<String, dynamic> map) async {
     dynamic responseJson;
     try {
+
       final response = await post(endpoint, jsonEncode(map),headers: {
         'Content-Type': 'application/json; charset=UTF-8',
         'Accept': '*/*',
@@ -88,8 +108,6 @@ class ApiProvider extends GetConnect {
       });
 
       responseJson = returnResponse(response);
-      print("Response Status Code: ${response.statusCode}");
-      print("Response Body: ${response.body}");
     } on TimeoutException {
       //throw FetchDataException('Request timed out');
     } on SocketException {
@@ -105,6 +123,7 @@ class ApiProvider extends GetConnect {
   Future<dynamic> putRequest(String endpoint, Map<String, dynamic> map) async {
     dynamic responseJson;
     try {
+
       final response = await put(endpoint, map,
         headers: {
           'content-type': 'application/json; charset=UTF-8',
@@ -185,8 +204,7 @@ Future<dynamic> postRequestWithImages(
       }
     }
 
-    print('🚀 Making POST request to: $endpoint');
-    
+
     // Send request
    // Send request
     final streamedResponse = await request.send().timeout(const Duration(seconds: 30));
@@ -194,33 +212,32 @@ Future<dynamic> postRequestWithImages(
     // Convert streamed response to regular response
     final response = await http.Response.fromStream(streamedResponse);
     
-    print('✅ Request successful: ${response.statusCode}');
+
     
     responseJson = returnHttpResponse(response);
     return responseJson;
 
   } on TimeoutException catch (e) {
-    print('❌ Request timed out: $e');
+
     throw Exception('Request timed out');
   } catch (e) {
-    print('❌ Error: $e');
+
     throw Exception('Request failed: $e');
   }
 }
 
 dynamic returnHttpResponse(http.Response response) {
-  print('📡 Response status: ${response.statusCode}');
-  print('📡 Response body: ${response.body}');
+
   
   switch (response.statusCode) {
     case 200:
     case 201:
       try {
         var responseJson = json.decode(response.body);
-        print('✅ Success response: $responseJson');
+
         return responseJson;
       } catch (e) {
-        print('❌ JSON decode error: $e');
+
         return {'success': true, 'message': 'Request successful', 'data': response.body};
       }
     case 400:
@@ -296,14 +313,12 @@ Future<dynamic> postRequestWithImagesDio(
       ),
     );
 
-    print('✅ Request successful: ${response.statusCode}');
     return response.data;
 
   } on DioException catch (e) {
-    print('❌ Dio Error: ${e.type} - ${e.message}');
+
     throw Exception('Something went wrong please try again');
   } catch (e) {
-    print('❌ Error: $e');
     throw Exception('Something went wrong please try again');
   }
 }
@@ -329,14 +344,14 @@ Future<dynamic> postRequestWithImagesDio(
         var responseJson = json.decode(response.bodyString!);
         return responseJson;
       case 400:
-       // throw BadRequestException(response.hasError.toString());
+        throw BadRequestException(response.hasError.toString());
       case 403:
-       // throw UnauthorizedException(response.hasError.toString());
+        throw UnauthorizedException(response.hasError.toString());
       case 404:
-        //throw UnauthorizedException(response.hasError.toString());
+        throw UnauthorizedException(response.hasError.toString());
       case 500:
       default:
-       // throw FetchDataException("server error${response.statusCode}");
+        throw FetchDataException("server error${response.statusCode}");
     }
   }
 

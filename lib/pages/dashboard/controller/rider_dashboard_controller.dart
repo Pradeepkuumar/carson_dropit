@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:carson_zyppy/firebase_notifications/firebase_notifiction_controller.dart';
 import 'package:carson_zyppy/local_db/entity/UserData.dart';
 import 'package:carson_zyppy/pages/dashboard/models/dashboard_data.dart';
+import 'package:carson_zyppy/pages/my_orders/orders/models/orders_model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,8 +13,10 @@ import 'package:in_app_update/in_app_update.dart';
 import 'package:location/location.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../apis/base_api_response.dart';
+import '../../../global/consts.dart';
 import '../../../global/global.dart';
 import '../../../global/location_service.dart';
+import '../../../utils/calculate_sla.dart';
 import '../models/driver_data.dart';
 
 
@@ -36,6 +39,9 @@ class RiderDashboardController extends GetxController {
   var isAttendanceLoaded = false.obs;
   var attendancesList = [].obs;
   var isAnyActiveOrder = false.obs;
+  var whatsAppDashBoardData = DashBoardData().obs;
+  var nextDelivery = Rxn<OrdersData>();
+  var upcomingOrders = <OrdersData>[].obs;
   var checkBoxValue = false.obs;
   RxBool isConsentGiven = RxBool(false);
   late FirebaseMessagingController firebaseMessagingController;
@@ -73,6 +79,8 @@ class RiderDashboardController extends GetxController {
       if (isNew) {
         getC2CCDashBoardData();
         getDashBoardData();
+        getWhatsAppDashBoardData();
+        getNextDelivery();
         getCurrentLocation();
         firebaseMessagingController.onNewNotification.value = false;
       }
@@ -279,6 +287,8 @@ class RiderDashboardController extends GetxController {
         WidgetsBinding.instance.addPostFrameCallback((_) async {
           await getDashBoardData();
           await getC2CCDashBoardData();
+          await getWhatsAppDashBoardData();
+          await getNextDelivery();
         });
       }
     } catch (e) {
@@ -401,6 +411,73 @@ class RiderDashboardController extends GetxController {
       var result = BaseApiResponse.fromJson(response);
       if (result.status_code == 200) {
         c2cDashBoardData.value = DashBoardData.fromJson(result.data);
+        utils.closeLoadingDialog();
+        update();
+        return true;
+      } else {
+        utils.closeLoadingDialog();
+        update();
+        return false;
+      }
+    } catch (e) {
+      utils.closeLoadingDialog();
+      return false;
+    }
+  }
+
+  Future<bool> getNextDelivery() async {
+    try {
+      Map<String, dynamic> model = {
+        apiKeys.feCode: userData.code,
+        apiKeys.status: [ASSIGNED, RE_ASSIGNED, PICKED, OFD],
+      };
+      var response = await apiProvider.postRequest(
+          apiEndPoints.driverFetchOrderList, model);
+      var result = BaseApiResponse.fromJson(response);
+      if (result.status_code == 200 && result.data != null) {
+        List<OrdersData> orders = (result.data as List)
+            .map((json) => OrdersData.fromJson(json as Map<String, dynamic>))
+            .toList();
+        orders.sort((a, b) =>
+            remainingSecondsFor(a).compareTo(remainingSecondsFor(b)));
+        nextDelivery.value = orders.isNotEmpty ? orders.first : null;
+        upcomingOrders.value = orders.take(5).toList();
+        return true;
+      } else {
+        nextDelivery.value = null;
+        upcomingOrders.value = [];
+        return false;
+      }
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Seconds left in an order's SLA window (createdAt + sla_in_hours), used
+  // to sort upcoming orders soonest-due-first and to show a "Due in" label.
+  // Negative once the SLA has elapsed.
+  int remainingSecondsFor(OrdersData order) {
+    final slaHours = int.tryParse(order.sla_in_hours ?? "") ?? 0;
+    final createdAt = order.createdAt;
+    if (createdAt == null || createdAt.isEmpty) return slaHours * 3600;
+    try {
+      final elapsed = getSecondsDifference(parseUtcTime(createdAt));
+      return (slaHours * 3600) - elapsed;
+    } catch (_) {
+      return slaHours * 3600;
+    }
+  }
+
+  Future<bool> getWhatsAppDashBoardData() async {
+    try {
+      Map<String, dynamic> model = {
+        apiKeys.feCode: userData.code,
+      };
+      var response = await apiProvider.getRequestWithQueryParams(
+          apiEndPoints.whatsAppDashBoardDetails, model);
+      var result = BaseApiResponse.fromJson(response);
+      if (result.status_code == 200) {
+        whatsAppDashBoardData.value = DashBoardData.fromJson(result.data);
         utils.closeLoadingDialog();
         update();
         return true;

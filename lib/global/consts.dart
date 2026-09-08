@@ -1,4 +1,9 @@
 const String USER_ID_KEY = "user_id";
+
+// Same key already configured for Maps/Navigation SDK in
+// android/app/src/main/AndroidManifest.xml (com.google.android.geo.API_KEY).
+// Reused here for Directions API polyline requests.
+const String GOOGLE_MAPS_API_KEY = "AIzaSyDj97zou5FNM7tc9pPuCmRH9vdnHVIKOow";
 ///Animations
  const String ANIM_LOADING_DOTS = 'assets/animations/anim_loading_dots.json';
  const String ANIM_SUCCESS = 'assets/animations/anim_success.json';

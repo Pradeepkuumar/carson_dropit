@@ -14,6 +14,10 @@ import '../pages/my_orders/c2c_orders/orders/signature_images/image_signature_bi
 import '../pages/my_orders/orders/orders_binding.dart';
 import '../pages/my_orders/orders/view/orders_tab_container.dart';
 import '../pages/my_orders/placed_orders/binding/placed_orders_binding.dart';
+import '../pages/order_list/order_list_binding.dart';
+import '../pages/order_list/order_list_screen.dart';
+import '../pages/order_list/order_detail_binding.dart';
+import '../pages/order_list/order_detail_screen.dart';
 
 
 class AppPages {
@@ -61,6 +65,16 @@ class AppPages {
       page: () => C2cImageSignatureView(),
       binding: C2cImageSignatureBinding(),
     ),
+    GetPage(
+      name: _Paths.orderListScreen,
+      page: () => const OrderListScreen(),
+      binding: OrderListBinding(),
+    ),
+    GetPage(
+      name: _Paths.orderDetailScreen,
+      page: () => const OrderDetailScreen(),
+      binding: OrderDetailBinding(),
+    ),
 
 
   ];
@@ -79,6 +93,8 @@ abstract class Routes {
   static const c2cOrders = _Paths.c2cOrders;
   static const c2cImageSign = _Paths.c2cImageSign;
   static const osrmMaps = _Paths.osrmMaps;
+  static const orderListScreen = _Paths.orderListScreen;
+  static const orderDetailScreen = _Paths.orderDetailScreen;
 }
 
 abstract class _Paths {
@@ -93,4 +109,6 @@ abstract class _Paths {
   static const c2cOrders = '/c2c_orders';
   static const c2cImageSign = '/c2c_ImageSign';
   static const osrmMaps = '/osrmMaps';
+  static const orderListScreen = '/order_list_screen';
+  static const orderDetailScreen = '/order_detail_screen';
 }
