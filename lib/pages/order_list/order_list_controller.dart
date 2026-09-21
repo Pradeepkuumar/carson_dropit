@@ -1,5 +1,8 @@
+import 'dart:math' as Log;
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../app_pages/app_pages.dart';
 import '../../apis/base_api_response.dart';
 import '../../global/consts.dart';
 import '../../global/global.dart';
@@ -8,10 +11,16 @@ import '../../local_db/entity/UserData.dart';
 import '../../utils/calculate_sla.dart';
 import '../dashboard/controller/rider_dashboard_controller.dart';
 import '../my_orders/orders/models/orders_model.dart';
+import 'models/driver_config_model.dart';
 
 class OrderListController extends GetxController {
   var user = UserData();
   final locationUtils = LocationUtils();
+
+  // "b2c" | "c2c" | "whatsapp" - which of these are shown as tabs, driven by
+  // the driver config API's allowed_channels. Defaults to all three so the
+  // screen behaves as before if that call hasn't returned yet or fails.
+  var allowedChannels = <String>["b2c", "c2c", "whatsapp"].obs;
 
   // "b2c" | "c2c" | "whatsapp"
   var typeTab = "b2c".obs;
@@ -19,6 +28,8 @@ class OrderListController extends GetxController {
   var statusTab = "assigned".obs;
   // "all" | "ppd" | "cod" | "risk"
   var paymentFilter = "all".obs;
+  // "all" | "b2c" | "c2c" | "whatsapp"
+  var serviceTypeFilter = "all".obs;
   var filterMenuOpen = false.obs;
   var searchOpen = false.obs;
   var searchQuery = "".obs;
@@ -30,8 +41,23 @@ class OrderListController extends GetxController {
   var availableOrders = <OrdersData>[].obs;
   var completedOrders = <OrdersData>[].obs;
 
+  // Set when this screen is opened from a "NearByOrders" notification tap -
+  // once the available list loads, the matching order is opened automatically.
+  String? _focusOrderRef;
+
   @override
   void onInit() {
+    final args = Get.arguments;
+    if (args is Map) {
+      final initialStatusTab = args["initialStatusTab"] as String?;
+      if (initialStatusTab != null && initialStatusTab.isNotEmpty) {
+        statusTab.value = initialStatusTab;
+      }
+      final focusOrderRef = args["focusOrderRef"] as String?;
+      if (focusOrderRef != null && focusOrderRef.isNotEmpty) {
+        _focusOrderRef = focusOrderRef;
+      }
+    }
     getUser();
     super.onInit();
   }
@@ -41,7 +67,38 @@ class OrderListController extends GetxController {
     if (value != null) {
       user = value;
     }
+    await getDriverConfig();
     await refreshCurrentTab();
+  }
+
+  static const _knownChannels = {"b2c", "c2c", "whatsapp"};
+
+  Future<void> getDriverConfig() async {
+    try {
+      Map<String, dynamic> model = {apiKeys.feCode: user.code};
+      var response = await apiProvider.getRequestWithQueryParams(
+        apiEndPoints.driverConfig,
+        model,
+      );
+      var result = BaseApiResponse.fromJson(response);
+      if (result.status_code == 200 && result.data != null) {
+        final config = DriverConfigData.fromJson(
+          result.data as Map<String, dynamic>,
+        );
+        final channels = (config.allowedChannels ?? [])
+            .map((c) => c.toLowerCase())
+            .where(_knownChannels.contains)
+            .toList();
+        if (channels.isNotEmpty) {
+          allowedChannels.value = channels;
+          if (!channels.contains(typeTab.value)) {
+            typeTab.value = channels.first;
+          }
+        }
+      }
+    } catch (_) {
+      // Keep the default allowedChannels (all tabs) on failure.
+    }
   }
 
   void switchType(String type) {
@@ -56,10 +113,12 @@ class OrderListController extends GetxController {
     refreshCurrentTab();
   }
 
-  void switchFilter(String filter) {
-    paymentFilter.value = filter;
-    filterMenuOpen.value = false;
-  }
+  // Type and Payment are independent filter groups shown side by side in the
+  // same dropdown, so picking one no longer auto-closes the menu - the user
+  // can set both before dismissing it by tapping outside.
+  void switchFilter(String filter) => paymentFilter.value = filter;
+
+  void switchServiceTypeFilter(String type) => serviceTypeFilter.value = type;
 
   void openFilterMenu() => filterMenuOpen.value = true;
 
@@ -108,7 +167,9 @@ class OrderListController extends GetxController {
         apiKeys.status: [ASSIGNED, RE_ASSIGNED, PICKED, OFD],
       };
       var response = await apiProvider.postRequest(
-          apiEndPoints.driverFetchOrderList, model);
+        apiEndPoints.driverFetchOrderList,
+        model,
+      );
       var result = BaseApiResponse.fromJson(response);
       if (result.status_code == 200 && result.data != null) {
         assignedOrders.value = (result.data as List)
@@ -117,7 +178,9 @@ class OrderListController extends GetxController {
       } else {
         assignedOrders.value = [];
       }
-    } catch (_) {
+    } catch (ex, stackTrace) {
+      print("❌ FetchAvailable Exception: $ex");
+      print("❌ StackTrace: $stackTrace");
       assignedOrders.value = [];
     } finally {
       isLoading.value = false;
@@ -132,7 +195,9 @@ class OrderListController extends GetxController {
         apiKeys.status: [DELIVERED, UNDELIVERED],
       };
       var response = await apiProvider.postRequest(
-          apiEndPoints.driverFetchOrderList, model);
+        apiEndPoints.driverFetchOrderList,
+        model,
+      );
       var result = BaseApiResponse.fromJson(response);
       if (result.status_code == 200 && result.data != null) {
         completedOrders.value = (result.data as List)
@@ -141,7 +206,9 @@ class OrderListController extends GetxController {
       } else {
         completedOrders.value = [];
       }
-    } catch (_) {
+    } catch (ex, stackTrace) {
+      print("❌ FetchAvailable Exception: $ex");
+      print("❌ StackTrace: $stackTrace");
       completedOrders.value = [];
     } finally {
       isLoading.value = false;
@@ -158,7 +225,9 @@ class OrderListController extends GetxController {
         apiKeys.longitude: location?.longitude,
       };
       var response = await apiProvider.postRequest(
-          apiEndPoints.fetchPlacedOrders, model);
+        apiEndPoints.fetchPlacedOrders,
+        model,
+      );
       var result = BaseApiResponse.fromJson(response);
       if (result.status_code == 200 && result.data != null) {
         availableOrders.value = (result.data as List)
@@ -167,16 +236,41 @@ class OrderListController extends GetxController {
       } else {
         availableOrders.value = [];
       }
-    } catch (_) {
+    } catch (ex, stackTrace) {
+      print("❌ FetchAvailable Exception: $ex");
+      print("❌ StackTrace: $stackTrace");
       availableOrders.value = [];
     } finally {
       isLoading.value = false;
+      _resolveFocusedOrder();
+    }
+  }
+
+  void _resolveFocusedOrder() {
+    final orderRef = _focusOrderRef;
+    if (orderRef == null) return;
+    _focusOrderRef = null;
+    OrdersData? match;
+    for (final model in availableOrders) {
+      if (model.orderRefNumber == orderRef || model.awbNo == orderRef) {
+        match = model;
+        break;
+      }
+    }
+    if (match != null) {
+      Get.toNamed(
+        Routes.orderDetailScreen,
+        arguments: match,
+      )?.then((_) => refreshCurrentTab());
+    } else {
+      utils.errorSnackBar("Order unavailable", "Order no longer available");
     }
   }
 
   Future<bool> acceptRejectOrder(String type, String awbNo) async {
     utils.showLoadingDialog(
-        type == acceptOrder ? "Accepting order..." : "Rejecting order...");
+      type == acceptOrder ? "Accepting order..." : "Rejecting order...",
+    );
     try {
       Map<String, dynamic> model = {
         apiKeys.feCode: user.code,
@@ -184,7 +278,9 @@ class OrderListController extends GetxController {
         apiKeys.awbNo: awbNo,
       };
       var response = await apiProvider.postRequest(
-          apiEndPoints.acceptRejectOrder, model);
+        apiEndPoints.acceptRejectOrder,
+        model,
+      );
       var result = BaseApiResponse.fromJson(response);
       utils.closeLoadingDialog();
       if (result.status_code == 200) {
@@ -193,11 +289,15 @@ class OrderListController extends GetxController {
           Get.find<RiderDashboardController>().getDashBoardData();
         }
         if (type == acceptOrder) {
-          utils.successSnackBar("Order Accepted",
-              "Please find the accepted order under Assigned");
+          utils.successSnackBar(
+            "Order Accepted",
+            "Please find the accepted order under Assigned",
+          );
         } else {
           utils.errorSnackBar(
-              "Order Rejected", "This order no longer belongs to you");
+            "Order Rejected",
+            "This order no longer belongs to you",
+          );
         }
         await fetchAvailable();
         return true;
@@ -237,6 +337,13 @@ class OrderListController extends GetxController {
         break;
       default:
         filtered = source;
+    }
+
+    final typeFilter = serviceTypeFilter.value;
+    if (typeFilter != "all") {
+      filtered = filtered
+          .where((o) => (o.serviceType ?? "").toLowerCase() == typeFilter)
+          .toList();
     }
 
     final query = searchQuery.value.trim().toLowerCase();

@@ -2745,7 +2745,7 @@ class _AllOrdersMapPageState extends State<AllOrdersMapPage> with WidgetsBinding
   //       }
   //     }
   //   }
-  //
+
   //   generatePolyLineFromPoints(polylineCoordinates);
   // }
 

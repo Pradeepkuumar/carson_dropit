@@ -27,10 +27,16 @@
     <key>UILaunchStoryboardName</key>
     <string>LaunchScreen</string>
     <key>UIMainStoryboardFile</key>
-    <string>NSLocationWhenInUseUsageDescription</string>
-    <key>Location Access Required To Track User</key>
     <string>Main</string>
-    <key>Location Access Required To Track User</key>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Location Access Required To Track User</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>Location Access Required To Track User</string>
+    <key>UIBackgroundModes</key>
+    <array>
+      <string>location</string>
+    </array>
+    <key>UISupportedInterfaceOrientations</key>
     <array>
       <string>UIInterfaceOrientationPortrait</string>
       <string>UIInterfaceOrientationLandscapeLeft</string>

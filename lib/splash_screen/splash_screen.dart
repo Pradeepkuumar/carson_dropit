@@ -1,10 +1,8 @@
-import 'package:carson_zyppy/local_db/entity/UserData.dart';
-import 'package:carson_zyppy/pages/auth/login_screen.dart';
-import 'package:carson_zyppy/pages/dashboard/view/rider_dashboard.dart';
+import 'package:carson_zyppy/app_pages/app_pages.dart';
 import 'package:carson_zyppy/utils/colors.dart';
+import 'package:carson_zyppy/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:lottie/lottie.dart';
 import '../global/consts.dart';
 import '../global/global.dart';
 
@@ -16,74 +14,44 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreesState extends State<SplashScreen> {
-  bool showLoadingScreen = true;
-  var user = UserData();
-
   @override
   void initState() {
     super.initState();
-    getUser();
-    Future.delayed(const Duration(seconds: 6), () {
-      setState(() {
-        showLoadingScreen = false;
-      });
-    });
+    _loadUser();
   }
 
-  void getUser() async {
-    var value = await userRepository.getUser();
-     if (value != null) {
-      user = value;
-     } else {
-
-     }
+  Future<void> _loadUser() async {
+    final user = await userRepository.getUser();
+    if (!mounted) return;
+    // Navigate via GetX's named routes (instead of returning a page widget
+    // directly from build()) so RiderDashboardBinding actually runs and
+    // RiderDashboardController is registered before any dashboard-family
+    // screen builds - notably needed for cold starts (killed app opened via
+    // a push notification), where AppBottomNav's Obx would otherwise build
+    // before the controller exists and throw GetX's "improper use" error.
+    Get.offAllNamed(user?.code != null ? Routes.riderDashBord : Routes.auth);
   }
 
   @override
   Widget build(BuildContext context) {
-    if (showLoadingScreen) {
-      return Scaffold(
-        appBar: AppBar(
-          backgroundColor: AppColors.primaryThemeColor,
-          elevation: 0,
-        ),
-        body: SafeArea(
-          child: SizedBox(
-            height: Get.height,
-           width: Get.width,
+    return Scaffold(
+      backgroundColor: AppColors.backgroundColorMain,
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: CustomPaint(painter: GeometricBackgroundPainter()),
+          ),
+          SafeArea(
             child: Center(
               child: SizedBox(
-                height: 200,
-                width: Get.width - 50,
-                child: Lottie.asset(ANIM_LOGO),
+                height: 110,
+                width: 200,
+                child: Image.asset(appLogo, fit: BoxFit.contain),
               ),
             ),
           ),
-        ),
-      );
-    } else {
-
-      if (user.code == null) {
-        return const LoginScreen();
-      } else if (user.code != null) {
-      //  Get.to(()=>  BiometricLockScreen().authenticate(
-      //     localizedReason: 'Please authenticate to proceed',
-      //     biometricOnly: true,
-      //     stickyAuth: false,
-      //     sensitiveTransaction: true,
-      //     useErrorDialogs: true,
-      //   ).then((authenticated) {
-      //     if (authenticated) {
-            
-      //     } else {
-      //       utils.errorSnackBar("Authentication Failed", "Unable to authenticate using biometrics.");
-      //        return const RiderDashboard();
-      //     }
-      //   }));
-        return const RiderDashboard();
-      }else{
-        return const SplashScreen();
-      }
-    }
+        ],
+      ),
+    );
   }
 }

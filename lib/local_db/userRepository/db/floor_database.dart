@@ -1,5 +1,3 @@
-
-
 import '../../../firebase_notifications/notification_model/notification.dart';
 import '../../dataBase/database.dart';
 import '../../entity/UserData.dart';

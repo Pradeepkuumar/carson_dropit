@@ -21,6 +21,13 @@ class AppTextStyle {
       color: textColor,
     );
   }
+  static TextStyle tsCustomRegular(Color textColor,double fontSize) {
+    return GoogleFonts.inter(
+      fontSize: fontSize,
+      fontWeight: FontWeight.w400,
+      color: textColor,
+    );
+  }
 
   static TextStyle tsMedium() {
     return GoogleFonts.inter(

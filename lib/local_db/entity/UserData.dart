@@ -23,6 +23,7 @@ class UserData {
   String? updatedAt;
   String? isSignedIn;
 
+
   UserData(
       {this.id,
         this.roleId,
@@ -42,6 +43,7 @@ class UserData {
         this.createdAt,
         this.updatedAt,
         this.isSignedIn,
+
       });
 
   UserData.fromJson(Map<String, dynamic> json) {
@@ -63,6 +65,7 @@ class UserData {
     createdAt = json['created_at'];
     updatedAt = json['updated_at'];
     isSignedIn = json['is_signed'];
+
   }
 
   Map<String, dynamic> toJson() {
@@ -84,6 +87,7 @@ class UserData {
     data['email_verified_at'] = emailVerifiedAt;
     data['created_at'] = createdAt;
     data['updated_at'] = updatedAt;
+
     return data;
   }
 }

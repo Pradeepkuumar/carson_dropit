@@ -1,9 +1,8 @@
-import 'dart:math' as math;
-
 import 'package:carson_zyppy/global/consts.dart';
 import 'package:carson_zyppy/global/global.dart';
 import 'package:carson_zyppy/pages/auth/auth_controller.dart';
 import 'package:carson_zyppy/utils/colors.dart';
+import 'package:carson_zyppy/utils/utils.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -46,7 +45,7 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Stack(
         children: [
           Positioned.fill(
-            child: CustomPaint(painter: _GeometricBackgroundPainter()),
+            child: CustomPaint(painter: GeometricBackgroundPainter()),
           ),
           SafeArea(
             child: LayoutBuilder(
@@ -274,66 +273,3 @@ class _LoginField extends StatelessWidget {
   }
 }
 
-/// Faint scattered isometric-cube wireframes over the login background,
-/// matching the reference design's decorative pattern.
-class _GeometricBackgroundPainter extends CustomPainter {
-  static const _cubes = [
-    _Cube(Offset(0.02, 0.14), 100),
-    _Cube(Offset(0.30, 0.05), 50),
-    _Cube(Offset(-0.04, 0.44), 42),
-    _Cube(Offset(0.90, 0.16), 46),
-    _Cube(Offset(0.86, 0.80), 78),
-    _Cube(Offset(1.06, 0.92), 95),
-    _Cube(Offset(0.14, 1.02), 62),
-    _Cube(Offset(0.46, 0.98), 34),
-  ];
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withOpacity(0.05)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-
-    for (final cube in _cubes) {
-      _drawCube(
-        canvas,
-        paint,
-        Offset(
-          cube.centerFraction.dx * size.width,
-          cube.centerFraction.dy * size.height,
-        ),
-        cube.radius,
-      );
-    }
-  }
-
-  void _drawCube(Canvas canvas, Paint paint, Offset center, double radius) {
-    final vertices = List.generate(6, (i) {
-      final angle = (math.pi / 180) * (-90 + i * 60);
-      return center +
-          Offset(math.cos(angle) * radius, math.sin(angle) * radius * 0.86);
-    });
-
-    final hexagon = Path()..moveTo(vertices[0].dx, vertices[0].dy);
-    for (var i = 1; i < vertices.length; i++) {
-      hexagon.lineTo(vertices[i].dx, vertices[i].dy);
-    }
-    hexagon.close();
-    canvas.drawPath(hexagon, paint);
-
-    canvas.drawLine(center, vertices[0], paint);
-    canvas.drawLine(center, vertices[2], paint);
-    canvas.drawLine(center, vertices[4], paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _GeometricBackgroundPainter oldDelegate) =>
-      false;
-}
-
-class _Cube {
-  final Offset centerFraction;
-  final double radius;
-  const _Cube(this.centerFraction, this.radius);
-}

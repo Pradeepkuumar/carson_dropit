@@ -3,9 +3,13 @@
   final String login = "login";
   final String logout = "logout";
   final String driverCheckIn = "driver/check-in";
+  final String driverCheckAttendance= "driver/fetch-driver-attendance";
   final String driverCurrentLocation = "driver/current-location";
   final String driverFetchOrderList = "driver/fetch-orders-list";
-  final String dashBoardDetails = "driver/fetch-dashboard-details";
+  final String driverOrdersByCategory = "driver/orders-by-category";
+  final String upcomingOrders = "driver/upcoming-orders";
+  //final String dashBoardDetails = "driver/fetch-dashboard-details";
+  final String dashBoardDetails = "driver/unified-dashboard";
   final String updateOrderStatus  = "driver/update-order-status";
   final String getReasons  = "get-reasons";
   final String getProfileData  = "driver/get-profile-details";
@@ -18,5 +22,7 @@
   final String updateC2COrderStatus  = "driver/update-c2c-order-status";
   final String c2cDashBoardDetails = "driver/fetch-c2c-order-dashboard-details";
   final String whatsAppDashBoardDetails = "driver/whatsapp/dashboard-details";
+  final String driverCallLog = "driver/call-log";
+  final String driverConfig = "driver/config";
 
 }

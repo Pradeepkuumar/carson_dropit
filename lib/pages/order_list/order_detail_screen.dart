@@ -3,7 +3,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:google_navigation_flutter/google_navigation_flutter.dart' hide Marker;
+import 'package:google_navigation_flutter/google_navigation_flutter.dart'
+    hide Marker;
 import '../../global/consts.dart';
 import '../../global/global.dart';
 import '../../utils/colors.dart';
@@ -29,7 +30,9 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
             Container(
               width: double.infinity,
               padding: EdgeInsets.symmetric(
-                  horizontal: (isTablet ? 32 : 16).w, vertical: 14.h),
+                horizontal: (isTablet ? 32 : 16).w,
+                vertical: 14.h,
+              ),
               color: AppColors.backgroundColorMain,
               child: Row(
                 children: [
@@ -38,15 +41,23 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
                     borderRadius: BorderRadius.circular(8.r),
                     child: Padding(
                       padding: EdgeInsets.only(right: 10.w),
-                      child: Icon(Icons.arrow_back,
-                          color: Colors.white, size: 20.sp),
+                      child: Icon(
+                        Icons.arrow_back,
+                        color: Colors.white,
+                        size: 20.sp,
+                      ),
                     ),
                   ),
-                  utils.tvCustom(
-                      "Order ${order.awbNo ?? order.orderRefNumber ?? '-'}",
+                  Flexible(
+                    child:utils.tvCustom(
+                      order.awbNo ?? order.orderRefNumber ?? '-',
                       Colors.white,
+                      maxLines: 2,
                       isTablet ? 22 : 19,
-                      textAlignment: TextAlign.left),
+                      textAlignment: TextAlign.left,
+                    ) ,
+                  )
+
                 ],
               ),
             ),
@@ -61,20 +72,32 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
                     Row(
                       children: [
                         if (controller.isAvailable)
-                          _pill("Available order", AppColors.greenLight,
-                              dotColor: AppColors.greenLight)
+                          _pill(
+                            "Available order",
+                            AppColors.greenLight,
+                            dotColor: AppColors.greenLight,
+                          )
                         else
-                          _pill(order.status ?? "-", _statusColor(order.status ?? "")),
+                          _pill(
+                            order.status ?? "-",
+                            _statusColor(order.status ?? ""),
+                          ),
                         SizedBox(width: 10.w),
                         if ((order.sla_in_hours ?? "").isNotEmpty)
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.access_time,
-                                  color: AppColors.greyColor4, size: 14.sp),
+                              Icon(
+                                Icons.access_time,
+                                color: AppColors.greyColor4,
+                                size: 14.sp,
+                              ),
                               SizedBox(width: 4.w),
-                              utils.tvCustom("${order.sla_in_hours}h SLA",
-                                  AppColors.greyColor4, 12.5),
+                              utils.tvCustom(
+                                "${order.sla_in_hours}h SLA",
+                                AppColors.greyColor4,
+                                12.5,
+                              ),
                             ],
                           ),
                       ],
@@ -98,7 +121,8 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
                               // recognizer instead of reaching the map.
                               gestureRecognizers: {
                                 Factory<EagerGestureRecognizer>(
-                                    () => EagerGestureRecognizer()),
+                                  () => EagerGestureRecognizer(),
+                                ),
                               },
                             ),
                             if ((order.distance ?? "").isNotEmpty)
@@ -107,24 +131,33 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
                                 bottom: 10.h,
                                 child: Container(
                                   padding: EdgeInsets.symmetric(
-                                      horizontal: 10.w, vertical: 6.h),
+                                    horizontal: 10.w,
+                                    vertical: 6.h,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: cardBg,
                                     borderRadius: BorderRadius.circular(8.r),
                                     boxShadow: [
                                       BoxShadow(
-                                          color: Colors.black.withOpacity(0.15),
-                                          blurRadius: 8),
+                                        color: Colors.black.withOpacity(0.15),
+                                        blurRadius: 8,
+                                      ),
                                     ],
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(Icons.social_distance,
-                                          color: AppColors.greyColor5, size: 13.sp),
+                                      Icon(
+                                        Icons.social_distance,
+                                        color: AppColors.greyColor5,
+                                        size: 13.sp,
+                                      ),
                                       SizedBox(width: 5.w),
                                       utils.tvCustom(
-                                          order.distance!, AppColors.black, 12),
+                                        order.distance!,
+                                        AppColors.black,
+                                        12,
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -140,7 +173,10 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
                       iconColor: AppColors.greenLight,
                       label: "Pickup from",
                       title: order.merchantName ?? "-",
-                      subtitle: order.pickupLocationName ?? order.pickupAddress ?? "-",
+                      subtitle:
+                          order.pickupLocationName ??
+                          order.pickupAddress ??
+                          "-",
                       cardBg: cardBg,
                       onCall: (order.pickupPhoneNo ?? "").isNotEmpty
                           ? controller.callPickup
@@ -180,7 +216,9 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
                     if (controller.isAvailable) ...[
                       Container(
                         padding: EdgeInsets.symmetric(
-                            horizontal: 14.w, vertical: 12.h),
+                          horizontal: 14.w,
+                          vertical: 12.h,
+                        ),
                         decoration: BoxDecoration(
                           color: Get.isDarkMode
                               ? AppColors.greyColor10
@@ -189,15 +227,19 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.info_outline,
-                                color: AppColors.greyColor5, size: 16.sp),
+                            Icon(
+                              Icons.info_outline,
+                              color: AppColors.greyColor5,
+                              size: 16.sp,
+                            ),
                             SizedBox(width: 8.w),
                             Expanded(
                               child: utils.tvCustom(
-                                  "Accepting assigns this order to you.",
-                                  AppColors.greyColor5,
-                                  12,
-                                  textAlignment: TextAlign.left),
+                                "Accepting assigns this order to you.",
+                                AppColors.greyColor5,
+                                12,
+                                textAlignment: TextAlign.left,
+                              ),
                             ),
                           ],
                         ),
@@ -211,12 +253,17 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
                               style: OutlinedButton.styleFrom(
                                 padding: EdgeInsets.symmetric(vertical: 14.h),
                                 side: const BorderSide(
-                                    color: AppColors.primaryThemeColor),
+                                  color: AppColors.primaryThemeColor,
+                                ),
                                 shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12.r)),
+                                  borderRadius: BorderRadius.circular(12.r),
+                                ),
                               ),
                               child: utils.tvCustom(
-                                  "Decline", AppColors.primaryThemeColor, 14.5),
+                                "Decline",
+                                AppColors.primaryThemeColor,
+                                14.5,
+                              ),
                             ),
                           ),
                           SizedBox(width: 10.w),
@@ -227,10 +274,14 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
                                 padding: EdgeInsets.symmetric(vertical: 14.h),
                                 backgroundColor: AppColors.primaryThemeColor,
                                 shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12.r)),
+                                  borderRadius: BorderRadius.circular(12.r),
+                                ),
                               ),
                               child: utils.tvCustom(
-                                  "Accept order", Colors.white, 14.5),
+                                "Accept order",
+                                Colors.white,
+                                14.5,
+                              ),
                             ),
                           ),
                         ],
@@ -247,13 +298,21 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
   }
 
   void _confirmAccept() {
-    utils.simpleDialog("Accept Order", "Do you want to accept this order?",
-        () => controller.accept(), () => Get.back());
+    utils.simpleDialog(
+      "Accept Order",
+      "Do you want to accept this order?",
+      () => controller.accept(),
+      () => Get.back(),
+    );
   }
 
   void _confirmDecline() {
-    utils.simpleDialog("Decline Order", "Do you want to decline this order?",
-        () => controller.decline(), () => Get.back());
+    utils.simpleDialog(
+      "Decline Order",
+      "Do you want to decline this order?",
+      () => controller.decline(),
+      () => Get.back(),
+    );
   }
 
   Color _statusColor(String status) {
@@ -289,7 +348,10 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
             Container(
               width: 7,
               height: 7,
-              decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+              decoration: BoxDecoration(
+                color: dotColor,
+                shape: BoxShape.circle,
+              ),
             ),
             SizedBox(width: 6.w),
           ],
@@ -317,9 +379,10 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
             ? []
             : [
                 BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4)),
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
               ],
       ),
       child: Row(
@@ -339,12 +402,26 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                utils.tvCustom(label, AppColors.greyColor4, 11.5,
-                    textAlignment: TextAlign.left),
-                utils.tvCustom(title, AppColors.black, 15,
-                    textAlignment: TextAlign.left, maxLines: 1),
-                utils.tvCustom(subtitle, AppColors.greyColor5, 11.5,
-                    textAlignment: TextAlign.left, maxLines: 2),
+                utils.tvCustom(
+                  label,
+                  AppColors.greyColor4,
+                  11.5,
+                  textAlignment: TextAlign.left,
+                ),
+                utils.tvCustom(
+                  title,
+                  AppColors.black,
+                  15,
+                  textAlignment: TextAlign.left,
+                  maxLines: 1,
+                ),
+                utils.tvCustom(
+                  subtitle,
+                  AppColors.greyColor5,
+                  11.5,
+                  textAlignment: TextAlign.left,
+                  maxLines: 2,
+                ),
               ],
             ),
           ),
@@ -358,14 +435,19 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10.r),
                   border: Border.all(
-                      color: Get.isDarkMode
-                          ? Colors.white.withOpacity(0.15)
-                          : const Color(0xFFE5E5E5)),
+                    color: Get.isDarkMode
+                        ? Colors.white.withOpacity(0.15)
+                        : const Color(0xFFE5E5E5),
+                  ),
                 ),
                 alignment: Alignment.center,
-                child: Icon(Icons.call_outlined,
-                    color: Get.isDarkMode ? Colors.white : AppColors.backgroundColorMain,
-                    size: 16.sp),
+                child: Icon(
+                  Icons.call_outlined,
+                  color: Get.isDarkMode
+                      ? Colors.white
+                      : AppColors.backgroundColorMain,
+                  size: 16.sp,
+                ),
               ),
             ),
         ],
@@ -389,9 +471,10 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
             ? []
             : [
                 BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4)),
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
               ],
       ),
       child: Row(
@@ -411,10 +494,19 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                utils.tvCustom(label, AppColors.greyColor4, 11.5,
-                    textAlignment: TextAlign.left),
-                utils.tvCustom(value, AppColors.black, 13.5,
-                    textAlignment: TextAlign.left, maxLines: 2),
+                utils.tvCustom(
+                  label,
+                  AppColors.greyColor4,
+                  11.5,
+                  textAlignment: TextAlign.left,
+                ),
+                utils.tvCustom(
+                  value,
+                  AppColors.black,
+                  13.5,
+                  textAlignment: TextAlign.left,
+                  maxLines: 2,
+                ),
               ],
             ),
           ),
@@ -438,9 +530,10 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
             ? []
             : [
                 BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4)),
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
               ],
       ),
       child: Row(
@@ -457,8 +550,12 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
           ),
           SizedBox(width: 12.w),
           Expanded(
-            child: utils.tvCustom("Customer payment", AppColors.greyColor4, 12.5,
-                textAlignment: TextAlign.left),
+            child: utils.tvCustom(
+              "Customer payment",
+              AppColors.greyColor4,
+              12.5,
+              textAlignment: TextAlign.left,
+            ),
           ),
           Container(
             padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
@@ -483,22 +580,29 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
             ? []
             : [
                 BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4)),
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
               ],
       ),
       child: Row(
         children: [
           Expanded(
-            child: _statLine(Icons.social_distance, "Distance",
-                (order.distance ?? "-").toString()),
+            child: _statLine(
+              Icons.social_distance,
+              "Distance",
+              (order.distance ?? "-").toString(),
+            ),
           ),
           Container(width: 1, height: 30.h, color: const Color(0xFFF0F0F0)),
           SizedBox(width: 12.w),
           Expanded(
-            child: _statLine(Icons.access_time, "Estimated travel",
-                (order.duration ?? "-").toString()),
+            child: _statLine(
+              Icons.access_time,
+              "Estimated travel",
+              (order.duration ?? "-").toString(),
+            ),
           ),
         ],
       ),
@@ -510,14 +614,26 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
       children: [
         Icon(icon, color: AppColors.greyColor5, size: 16),
         SizedBox(width: 8.w),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            utils.tvCustom(label, AppColors.greyColor4, 10.5,
-                textAlignment: TextAlign.left),
-            utils.tvCustom(value, AppColors.black, 13.5,
-                textAlignment: TextAlign.left),
-          ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              utils.tvCustom(
+                label,
+                AppColors.greyColor4,
+                10.5,
+                textAlignment: TextAlign.left,
+                maxLines: 1,
+              ),
+              utils.tvCustom(
+                value,
+                AppColors.black,
+                13.5,
+                textAlignment: TextAlign.left,
+                maxLines: 1,
+              ),
+            ],
+          ),
         ),
       ],
     );

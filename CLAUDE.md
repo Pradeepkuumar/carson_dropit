@@ -1,5 +1,9 @@
 # Project instructions
 
+## Permission before changes
+
+Do not edit, create, or delete any file in this project without the user's explicit go-ahead first. Before making a change, describe what you're about to do (files, the nature of the change) and wait for the user to confirm — even for small or clearly-implied fixes. This applies to code changes specifically; read-only research (reading files, searching, running analyzers) does not need prior permission.
+
 ## Text styles
 
 Always use the project's custom text styles for UI text instead of raw `TextStyle(...)` widgets.

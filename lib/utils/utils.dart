@@ -1,11 +1,14 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui';
 import 'dart:ui' as ui;
 import 'package:carson_zyppy/utils/text_style_util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:google_navigation_flutter/google_navigation_flutter.dart' hide Marker;
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
@@ -801,6 +804,74 @@ class Utils extends GetxController {
   }
 }
 
+  // Parses a lat/lng string pair off an order model into a LatLng, or null
+  // if either is missing/unparseable - shared by every screen that reads
+  // pickup/dropoff coordinates off an order.
+  LatLng? parseLatLng(String? lat, String? lng) {
+    final parsedLat = double.tryParse(lat ?? "");
+    final parsedLng = double.tryParse(lng ?? "");
+    if (parsedLat == null || parsedLng == null) return null;
+    return LatLng(latitude: parsedLat, longitude: parsedLng);
+  }
+
+  // A simple colored dot-with-white-ring marker, drawn at runtime so pickup
+  // (red) and dropoff (green) markers are visually distinct on the map -
+  // the google_navigation_flutter package's default marker icon has no
+  // color/hue option. Shared by OrderDetailController and
+  // ActiveDeliveryController so both screens render pickup/dropoff
+  // identically.
+  Future<ImageDescriptor> mapDotMarker(Color color) async {
+    const double size = 72;
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    const center = Offset(size / 2, size / 2);
+    canvas.drawCircle(center, size / 2 - 4, Paint()..color = Colors.white);
+    canvas.drawCircle(center, size / 2 - 10, Paint()..color = color);
+    final picture = recorder.endRecording();
+    final image = await picture.toImage(size.toInt(), size.toInt());
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    return registerBitmapImage(
+      bitmap: byteData!,
+      imagePixelRatio: 2,
+      width: 26,
+      height: 26,
+    );
+  }
+
+  // Draws the actual road-following route via the Directions API (reusing
+  // the app's Maps API key, already configured for Android in
+  // AndroidManifest.xml). Falls back to a straight connector if the
+  // directions request fails so the map never ends up with no line at all.
+  Future<void> drawMapRoute(
+      GoogleMapViewController controller, LatLng pickup, LatLng dropoff) async {
+    List<LatLng> routePoints = [pickup, dropoff];
+    try {
+      final result = await PolylinePoints().getRouteBetweenCoordinates(
+        request: PolylineRequest(
+          origin: PointLatLng(pickup.latitude, pickup.longitude),
+          destination: PointLatLng(dropoff.latitude, dropoff.longitude),
+          mode: TravelMode.driving,
+        ),
+        googleApiKey: GOOGLE_MAPS_API_KEY,
+      );
+      if (result.points.isNotEmpty) {
+        routePoints = result.points
+            .map((p) => LatLng(latitude: p.latitude, longitude: p.longitude))
+            .toList();
+      }
+    } catch (_) {
+      // keep the straight-line fallback
+    }
+
+    await controller.addPolylines([
+      PolylineOptions(
+        points: routePoints,
+        strokeColor: AppColors.blue,
+        strokeWidth: 4,
+      ),
+    ]);
+  }
+
   getTodayDate() {
     final DateTime now = DateTime.now();
     final DateFormat formatter = DateFormat('dd-MM-yyyy');
@@ -914,15 +985,13 @@ class Utils extends GetxController {
   //Dialog
   simpleDialog(String title, String middleText, void Function() clickListener,
       void Function() clickListenerCancelButton) {
-    return Get.defaultDialog(
-      title: title,
-      titleStyle: TextStyle(
-        fontSize: 15.sp
-      ),  
-      middleText: middleText,
-      buttonColor: AppColors.primaryThemeColor,
-      onConfirm: clickListener,
-      onCancel: clickListenerCancelButton,
+    return Get.dialog(
+      _SimpleConfirmDialog(
+        title: title,
+        message: middleText,
+        onConfirm: clickListener,
+        onCancel: clickListenerCancelButton,
+      ),
       barrierDismissible: false,
     );
   }
@@ -1217,6 +1286,19 @@ class Utils extends GetxController {
       maxLines: maxLines,
       overflow: maxLines != null ? TextOverflow.ellipsis : null,
       style: AppTextStyle.tsCustom(
+          Get.isDarkMode ? AppColors.white : textColor,
+          responsiveFontSize(fontSize.sp)),
+      textAlign: textAlignment,
+    );
+  }
+  tvCustomRegular(String? text, Color textColor, double fontSize,
+      {TextAlign textAlignment = TextAlign.center, int? maxLines}) {
+    return Text(
+      text ?? "",
+      softWrap: true,
+      maxLines: maxLines,
+      overflow: maxLines != null ? TextOverflow.ellipsis : null,
+      style: AppTextStyle.tsCustomRegular(
           Get.isDarkMode ? AppColors.white : textColor,
           responsiveFontSize(fontSize.sp)),
       textAlign: textAlignment,
@@ -1547,3 +1629,177 @@ class Utils extends GetxController {
 //                                                           }).toList(),
 //                                                           onChanged: (_) {},
 //                                                         // ),
+
+// Faint scattered isometric-cube wireframes used as the background on
+// LoginScreen, SplashScreen, and RiderDashboard's pre-attendance loading
+// screen, so all three read as one continuous look instead of each having
+// its own copy of the same pattern.
+class GeometricBackgroundPainter extends CustomPainter {
+  static const _cubes = [
+    _GeometricCube(Offset(0.02, 0.14), 100),
+    _GeometricCube(Offset(0.30, 0.05), 50),
+    _GeometricCube(Offset(-0.04, 0.44), 42),
+    _GeometricCube(Offset(0.90, 0.16), 46),
+    _GeometricCube(Offset(0.86, 0.80), 78),
+    _GeometricCube(Offset(1.06, 0.92), 95),
+    _GeometricCube(Offset(0.14, 1.02), 62),
+    _GeometricCube(Offset(0.46, 0.98), 34),
+  ];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withOpacity(0.05)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+
+    for (final cube in _cubes) {
+      _drawCube(
+        canvas,
+        paint,
+        Offset(
+          cube.centerFraction.dx * size.width,
+          cube.centerFraction.dy * size.height,
+        ),
+        cube.radius,
+      );
+    }
+  }
+
+  void _drawCube(Canvas canvas, Paint paint, Offset center, double radius) {
+    final vertices = List.generate(6, (i) {
+      final angle = (math.pi / 180) * (-90 + i * 60);
+      return center +
+          Offset(math.cos(angle) * radius, math.sin(angle) * radius * 0.86);
+    });
+
+    final hexagon = Path()..moveTo(vertices[0].dx, vertices[0].dy);
+    for (var i = 1; i < vertices.length; i++) {
+      hexagon.lineTo(vertices[i].dx, vertices[i].dy);
+    }
+    hexagon.close();
+    canvas.drawPath(hexagon, paint);
+
+    canvas.drawLine(center, vertices[0], paint);
+    canvas.drawLine(center, vertices[2], paint);
+    canvas.drawLine(center, vertices[4], paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant GeometricBackgroundPainter oldDelegate) => false;
+}
+
+class _GeometricCube {
+  final Offset centerFraction;
+  final double radius;
+  const _GeometricCube(this.centerFraction, this.radius);
+}
+
+class _SimpleConfirmDialog extends StatelessWidget {
+  final String title;
+  final String message;
+  final VoidCallback onConfirm;
+  final VoidCallback onCancel;
+
+  const _SimpleConfirmDialog({
+    required this.title,
+    required this.message,
+    required this.onConfirm,
+    required this.onCancel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Get.isDarkMode;
+    final isTablet = !context.isPhone;
+    final cardWidth = isTablet ? 380.0.sp : 320.0.sp;
+    final cardBg = isDark ? AppColors.greyColor10 : Colors.white;
+    final textColor = isDark ? Colors.white : AppColors.black;
+    final subtextColor = isDark ? Colors.white.withOpacity(0.62) : AppColors.greyColor4;
+    final iconBg = isDark
+        ? AppColors.primaryThemeColor.withOpacity(0.18)
+        : AppColors.primaryThemeColor.withOpacity(0.10);
+    final outlineColor = isDark ? Colors.white.withOpacity(0.18) : const Color(0xFFE0E0E0);
+
+    // Get.dialog() shows this as a standalone overlay route with no
+    // ambient Material/DefaultTextStyle, so Text falls back to Flutter's
+    // debug style (yellow with an underline) without this wrapper.
+    return Material(
+      type: MaterialType.transparency,
+      child: Center(
+        child: Container(
+          width: cardWidth,
+          padding: EdgeInsets.fromLTRB(22.sp, 26.sp, 22.sp, 22.sp),
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: BorderRadius.circular(20.r),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.35),
+                blurRadius: 48,
+                offset: const Offset(0, 20),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 56.sp,
+                height: 56.sp,
+                decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle),
+                child: Icon(
+                  Icons.help_outline,
+                  color: AppColors.primaryThemeColor,
+                  size: 26.sp,
+                ),
+              ),
+              SizedBox(height: 16.h),
+              utils.tvCustom(title, textColor, 17),
+              SizedBox(height: 8.h),
+              utils.tvCustom(message, subtextColor, 13.5, maxLines: 4),
+              SizedBox(height: 22.h),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        Get.back();
+                        onCancel();
+                      },
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: outlineColor, width: 1.5),
+                        padding: EdgeInsets.symmetric(vertical: 13.sp),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
+                      ),
+                      child: utils.tvCustom("Cancel", textColor, 14.5),
+                    ),
+                  ),
+                  SizedBox(width: 12.w),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Get.back();
+                        onConfirm();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryThemeColor,
+                        padding: EdgeInsets.symmetric(vertical: 13.sp),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
+                      ),
+                      child: utils.tvCustom("Ok", Colors.white, 14.5),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

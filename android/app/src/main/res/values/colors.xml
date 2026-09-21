@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Matches AppColors.backgroundColorMain in Dart, used by the Flutter
+         splash/login screens - the native launch screen uses the same color
+         so there's no white flash before Flutter's first frame. -->
+    <color name="splash_background">#293540</color>
+</resources>

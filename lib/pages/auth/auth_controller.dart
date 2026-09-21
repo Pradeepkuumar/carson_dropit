@@ -36,15 +36,15 @@ class AuthController extends GetxController {
 
   getFireBaseToken() async{
     utils.showLoadingDialog("Loading please wait...");
-    await  firebaseNotificationController?.getFCMTokenWithRetry();
-    await Future.delayed(const Duration(seconds: 5), () async{
-       firebaseNotificationController =  Get.find<FirebaseMessagingController>();
-       fcmToken.value = firebaseNotificationController?.fcm_token ?? "";
-       utils.closeLoadingDialog();
-     });
-     if(fcmToken.value != ""){
-       isTokenLoaded.value = true;
-     }
+    firebaseNotificationController = Get.find<FirebaseMessagingController>();
+    await firebaseNotificationController
+        ?.getFCMTokenWithRetry()
+        .timeout(const Duration(seconds: 5), onTimeout: () {});
+    fcmToken.value = firebaseNotificationController?.fcm_token ?? "";
+    if(fcmToken.value != ""){
+      isTokenLoaded.value = true;
+    }
+    utils.closeLoadingDialog();
   }
    
 

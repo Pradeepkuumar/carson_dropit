@@ -41,6 +41,9 @@
          <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="assigned_new_order_channel" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_notification" />
         <service
             android:name="io.flutter.plugins.firebase.messaging.FlutterFirebaseMessagingBackgroundService"
             android:permission="android.permission.BIND_JOB_SERVICE"

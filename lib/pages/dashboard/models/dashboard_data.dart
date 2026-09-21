@@ -65,3 +65,68 @@ class TodayOrdersCount {
     return data;
   }
 }
+
+class AttendanceModel {
+  // final int? id;
+  // final int? userId;
+  final bool? markAttendance;
+  // final String? date;
+  // final String? checkIn;
+  // final String? checkOut;
+  // final num workingHours;
+  // final String? status;
+  // final DateTime? createdAt;
+  // final DateTime? updatedAt;
+
+  AttendanceModel({
+    // this.id,
+    // this.userId,
+    this.markAttendance = false,
+    // this.date,
+    // this.checkIn,
+    // this.checkOut,
+    // this.workingHours = 0,
+    // this.status,
+    // this.createdAt,
+    // this.updatedAt,
+  });
+
+  factory AttendanceModel.fromJson(Map<String, dynamic> json) {
+    return AttendanceModel(
+      // id: json['id'] as int?,
+      // userId: json['user_id'] as int?,
+      markAttendance: json['is_marked_attendance'],
+      // date: json['date'] as String?,
+      // checkIn: json['check_in'] as String?,
+      // checkOut: json['check_out'] as String?,
+      // workingHours: json['working_hours'] is num
+      //     ? json['working_hours'] as num
+      //     : num.tryParse(
+      //   json['working_hours']?.toString() ?? '',
+      // ) ??
+      //     0,
+      // status: json['status'] as String?,
+      // createdAt: json['created_at'] != null
+      //     ? DateTime.tryParse(json['created_at'].toString())
+      //     : null,
+      // updatedAt: json['updated_at'] != null
+      //     ? DateTime.tryParse(json['updated_at'].toString())
+      //     : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      // 'id': id,
+      // 'user_id': userId,
+      'is_marked_attendance': markAttendance,
+      // 'date': date,
+      // 'check_in': checkIn,
+      // 'check_out': checkOut,
+      // 'working_hours': workingHours,
+      // 'status': status,
+      // 'created_at': createdAt?.toIso8601String(),
+      // 'updated_at': updatedAt?.toIso8601String(),
+    };
+  }
+}

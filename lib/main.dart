@@ -16,6 +16,8 @@ import 'package:carson_zyppy/local_db/user_repo.dart';
 import 'package:carson_zyppy/local_db/userRepository/db/floor_database.dart';
 import 'package:carson_zyppy/splash_screen/splash_screen.dart';
 import 'package:upgrader/upgrader.dart';
+import 'package:carson_zyppy/global/consts.dart';
+import 'package:carson_zyppy/global/global.dart';
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -82,7 +84,7 @@ class MyApp extends StatelessWidget {
         return GetMaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'Carson Drop-it',
-          themeMode: ThemeMode.system,
+          themeMode: _initialThemeMode(),
           theme: AppThemes.light,
           darkTheme: AppThemes.dark,
           getPages: AppPages.routes,
@@ -96,5 +98,14 @@ class MyApp extends StatelessWidget {
         );
       },
     );
+  }
+
+  // The Account screen's Light/Dark toggle persists an explicit choice here;
+  // with none saved yet, fall back to following the OS setting.
+  ThemeMode _initialThemeMode() {
+    final saved = box.read<String>(THEME_MODE_KEY);
+    if (saved == 'dark') return ThemeMode.dark;
+    if (saved == 'light') return ThemeMode.light;
+    return ThemeMode.system;
   }
 }

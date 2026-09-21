@@ -1,4 +1,3 @@
-
 class OrdersData {
   int? id;
   int? merchantId;
@@ -52,62 +51,63 @@ class OrdersData {
   double? current_dropoff_distance_value;
   String? pickup_buffer_time_in_minutes;
   String? dropoff_buffer_time_in_minutes;
+  String? serviceType;
 
-
-  OrdersData(
-      {this.id,
-        this.merchantId,
-        this.locationId,
-        this.orderRefNumber,
-        this.jobType,
-        this.awbNo,
-        this.feCode,
-        this.status,
-        this.runSheetNo,
-        this.orderAmount,
-        this.paymentType,
-        this.quantity,
-        this.itemName,
-        this.itemDescription,
-        this.weight,
-        this.consigneeName,
-        this.consigneeMobileNo,
-        this.consigneeAddress,
-        this.consigneeStreetNumber,
-        this.consigneeZone,
-        this.consigneeBuildingNo,
-        this.consigneeUnitNo,
-        this.dropoffLatitude,
-        this.dropoffLongitude,
-        this.remarks,
-        this.createdAt,
-        this.updatedAt,
-        this.pickupLocationName,
-        this.pickupAddress,
-        this.pickupPhoneNo,
-        this.pickupZoneNo,
-        this.pickupLatitude,
-        this.pickupLongitude,
-        this.merchantName,
-        this.merchantCode,
-        this.contact_person_name,
-        this.contact_person_phoneno,
-        this.sla_in_hours,
-        this.reason,
-        this.failed_delivery_proof,
-        this.distance,
-        this.duration,
-        this.distanceInKms,
-        this.remainingTime,
-        this.current_pickup_distance,
-        this.current_pickup_duration,
-        this.current_pickup_distance_value,
-        this.current_dropoff_distance,
-        this.current_dropoff_duration,
-        this.current_dropoff_distance_value,
-        this.pickup_buffer_time_in_minutes,
-        this.dropoff_buffer_time_in_minutes,
-      });
+  OrdersData({
+    this.id,
+    this.merchantId,
+    this.locationId,
+    this.orderRefNumber,
+    this.jobType,
+    this.awbNo,
+    this.feCode,
+    this.status,
+    this.runSheetNo,
+    this.orderAmount,
+    this.paymentType,
+    this.quantity,
+    this.itemName,
+    this.itemDescription,
+    this.weight,
+    this.consigneeName,
+    this.consigneeMobileNo,
+    this.consigneeAddress,
+    this.consigneeStreetNumber,
+    this.consigneeZone,
+    this.consigneeBuildingNo,
+    this.consigneeUnitNo,
+    this.dropoffLatitude,
+    this.dropoffLongitude,
+    this.remarks,
+    this.createdAt,
+    this.updatedAt,
+    this.pickupLocationName,
+    this.pickupAddress,
+    this.pickupPhoneNo,
+    this.pickupZoneNo,
+    this.pickupLatitude,
+    this.pickupLongitude,
+    this.merchantName,
+    this.merchantCode,
+    this.contact_person_name,
+    this.contact_person_phoneno,
+    this.sla_in_hours,
+    this.reason,
+    this.failed_delivery_proof,
+    this.distance,
+    this.duration,
+    this.distanceInKms,
+    this.remainingTime,
+    this.current_pickup_distance,
+    this.current_pickup_duration,
+    this.current_pickup_distance_value,
+    this.current_dropoff_distance,
+    this.current_dropoff_duration,
+    this.current_dropoff_distance_value,
+    this.pickup_buffer_time_in_minutes,
+    this.dropoff_buffer_time_in_minutes,
+    this.serviceType,
+  });
 
   OrdersData.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -160,12 +160,15 @@ class OrdersData {
     current_dropoff_distance = json['current_dropoff_distance'];
     current_pickup_duration = json['current_pickup_duration'];
     current_pickup_distance = json['current_pickup_distance'];
-    current_pickup_distance_value = json['current_pickup_distance_value'] != null
+    current_pickup_distance_value =
+        json['current_pickup_distance_value'] != null
         ? double.tryParse(json['current_pickup_distance_value'].toString())
         : null;
-    current_dropoff_distance_value = json['current_dropoff_distance_value'] != null
+    current_dropoff_distance_value =
+        json['current_dropoff_distance_value'] != null
         ? double.tryParse(json['current_dropoff_distance_value'].toString())
         : null;
+    serviceType = json['service_type'];
   }
 
   Map<String, dynamic> toJson() {
@@ -213,14 +216,15 @@ class OrdersData {
     data['duration'] = duration;
     data['distance_in_kms'] = distanceInKms;
     data['remainingTimeFormatted'] = remainingTime;
-    data['current_dropoff_duration'] = current_dropoff_duration ;
-    data['current_dropoff_distance'] = current_dropoff_distance ;
+    data['current_dropoff_duration'] = current_dropoff_duration;
+    data['current_dropoff_distance'] = current_dropoff_distance;
     data['current_pickup_duration'] = current_pickup_duration;
-    data['current_pickup_distance'] = current_pickup_distance ;
-    data['pickup_buffer_time_in_minutes'] = pickup_buffer_time_in_minutes ;
-    data['dropoff_buffer_time_in_minutes'] = dropoff_buffer_time_in_minutes ;
-    data['current_pickup_distance_value'] = current_pickup_distance_value ;
-    data['current_dropoff_distance_value'] = current_dropoff_distance_value ;
+    data['current_pickup_distance'] = current_pickup_distance;
+    data['pickup_buffer_time_in_minutes'] = pickup_buffer_time_in_minutes;
+    data['dropoff_buffer_time_in_minutes'] = dropoff_buffer_time_in_minutes;
+    data['current_pickup_distance_value'] = current_pickup_distance_value;
+    data['current_dropoff_distance_value'] = current_dropoff_distance_value;
+    data['service_type'] = serviceType;
     return data;
   }
 }

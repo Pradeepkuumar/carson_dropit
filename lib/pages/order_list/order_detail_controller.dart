@@ -1,11 +1,9 @@
-import 'dart:ui' as ui;
-import 'package:flutter/material.dart';
-import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:get/get.dart';
 import 'package:google_navigation_flutter/google_navigation_flutter.dart';
 import '../../apis/base_api_response.dart';
 import '../../global/consts.dart';
 import '../../global/global.dart';
+import '../../local_db/entity/UserData.dart';
 import '../../utils/colors.dart';
 import '../dashboard/controller/rider_dashboard_controller.dart';
 import '../my_orders/orders/models/orders_model.dart';
@@ -13,28 +11,26 @@ import '../my_orders/orders/models/orders_model.dart';
 class OrderDetailController extends GetxController {
   late OrdersData order;
   GoogleMapViewController? mapViewController;
-
+  var user = UserData();
   @override
   void onInit() {
+    getUser();
     order = (Get.arguments is OrdersData) ? Get.arguments as OrdersData : OrdersData();
     super.onInit();
   }
-
+  Future<void> getUser() async {
+    final value = await userRepository.getUser();
+    if (value != null) {
+      user = value;
+    }
+  }
   bool get isAvailable => order.status == PLACED;
 
-  LatLng? get pickupLatLng {
-    final lat = double.tryParse(order.pickupLatitude ?? "");
-    final lng = double.tryParse(order.pickupLongitude ?? "");
-    if (lat == null || lng == null) return null;
-    return LatLng(latitude: lat, longitude: lng);
-  }
+  LatLng? get pickupLatLng =>
+      utils.parseLatLng(order.pickupLatitude, order.pickupLongitude);
 
-  LatLng? get dropoffLatLng {
-    final lat = double.tryParse(order.dropoffLatitude ?? "");
-    final lng = double.tryParse(order.dropoffLongitude ?? "");
-    if (lat == null || lng == null) return null;
-    return LatLng(latitude: lat, longitude: lng);
-  }
+  LatLng? get dropoffLatLng =>
+      utils.parseLatLng(order.dropoffLatitude, order.dropoffLongitude);
 
   Future<void> onMapViewCreated(GoogleMapViewController controller) async {
     mapViewController = controller;
@@ -43,17 +39,17 @@ class OrderDetailController extends GetxController {
 
     final markerOptions = <MarkerOptions>[
       if (pickup != null)
-        MarkerOptions(position: pickup, icon: await _dotMarker(AppColors.red)),
+        MarkerOptions(position: pickup, icon: await utils.mapDotMarker(AppColors.red)),
       if (dropoff != null)
         MarkerOptions(
-            position: dropoff, icon: await _dotMarker(AppColors.greenLight)),
+            position: dropoff, icon: await utils.mapDotMarker(AppColors.greenLight)),
     ];
     if (markerOptions.isNotEmpty) {
       await controller.addMarkers(markerOptions);
     }
 
     if (pickup != null && dropoff != null) {
-      await _drawRoute(controller, pickup, dropoff);
+      await utils.drawMapRoute(controller, pickup, dropoff);
     }
 
     if (pickup != null && dropoff != null) {
@@ -71,64 +67,6 @@ class OrderDetailController extends GetxController {
     } else if (pickup != null) {
       await controller.animateCamera(CameraUpdate.newLatLngZoom(pickup, 14));
     }
-  }
-
-  // A simple colored dot-with-white-ring marker, drawn at runtime so pickup
-  // (red) and dropoff (green) are visually distinct on the map - the
-  // package's default marker icon has no color/hue option.
-  Future<ImageDescriptor> _dotMarker(Color color) async {
-    const double size = 72;
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder);
-    const center = Offset(size / 2, size / 2);
-    canvas.drawCircle(
-        center, size / 2 - 4, Paint()..color = Colors.white);
-    canvas.drawCircle(
-        center, size / 2 - 10, Paint()..color = color);
-    final picture = recorder.endRecording();
-    final image = await picture.toImage(size.toInt(), size.toInt());
-    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-    return registerBitmapImage(
-      bitmap: byteData!,
-      imagePixelRatio: 2,
-      width: 26,
-      height: 26,
-    );
-  }
-
-  // Draws the actual road-following route via the Directions API (reusing
-  // the same Maps API key already configured for Android in
-  // AndroidManifest.xml). Falls back to a straight connector if the
-  // directions request fails (e.g. API not enabled for this key) so the
-  // map never ends up with no line at all.
-  Future<void> _drawRoute(
-      GoogleMapViewController controller, LatLng pickup, LatLng dropoff) async {
-    List<LatLng> routePoints = [pickup, dropoff];
-    try {
-      final result = await PolylinePoints().getRouteBetweenCoordinates(
-        request: PolylineRequest(
-          origin: PointLatLng(pickup.latitude, pickup.longitude),
-          destination: PointLatLng(dropoff.latitude, dropoff.longitude),
-          mode: TravelMode.driving,
-        ),
-        googleApiKey: GOOGLE_MAPS_API_KEY,
-      );
-      if (result.points.isNotEmpty) {
-        routePoints = result.points
-            .map((p) => LatLng(latitude: p.latitude, longitude: p.longitude))
-            .toList();
-      }
-    } catch (_) {
-      // keep the straight-line fallback
-    }
-
-    await controller.addPolylines([
-      PolylineOptions(
-        points: routePoints,
-        strokeColor: AppColors.blue,
-        strokeWidth: 4,
-      ),
-    ]);
   }
 
   void callPickup() {
@@ -150,6 +88,7 @@ class OrderDetailController extends GetxController {
     try {
       Map<String, dynamic> model = {
         apiKeys.status: type,
+        apiKeys.feCode: user.code,
         apiKeys.awbNo: order.awbNo ?? "",
       };
       var response = await apiProvider.postRequest(

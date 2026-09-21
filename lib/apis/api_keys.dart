@@ -12,5 +12,7 @@ class ApiKeys {
   final String driverCurrentLocation = "driver/current-location";
   final String awbNo = "awb_no";
   final String fcmToken = "fcm_token";
+  final String channel = "channel";
+  final String category = "category";
 
 }

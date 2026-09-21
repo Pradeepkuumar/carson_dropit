@@ -18,7 +18,11 @@ import '../pages/order_list/order_list_binding.dart';
 import '../pages/order_list/order_list_screen.dart';
 import '../pages/order_list/order_detail_binding.dart';
 import '../pages/order_list/order_detail_screen.dart';
-
+import '../pages/order_list/active_delivery_binding.dart';
+import '../pages/order_list/active_delivery_screen.dart';
+import '../pages/order_list/turn_by_turn_navigation_binding.dart';
+import '../pages/order_list/turn_by_turn_navigation_screen.dart';
+import '../pages/dashboard/view/account_screen.dart';
 
 class AppPages {
   AppPages._();
@@ -37,7 +41,7 @@ class AppPages {
     ),
     GetPage(
       name: _Paths.ordersScreen,
-      page: () =>  OrdersTabContainer(),
+      page: () => OrdersTabContainer(),
       binding: OrdersBinding(),
     ),
     GetPage(
@@ -47,7 +51,7 @@ class AppPages {
     ),
     GetPage(
       name: _Paths.nearByOrders,
-      page: () =>  NearbyOrdersView(),
+      page: () => NearbyOrdersView(),
       binding: PlacedOrdersBinding(),
     ),
     GetPage(
@@ -75,11 +79,19 @@ class AppPages {
       page: () => const OrderDetailScreen(),
       binding: OrderDetailBinding(),
     ),
-
-
+    GetPage(
+      name: _Paths.activeDeliveryScreen,
+      page: () => const ActiveDeliveryScreen(),
+      binding: ActiveDeliveryBinding(),
+    ),
+    GetPage(
+      name: _Paths.turnByTurnNavigation,
+      page: () => const TurnByTurnNavigationScreen(),
+      binding: TurnByTurnNavigationBinding(),
+    ),
+    GetPage(name: _Paths.accountScreen, page: () => const AccountScreen()),
   ];
 }
-
 
 abstract class Routes {
   Routes._();
@@ -95,6 +107,9 @@ abstract class Routes {
   static const osrmMaps = _Paths.osrmMaps;
   static const orderListScreen = _Paths.orderListScreen;
   static const orderDetailScreen = _Paths.orderDetailScreen;
+  static const activeDeliveryScreen = _Paths.activeDeliveryScreen;
+  static const turnByTurnNavigation = _Paths.turnByTurnNavigation;
+  static const accountScreen = _Paths.accountScreen;
 }
 
 abstract class _Paths {
@@ -111,4 +126,7 @@ abstract class _Paths {
   static const osrmMaps = '/osrmMaps';
   static const orderListScreen = '/order_list_screen';
   static const orderDetailScreen = '/order_detail_screen';
+  static const activeDeliveryScreen = '/active_delivery_screen';
+  static const turnByTurnNavigation = '/turn_by_turn_navigation';
+  static const accountScreen = '/account_screen';
 }

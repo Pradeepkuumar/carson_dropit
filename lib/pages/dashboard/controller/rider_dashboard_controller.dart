@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:math';
+import 'package:carson_zyppy/apis/api_keys.dart';
 import 'package:carson_zyppy/firebase_notifications/firebase_notifiction_controller.dart';
 import 'package:carson_zyppy/local_db/entity/UserData.dart';
 import 'package:carson_zyppy/pages/dashboard/models/dashboard_data.dart';
@@ -13,12 +14,12 @@ import 'package:in_app_update/in_app_update.dart';
 import 'package:location/location.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../apis/base_api_response.dart';
+import '../../../app_pages/app_pages.dart';
 import '../../../global/consts.dart';
 import '../../../global/global.dart';
 import '../../../global/location_service.dart';
 import '../../../utils/calculate_sla.dart';
 import '../models/driver_data.dart';
-
 
 class RiderDashboardController extends GetxController {
   var isLoading = true.obs;
@@ -28,23 +29,40 @@ class RiderDashboardController extends GetxController {
   var riderName = "".obs;
   var isAttendanceMarked = false.obs;
   final locationUtils = LocationUtils();
-  late LocationData startLocation;
+  LocationData? startLocation;
+  // Latest known fix, kept fresh by getCountinuesLocation()'s stream
+  // listener (~every 10s) - other API calls (fetchAvailableOrders, etc.)
+  // read this instead of doing their own one-shot GPS fetch each time.
+  LocationData? currentLocation;
   var workingHours = "".obs;
   var walletAmount = "".obs;
   var isInternetOn = false.obs;
   var updateRiderLocation = false.obs;
-  var driverData = DriverData().obs;
+  //var driverData = DriverData().obs;
   var dashBoardData = DashBoardData().obs;
   var c2cDashBoardData = DashBoardData().obs;
   var isAttendanceLoaded = false.obs;
   var attendancesList = [].obs;
   var isAnyActiveOrder = false.obs;
+  // Lives on the controller (not the dashboard State) so the shared bottom
+  // nav on other screens can open the account flyout after popping back to
+  // the dashboard - see AppBottomNav.
+  var showMenu = false.obs;
   var whatsAppDashBoardData = DashBoardData().obs;
   var nextDelivery = Rxn<OrdersData>();
   var upcomingOrders = <OrdersData>[].obs;
+  // Unclaimed orders nearby the rider can accept, shown in the dashboard's
+  // "New Requests" section - same data OrderListController's "available"
+  // tab fetches.
+  var availableOrders = <OrdersData>[].obs;
+  // A "NearByOrders" notification can fire before this controller is
+  // registered (cold start) - the ref is stashed here so fetchAvailableOrders
+  // picks it up once it runs, instead of the notification tap being dropped.
+  static String? pendingFocusOrderRef;
   var checkBoxValue = false.obs;
   RxBool isConsentGiven = RxBool(false);
   late FirebaseMessagingController firebaseMessagingController;
+  Worker? _notificationWorker;
   var isNewAppUpdateAvailable = false.obs;
 
   // Profile fields for update
@@ -52,12 +70,30 @@ class RiderDashboardController extends GetxController {
   var address = TextEditingController();
   var phone = TextEditingController();
   var feCode = TextEditingController();
-  
+
   final picker = ImagePicker();
-  
+
   // Form key for validation
   final profileFormKey = GlobalKey<FormState>();
   var updateProfileDialog = false.obs;
+
+  // Account screen's Light/Dark toggle - persisted so it survives restarts,
+  // see main.dart's _initialThemeMode.
+  var isDarkMode = Get.isDarkMode.obs;
+
+  void setThemeMode(bool dark) {
+    // Get.changeThemeMode must land (and its MaterialApp rebuild finish)
+    // before isDarkMode.value flips - otherwise screens' Obx rebuilds can
+    // run a frame early and read a stale Get.isDarkMode, leaving text
+    // colors (from utils.tvCustom, which reads Get.isDarkMode directly)
+    // out of sync with the already-updated backgrounds until some other
+    // rebuild happens to catch them up.
+    Get.changeThemeMode(dark ? ThemeMode.dark : ThemeMode.light);
+    box.write(THEME_MODE_KEY, dark ? 'dark' : 'light');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      isDarkMode.value = dark;
+    });
+  }
 
   @override
   void onInit() {
@@ -69,26 +105,29 @@ class RiderDashboardController extends GetxController {
   @override
   void onReady() {
     isConsentGiven.value = box.read("isConsentGiven") ?? false;
-    if(isConsentGiven.value){
+    if (isConsentGiven.value) {
       updateLocation();
       requestBackgroundPermission();
       getUserData();
+     // driverCheckAttendance();
     }
     firebaseMessagingController = Get.find<FirebaseMessagingController>();
-    ever(firebaseMessagingController.onNewNotification, (bool isNew) {
+    _notificationWorker = ever(firebaseMessagingController.onNewNotification, (bool isNew) {
       if (isNew) {
-        getC2CCDashBoardData();
+       // getC2CCDashBoardData();
+        // driverCheckAttendance();
         getDashBoardData();
-        getWhatsAppDashBoardData();
+       // getWhatsAppDashBoardData();
         getNextDelivery();
+        fetchAvailableOrders();
         getCurrentLocation();
+
         firebaseMessagingController.onNewNotification.value = false;
       }
     });
     checkForUpdate();
     super.onReady();
   }
-  
 
   // Load user details into controllers
   void loadUserDetails() {
@@ -96,7 +135,7 @@ class RiderDashboardController extends GetxController {
     phone.text = userData.phone ?? "";
     feCode.text = userData.code ?? "";
   }
-  
+
   // Pick avatar from gallery
   Future<void> pickAvatar() async {
     try {
@@ -114,7 +153,7 @@ class RiderDashboardController extends GetxController {
       utils.errorSnackBar("Error", "Failed to pick image: $e");
     }
   }
-  
+
   // Pick avatar from camera
   Future<void> pickAvatarFromCamera() async {
     try {
@@ -132,7 +171,7 @@ class RiderDashboardController extends GetxController {
       utils.errorSnackBar("Error", "Failed to capture image: $e");
     }
   }
-  
+
   void showImageSourceDialog() {
     Get.dialog(
       AlertDialog(
@@ -161,7 +200,7 @@ class RiderDashboardController extends GetxController {
       ),
     );
   }
-  
+
   // Validate phone number
   String? validatePhone(String? value) {
     if (value == null || value.isEmpty) {
@@ -172,7 +211,7 @@ class RiderDashboardController extends GetxController {
     }
     return null;
   }
-  
+
   // Validate address
   String? validateAddress(String? value) {
     if (value == null || value.isEmpty) {
@@ -183,50 +222,45 @@ class RiderDashboardController extends GetxController {
     }
     return null;
   }
-  
 
-  
   // Update profile details
   Future<bool> updateProfileDetails() async {
     if (!profileFormKey.currentState!.validate()) {
       return false;
     }
-    
+
     try {
       utils.showLoadingDialog("Updating profile...");
-      
+
       List<Map<String, dynamic>> images = [];
-      
+
       if (avatar.value != null) {
-        images.add({
-          'key': 'avatar',
-          'file': avatar.value,
-        });
+        images.add({'key': 'avatar', 'file': avatar.value});
       }
-      
+
       Map<String, dynamic> data = {
         'address': address.text.trim(),
         'phone': phone.text.trim(),
-        'fe_code': userData.code
+        'fe_code': userData.code,
       };
-      
+
       if (kDebugMode) {
         print("Profile Update Data: $data");
         print("Images count: ${images.length}");
       }
-      
+
       var response = await apiProvider.postRequestWithImagesDio(
         'driver/update-profile-details',
-        data, 
-        images
+        data,
+        images,
       );
-      
+
       var result = BaseApiResponse.fromJson(response);
-      
+
       if (response['status_code'] == 200) {
         utils.closeLoadingDialog();
         utils.successSnackBar("Success", "Profile updated successfully");
-        userData =  UserData.fromJson(result.data);
+        userData = UserData.fromJson(result.data);
         await userRepository.updateUser(userData);
         update();
         return true;
@@ -241,21 +275,23 @@ class RiderDashboardController extends GetxController {
       return false;
     }
   }
-  
+
   updateLocation() async {
+    //driverCheckAttendance();
+    final walletFuture = fetchWalletAmount();
     await getCurrentLocation();
-    checkAttendance();
     await getCountinuesLocation();
-    await fetchWalletAmount();
+    await walletFuture;
   }
 
-  void checkAttendance() {
-    if (driverData.value.attendances?.last.markAttendance == 1) {
-      isAttendanceMarked.value = true;
-    } else {
-      isAttendanceMarked.value = false;
+  void checkAttendance(AttendanceModel attendance) {
+    print(attendance.markAttendance);
+    if (attendance.markAttendance ??false) {
+      isAttendanceMarked.value =  true;
+     } else {
+       isAttendanceMarked.value = false;
     }
-    isAttendanceLoaded.value = true;
+     isAttendanceLoaded.value = true;
   }
 
   Future<void> requestBackgroundPermission() async {
@@ -285,10 +321,15 @@ class RiderDashboardController extends GetxController {
         riderName.value = userData.name ?? "";
         loadUserDetails(); // Reload details when user data changes
         WidgetsBinding.instance.addPostFrameCallback((_) async {
-          await getDashBoardData();
-          await getC2CCDashBoardData();
-          await getWhatsAppDashBoardData();
-          await getNextDelivery();
+          // await getC2CCDashBoardData();
+          // await getWhatsAppDashBoardData();
+          await Future.wait([
+            driverCheckAttendance(),
+            fetchWalletAmount(),
+            getDashBoardData(),
+            getNextDelivery(),
+            fetchAvailableOrders(),
+          ]);
         });
       }
     } catch (e) {
@@ -299,7 +340,7 @@ class RiderDashboardController extends GetxController {
   Future<void> checkForUpdate() async {
     try {
       final updateInfo = await InAppUpdate.checkForUpdate();
-      
+
       if (updateInfo.updateAvailability == UpdateAvailability.updateAvailable) {
         isNewAppUpdateAvailable.value = true;
         performImmediateUpdate();
@@ -312,14 +353,13 @@ class RiderDashboardController extends GetxController {
   Future<void> performImmediateUpdate() async {
     try {
       AppUpdateResult result = await InAppUpdate.performImmediateUpdate();
-      if(result == AppUpdateResult.success){
-         isNewAppUpdateAvailable.value = false;
+      if (result == AppUpdateResult.success) {
+        isNewAppUpdateAvailable.value = false;
       } else {
-         // Forcefully ask again if the user denies or if it fails
-         performImmediateUpdate();
+        // Forcefully ask again if the user denies or if it fails
+        performImmediateUpdate();
       }
-    } 
-    on FormatException catch (e) {
+    } on FormatException catch (e) {
       debugPrint('FormatException: $e');
       utils.errorSnackBar('Update Failed', 'Failed to start update process');
       Future.delayed(const Duration(seconds: 1), () {
@@ -342,7 +382,10 @@ class RiderDashboardController extends GetxController {
     try {
       await InAppUpdate.startFlexibleUpdate();
       await InAppUpdate.completeFlexibleUpdate();
-      utils.successSnackBar('Update Complete', 'App has been updated successfully');
+      utils.successSnackBar(
+        'Update Complete',
+        'App has been updated successfully',
+      );
     } catch (e) {
       debugPrint('Error with flexible update: $e');
     }
@@ -351,9 +394,7 @@ class RiderDashboardController extends GetxController {
   Future<bool> logout() async {
     utils.showLoadingDialog("Logging out...");
     try {
-      Map<String, dynamic> model = {
-        apiKeys.userID: userData.id,
-      };
+      Map<String, dynamic> model = {apiKeys.userID: userData.id};
       var response = await apiProvider.postRequest(apiEndPoints.logout, model);
       var result = BaseApiResponse.fromJson(response);
       if (result.status_code == 200) {
@@ -371,23 +412,18 @@ class RiderDashboardController extends GetxController {
     }
   }
 
-  Future<bool> getDashBoardData() async {
+  Future<bool> driverCheckAttendance() async {
     try {
-      Map<String, dynamic> model = {
-        apiKeys.feCode: userData.code,
-      };
+      Map<String, dynamic> model = {apiKeys.feCode: userData.code};
       var response = await apiProvider.getRequestWithQueryParams(
-          apiEndPoints.dashBoardDetails, model);
+        apiEndPoints.driverCheckAttendance,
+        model,
+      );
       var result = BaseApiResponse.fromJson(response);
+      utils.closeLoadingDialog();
       if (result.status_code == 200) {
-        dashBoardData.value = DashBoardData.fromJson(result.data);
-        if(dashBoardData.value.allOrdersCount?.aSSIGNED != 0 || dashBoardData.value.allOrdersCount?.pICKED != 0 ||
-        dashBoardData.value.allOrdersCount?.oFD != 0 || dashBoardData.value.allOrdersCount?.reached != 0) {
-          isAnyActiveOrder.value = true;
-        } else {
-          isAnyActiveOrder.value = false;
-        }
-        utils.closeLoadingDialog();
+        final attendance = AttendanceModel.fromJson(result.data);
+        checkAttendance(attendance);
         update();
         return true;
       } else {
@@ -395,19 +431,50 @@ class RiderDashboardController extends GetxController {
         update();
         return false;
       }
-    } catch (e) {
+    } catch (e,stackTrace) {
+      print("❌ FetchAvailable Exception: $e");
+      print("❌ StackTrace: $stackTrace");
       utils.closeLoadingDialog();
+      return false;
+    }
+  }
+
+  Future<bool> getDashBoardData() async {
+    try {
+      Map<String, dynamic> model = {apiKeys.feCode: userData.code};
+      var response = await apiProvider.getRequestWithQueryParams(
+        apiEndPoints.dashBoardDetails,
+        model,
+      );
+      var result = BaseApiResponse.fromJson(response);
+      if (result.status_code == 200) {
+        dashBoardData.value = DashBoardData.fromJson(result.data);
+        if (dashBoardData.value.allOrdersCount?.aSSIGNED != 0 ||
+            dashBoardData.value.allOrdersCount?.pICKED != 0 ||
+            dashBoardData.value.allOrdersCount?.oFD != 0 ||
+            dashBoardData.value.allOrdersCount?.reached != 0) {
+          isAnyActiveOrder.value = true;
+        } else {
+          isAnyActiveOrder.value = false;
+        }
+        update();
+        return true;
+      } else {
+        update();
+        return false;
+      }
+    } catch (e) {
       return false;
     }
   }
 
   Future<bool> getC2CCDashBoardData() async {
     try {
-      Map<String, dynamic> model = {
-        apiKeys.feCode: userData.code,
-      };
+      Map<String, dynamic> model = {apiKeys.feCode: userData.code};
       var response = await apiProvider.getRequestWithQueryParams(
-          apiEndPoints.c2cDashBoardDetails, model);
+        apiEndPoints.c2cDashBoardDetails,
+        model,
+      );
       var result = BaseApiResponse.fromJson(response);
       if (result.status_code == 200) {
         c2cDashBoardData.value = DashBoardData.fromJson(result.data);
@@ -429,17 +496,20 @@ class RiderDashboardController extends GetxController {
     try {
       Map<String, dynamic> model = {
         apiKeys.feCode: userData.code,
+        //  apiKeys.channel: "ALL",
         apiKeys.status: [ASSIGNED, RE_ASSIGNED, PICKED, OFD],
       };
       var response = await apiProvider.postRequest(
-          apiEndPoints.driverFetchOrderList, model);
+        apiEndPoints.driverFetchOrderList,
+        model,
+      );
       var result = BaseApiResponse.fromJson(response);
       if (result.status_code == 200 && result.data != null) {
         List<OrdersData> orders = (result.data as List)
             .map((json) => OrdersData.fromJson(json as Map<String, dynamic>))
             .toList();
-        orders.sort((a, b) =>
-            remainingSecondsFor(a).compareTo(remainingSecondsFor(b)));
+        // orders.sort((a, b) =>
+        //     remainingSecondsFor(a).compareTo(remainingSecondsFor(b)));
         nextDelivery.value = orders.isNotEmpty ? orders.first : null;
         upcomingOrders.value = orders.take(5).toList();
         return true;
@@ -470,11 +540,11 @@ class RiderDashboardController extends GetxController {
 
   Future<bool> getWhatsAppDashBoardData() async {
     try {
-      Map<String, dynamic> model = {
-        apiKeys.feCode: userData.code,
-      };
+      Map<String, dynamic> model = {apiKeys.feCode: userData.code};
       var response = await apiProvider.getRequestWithQueryParams(
-          apiEndPoints.whatsAppDashBoardDetails, model);
+        apiEndPoints.whatsAppDashBoardDetails,
+        model,
+      );
       var result = BaseApiResponse.fromJson(response);
       if (result.status_code == 200) {
         whatsAppDashBoardData.value = DashBoardData.fromJson(result.data);
@@ -494,14 +564,15 @@ class RiderDashboardController extends GetxController {
 
   Future<bool> fetchWalletAmount() async {
     try {
-      Map<String, dynamic> model = {
-        apiKeys.feCode: userData.code,
-      };
+      Map<String, dynamic> model = {apiKeys.feCode: userData.code};
       var response = await apiProvider.getRequestWithQueryParams(
-          apiEndPoints.fetchWalletAmount, model);
+        apiEndPoints.fetchWalletAmount,
+        model,
+      );
       var result = BaseApiResponse.fromJson(response);
       if (result.status_code == 200) {
-        walletAmount.value = result.data;
+        walletAmount.value =
+            (result.data?['total_cod'] ?? 0).toString();
         utils.closeLoadingDialog();
         update();
         return true;
@@ -515,13 +586,14 @@ class RiderDashboardController extends GetxController {
       return false;
     }
   }
+
   Future<bool> getUserData() async {
     try {
-      Map<String, dynamic> model = {
-        apiKeys.feCode: userData.code,
-      };
+      Map<String, dynamic> model = {apiKeys.feCode: userData.code};
       var response = await apiProvider.getRequestWithQueryParams(
-          apiEndPoints.getProfileData, model);
+        apiEndPoints.getProfileData,
+        model,
+      );
       var result = BaseApiResponse.fromJson(response);
       if (result.status_code == 200) {
         userData = UserData.fromJson(result.data);
@@ -546,11 +618,13 @@ class RiderDashboardController extends GetxController {
       Map<String, dynamic> model = {
         apiKeys.userID: userData.id,
         apiKeys.markAttendance: status,
-        apiKeys.latitude: startLocation.latitude,
-        apiKeys.longitude: startLocation.longitude
+        apiKeys.latitude: startLocation?.latitude,
+        apiKeys.longitude: startLocation?.longitude,
       };
-      var response =
-          await apiProvider.postRequest(apiEndPoints.driverCheckIn, model);
+      var response = await apiProvider.postRequest(
+        apiEndPoints.driverCheckIn,
+        model,
+      );
       var result = BaseApiResponse.fromJson(response);
       if (result.status_code == 200) {
         utils.closeLoadingDialog();
@@ -571,7 +645,8 @@ class RiderDashboardController extends GetxController {
     const R = 6371000;
     final dLat = _toRadians(lat2 - lat1);
     final dLon = _toRadians(lon2 - lon1);
-    final a = sin(dLat / 2) * sin(dLat / 2) +
+    final a =
+        sin(dLat / 2) * sin(dLat / 2) +
         cos(_toRadians(lat1)) *
             cos(_toRadians(lat2)) *
             sin(dLon / 2) *
@@ -589,16 +664,18 @@ class RiderDashboardController extends GetxController {
       Map<String, dynamic> model = {
         apiKeys.userID: userData.id,
         apiKeys.latitude: locationData.latitude,
-        apiKeys.longitude: locationData.longitude
+        apiKeys.longitude: locationData.longitude,
       };
       var response = await apiProvider.postRequest(
-          apiEndPoints.driverCurrentLocation, model);
+        apiEndPoints.driverCurrentLocation,
+        model,
+      );
       var result = BaseApiResponse.fromJson(response);
       if (result.status_code == 200) {
-        driverData.value = DriverData.fromJson(result.data);
+        //driverData.value = DriverData.fromJson(result.data);
         Future.delayed(const Duration(seconds: 2));
-        attendancesList.value = driverData.value.attendances!.reversed.toList();
-        await getDashBoardData();
+        //attendancesList.value = driverData.value.attendances!.reversed.toList();
+      //  await getDashBoardData();
         update();
         return true;
       } else {
@@ -612,21 +689,35 @@ class RiderDashboardController extends GetxController {
   }
 
   getCurrentLocation() async {
-    startLocation = (await locationUtils.getCurrentLocation())!;
-    await sendDriverLocation(startLocation);
-    print('Current Location: ${startLocation.latitude}, ${startLocation.longitude}');
+    final location = await locationUtils.getCurrentLocation();
+    if (location == null) return;
+    startLocation = location;
+    currentLocation = location;
+    await sendDriverLocation(location);
+    print(
+      'Current Location: ${location.latitude}, ${location.longitude}',
+    );
   }
 
   getCountinuesLocation() {
     locationUtils.startListeningToLocationUpdates(
       onLocationChanged: (LocationData locationData) async {
+        currentLocation = locationData;
+        final baseline = startLocation;
+        if (baseline == null) {
+          startLocation = locationData;
+          return;
+        }
         double distance = calculateDistance(
-            startLocation.latitude!,
-            startLocation.longitude!,
-            locationData.latitude!,
-            locationData.longitude!);
+          baseline.latitude!,
+          baseline.longitude!,
+          locationData.latitude!,
+          locationData.longitude!,
+        );
         if (kDebugMode) {
-          print("start latlng :- ${startLocation.latitude},${startLocation.longitude}\ncurrent latlng :-${locationData.latitude},${locationData.longitude}");
+          print(
+            "start latlng :- ${baseline.latitude},${baseline.longitude}\ncurrent latlng :-${locationData.latitude},${locationData.longitude}",
+          );
         }
         print(distance.toString());
         if (distance >= 10) {
@@ -639,6 +730,116 @@ class RiderDashboardController extends GetxController {
     );
   }
 
+  // ---------------------------------------------------------------------
+  // "New Requests" (unclaimed nearby orders) - same fetchPlacedOrders call
+  // OrderListController.fetchAvailable() makes, kept separate so the
+  // dashboard doesn't depend on that controller being registered.
+  // ---------------------------------------------------------------------
+  Future<void> fetchAvailableOrders() async {
+    try {
+      final location = currentLocation ?? await locationUtils.getCurrentLocation();
+      Map<String, dynamic> model = {
+        apiKeys.feCode: userData.code,
+        apiKeys.latitude: location?.latitude,
+        apiKeys.longitude: location?.longitude,
+      };
+      var response = await apiProvider.postRequest(
+        apiEndPoints.fetchPlacedOrders,
+        model,
+      );
+      var result = BaseApiResponse.fromJson(response);
+      if (result.status_code == 200 && result.data != null) {
+        availableOrders.value = (result.data as List)
+            .map((json) => OrdersData.fromJson(json as Map<String, dynamic>))
+            .toList();
+      } else {
+        availableOrders.value = [];
+      }
+    } catch (_) {
+      availableOrders.value = [];
+    }
+
+    final ref = pendingFocusOrderRef;
+    if (ref != null) {
+      pendingFocusOrderRef = null;
+      openAvailableOrderDetail(ref);
+    }
+  }
+
+  bool isCod(OrdersData order) =>
+      (order.paymentType ?? "").toLowerCase() == "cod";
+
+  bool isAtRisk(OrdersData order) => remainingSecondsFor(order) < 1800;
+
+  Future<bool> acceptRejectOrder(String type, String awbNo) async {
+    utils.showLoadingDialog(
+      type == acceptOrder ? "Accepting order..." : "Rejecting order...",
+    );
+    try {
+      Map<String, dynamic> model = {
+        apiKeys.feCode: userData.code,
+        apiKeys.status: type,
+        apiKeys.awbNo: awbNo,
+      };
+      var response = await apiProvider.postRequest(
+        apiEndPoints.acceptRejectOrder,
+        model,
+      );
+      var result = BaseApiResponse.fromJson(response);
+      utils.closeLoadingDialog();
+      if (result.status_code == 200) {
+        availableOrders.removeWhere((o) => o.awbNo == awbNo);
+        if (type == acceptOrder) {
+          utils.successSnackBar(
+            "Order Accepted",
+            "Please find the accepted order under Assigned",
+          );
+          getDashBoardData();
+          getNextDelivery();
+        } else {
+          utils.errorSnackBar(
+            "Order Rejected",
+            "This order no longer belongs to you",
+          );
+        }
+        return true;
+      } else {
+        utils.errorSnackBar("Error", result.message.toString());
+        return false;
+      }
+    } catch (e) {
+      utils.closeLoadingDialog();
+      utils.errorSnackBar("Exception", e.toString());
+      return false;
+    }
+  }
+
+  // Shared by the dashboard's "New Requests" cards and the "NearByOrders"
+  // push-notification tap flow (see FirebaseNotifiactionController) - both
+  // resolve against this same availableOrders list instead of each doing
+  // their own fetch.
+  Future<void> openAvailableOrderDetail(String orderRef) async {
+    if (orderRef.isEmpty) return;
+    if (availableOrders.isEmpty) {
+      await fetchAvailableOrders();
+    }
+    OrdersData? match;
+    for (final o in availableOrders) {
+      if (o.orderRefNumber == orderRef || o.awbNo == orderRef) {
+        match = o;
+        break;
+      }
+    }
+    if (match != null) {
+      Get.toNamed(
+        Routes.orderDetailScreen,
+        arguments: match,
+      )?.then((_) => fetchAvailableOrders());
+    } else {
+      utils.errorSnackBar("Order unavailable", "Order no longer available");
+    }
+  }
+
   // Clear profile fields
   void clearProfileFields() {
     avatar.value = null;
@@ -646,14 +847,13 @@ class RiderDashboardController extends GetxController {
     phone.clear();
     feCode.clear();
   }
-  
+
   @override
   void onClose() {
+    _notificationWorker?.dispose();
     address.dispose();
     phone.dispose();
     feCode.dispose();
     super.onClose();
   }
-
-
 }

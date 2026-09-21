@@ -17,7 +17,8 @@ android {
 
     defaultConfig {
         applicationId = "com.dropit.carson"
-        minSdk = flutter.minSdkVersion
+        // Google Navigation SDK (google_navigation_flutter) requires API 24+.
+        minSdk = 24
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

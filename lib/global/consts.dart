@@ -1,4 +1,5 @@
 const String USER_ID_KEY = "user_id";
+const String THEME_MODE_KEY = "theme_mode";
 
 // Same key already configured for Maps/Navigation SDK in
 // android/app/src/main/AndroidManifest.xml (com.google.android.geo.API_KEY).

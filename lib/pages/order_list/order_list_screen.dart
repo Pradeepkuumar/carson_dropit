@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import '../../app_pages/app_pages.dart';
+import '../../global/app_bottom_nav.dart';
+import '../../global/order_card_widget.dart';
 import '../../global/consts.dart';
 import '../../global/global.dart';
 import '../../utils/colors.dart';
+import '../../utils/text_style_util.dart';
 import '../my_orders/orders/models/orders_model.dart';
 import 'order_list_controller.dart';
-
-const Color _amberOFD = Color(0xFFA67C00);
 
 class OrderListScreen extends GetView<OrderListController> {
   const OrderListScreen({super.key});
@@ -25,19 +26,21 @@ class OrderListScreen extends GetView<OrderListController> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Get.isDarkMode ? AppColors.black : AppColors.greyColor1,
+      bottomNavigationBar: const AppBottomNav(currentIndex: 1),
       body: SafeArea(
         child: Stack(
           children: [
             Column(
               children: [
-                Obx(() => _buildHeader(context)),
+                _buildHeader(context),
                 Obx(() => _buildStatusPills(context)),
                 Obx(() => _buildActiveFilterIndicator(context)),
                 Expanded(
                   child: Obx(() {
                     if (controller.typeTab.value != "b2c") {
                       return _emptyState(
-                          "${controller.typeTab.value == "c2c" ? "C2C" : "WhatsApp"} orders aren't available on this screen yet.");
+                        "${controller.typeTab.value == "c2c" ? "C2C" : "WhatsApp"} orders aren't available on this screen yet.",
+                      );
                     }
                     if (controller.isLoading.value) {
                       return const Center(child: CircularProgressIndicator());
@@ -61,9 +64,11 @@ class OrderListScreen extends GetView<OrderListController> {
                 ),
               ],
             ),
-            Obx(() => controller.filterMenuOpen.value
-                ? _filterMenu(context)
-                : const SizedBox.shrink()),
+            Obx(
+              () => controller.filterMenuOpen.value
+                  ? _filterMenu(context)
+                  : const SizedBox.shrink(),
+            ),
           ],
         ),
       ),
@@ -82,31 +87,50 @@ class OrderListScreen extends GetView<OrderListController> {
   // ---------------------------------------------------------------------
   // Header: title + search/filter buttons + order-type tabs
   // ---------------------------------------------------------------------
+  static const _typeLabels = {
+    "b2c": "B2C",
+    "c2c": "C2C",
+    "whatsapp": "WhatsApp",
+  };
+
   Widget _buildHeader(BuildContext context) {
     final isTablet = !context.isPhone;
-    final accent = _typeAccent;
+    // final accent = _typeAccent;
+    // final channels = controller.allowedChannels;
+    // final tabs = <Widget>[];
+    // for (var i = 0; i < channels.length; i++) {
+    //   final value = channels[i];
+    //   tabs.add(Expanded(
+    //       child: _typeTab(
+    //           context, _typeLabels[value] ?? value, value, accent)));
+    //   if (i != channels.length - 1) tabs.add(SizedBox(width: 2.w));
+    // }
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.fromLTRB((isTablet ? 32 : 16).w, 12.h,
-          (isTablet ? 32 : 16).w, (isTablet ? 20 : 14).h),
+      padding: EdgeInsets.fromLTRB(
+        (isTablet ? 32 : 16).w,
+        12.h,
+        (isTablet ? 32 : 16).w,
+        (isTablet ? 20 : 14).h,
+      ),
       color: AppColors.backgroundColorMain,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Obx(() => controller.searchOpen.value
-              ? _searchBar(context)
-              : _titleRow(context, isTablet)),
-          SizedBox(height: isTablet ? 18.h : 14.h),
-          Row(
-            children: [
-              Expanded(child: _typeTab(context, "B2C", "b2c", accent)),
-              SizedBox(width: 8.w),
-              Expanded(child: _typeTab(context, "C2C", "c2c", accent)),
-              SizedBox(width: 8.w),
-              Expanded(
-                  child: _typeTab(context, "WhatsApp", "whatsapp", accent)),
-            ],
+          Obx(
+            () => controller.searchOpen.value
+                ? _searchBar(context)
+                : _titleRow(context, isTablet),
           ),
+          SizedBox(height: isTablet ? 18.h : 5.h),
+          // Container(
+          //   padding: EdgeInsets.all(4.w),
+          //   decoration: BoxDecoration(
+          //     color: AppColors.backgroundColorLight,
+          //     borderRadius: BorderRadius.circular(12.r),
+          //   ),
+          //   child: Row(children: tabs),
+          // ),
         ],
       ),
     );
@@ -115,17 +139,21 @@ class OrderListScreen extends GetView<OrderListController> {
   Widget _titleRow(BuildContext context, bool isTablet) {
     return Row(
       children: [
-        InkWell(
-          onTap: () => Get.back(),
-          borderRadius: BorderRadius.circular(8.r),
-          child: Padding(
-            padding: EdgeInsets.only(right: 8.w),
-            child: Icon(Icons.arrow_back, color: Colors.white, size: 22.sp),
-          ),
-        ),
+        // InkWell(
+        //   onTap: () => Get.back(),
+        //   borderRadius: BorderRadius.circular(8.r),
+        //   child: Padding(
+        //     padding: EdgeInsets.only(right: 8.w),
+        //     child: Icon(Icons.arrow_back, color: Colors.white, size: 22.sp),
+        //   ),
+        // ),
         Expanded(
-          child: utils.tvCustom("Orders", Colors.white, isTablet ? 24 : 20,
-              textAlignment: TextAlign.left),
+          child: utils.tvCustom(
+            "Orders",
+            Colors.white,
+            isTablet ? 24 : 16,
+            textAlignment: TextAlign.left,
+          ),
         ),
         _headerIconButton(context, Icons.search, controller.openSearch),
         SizedBox(width: 10.w),
@@ -173,7 +201,10 @@ class OrderListScreen extends GetView<OrderListController> {
   }
 
   Widget _headerIconButton(
-      BuildContext context, IconData icon, VoidCallback onTap) {
+    BuildContext context,
+    IconData icon,
+    VoidCallback onTap,
+  ) {
     final isTablet = !context.isPhone;
     return InkWell(
       onTap: onTap,
@@ -191,21 +222,33 @@ class OrderListScreen extends GetView<OrderListController> {
     );
   }
 
-  Widget _typeTab(BuildContext context, String label, String value, Color accent) {
+  Widget _typeTab(
+    BuildContext context,
+    String label,
+    String value,
+    Color accent,
+  ) {
     final isTablet = !context.isPhone;
     final selected = controller.typeTab.value == value;
+    final color = selected ? Colors.white : AppColors.whiteFade;
     return InkWell(
       onTap: () => controller.switchType(value),
-      borderRadius: BorderRadius.circular(10.r),
+      borderRadius: BorderRadius.circular(9.r),
       child: Container(
-        padding: EdgeInsets.symmetric(vertical: (isTablet ? 12 : 9).h),
+        padding: EdgeInsets.symmetric(vertical: (isTablet ? 11 : 8).h),
         decoration: BoxDecoration(
-          color: selected ? accent : Colors.white,
-          borderRadius: BorderRadius.circular(10.r),
+          color: selected ? accent : Colors.transparent,
+          borderRadius: BorderRadius.circular(9.r),
         ),
         alignment: Alignment.center,
-        child: utils.tvCustom(
-            label, selected ? Colors.white : AppColors.black, 12.5),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: AppTextStyle.tsCustom(
+            color,
+            utils.responsiveFontSize(isTablet ? 16 : 14.5),
+          ).copyWith(fontWeight: selected ? FontWeight.w700 : FontWeight.w500),
+        ),
       ),
     );
   }
@@ -218,67 +261,98 @@ class OrderListScreen extends GetView<OrderListController> {
     final accent = _typeAccent;
     return Padding(
       padding: EdgeInsets.fromLTRB(
-          (isTablet ? 32 : 16).w, 14.h, (isTablet ? 32 : 16).w, 0),
+        (isTablet ? 32 : 16).w,
+        14.h,
+        (isTablet ? 32 : 16).w,
+        0,
+      ),
       child: Row(
         children: [
           Expanded(
-              child: _statusPill(context, "Assigned", "assigned",
-                  controller.assignedOrders.length, accent)),
+            child: _statusPill(
+              context,
+              "Assigned",
+              "assigned",
+              controller.assignedOrders.length,
+              accent,
+            ),
+          ),
           SizedBox(width: 8.w),
           Expanded(
-              child: _statusPill(context, "Available", "available",
-                  controller.availableOrders.length, accent)),
+            child: _statusPill(
+              context,
+              "Available",
+              "available",
+              controller.availableOrders.length,
+              accent,
+            ),
+          ),
           SizedBox(width: 8.w),
           Expanded(
-              child:
-                  _statusPill(context, "Completed", "completed", null, accent)),
+            child: _statusPill(context, "Completed", "completed", null, accent),
+          ),
         ],
       ),
     );
   }
 
   Widget _statusPill(
-      BuildContext context, String label, String value, int? count, Color accent) {
+    BuildContext context,
+    String label,
+    String value,
+    int? count,
+    Color accent,
+  ) {
     final isTablet = !context.isPhone;
     final selected = controller.statusTab.value == value;
+    final inactiveColor = Get.isDarkMode
+        ? AppColors.greyColor3
+        : AppColors.greyColor4;
+    final color = selected ? accent : inactiveColor;
     return InkWell(
       onTap: () => controller.switchStatus(value),
-      borderRadius: BorderRadius.circular(12.r),
-      child: Container(
-        padding: EdgeInsets.symmetric(vertical: (isTablet ? 13 : 10).h),
-        decoration: BoxDecoration(
-          color: selected
-              ? accent
-              : (Get.isDarkMode ? AppColors.greyColor10 : Colors.white),
-          borderRadius: BorderRadius.circular(12.r),
-          border: Border.all(color: accent, width: 1.5),
-        ),
-        alignment: Alignment.center,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: (isTablet ? 8 : 6).h),
+        child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            utils.tvCustom(
-                label,
-                selected
-                    ? Colors.white
-                    : (Get.isDarkMode ? Colors.white : AppColors.black),
-                13),
-            if (count != null) ...[
-              SizedBox(width: 6.w),
-              Container(
-                padding:
-                    EdgeInsets.symmetric(horizontal: 6.w, vertical: 1.h),
-                decoration: BoxDecoration(
-                  color: selected
-                      ? Colors.white.withOpacity(0.25)
-                      : accent.withOpacity(0.14),
-                  borderRadius: BorderRadius.circular(8.r),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: utils.tvCustom(
+                    label,
+                    color,
+                    isTablet ? 15 : 13,
+                    maxLines: 1,
+                  ),
                 ),
-                child: utils.tvCustom(
-                    count.toString(), selected ? Colors.white : accent, 10.5),
+                if (count != null) ...[
+                  SizedBox(width: 6.w),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 6.w,
+                      vertical: 1.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: accent.withOpacity(Get.isDarkMode ? 0.22 : 0.14),
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                    child: utils.tvCustom(count.toString(), accent, 10.5),
+                  ),
+                ],
+              ],
+            ),
+            SizedBox(height: (isTablet ? 8 : 6).h),
+            Container(
+              height: (isTablet ? 3 : 2.5).h,
+              decoration: BoxDecoration(
+                color: selected ? accent : Colors.transparent,
+                borderRadius: BorderRadius.circular(2.r),
               ),
-            ],
+            ),
           ],
         ),
       ),
@@ -293,39 +367,66 @@ class OrderListScreen extends GetView<OrderListController> {
 
   Widget _buildActiveFilterIndicator(BuildContext context) {
     final isTablet = !context.isPhone;
-    final filter = controller.paymentFilter.value;
-    if (filter == "all") return const SizedBox.shrink();
-    final accent = filter == "risk" ? AppColors.red : _typeAccent;
+    final typeFilter = controller.serviceTypeFilter.value;
+    final paymentFilter = controller.paymentFilter.value;
+    if (typeFilter == "all" && paymentFilter == "all") {
+      return const SizedBox.shrink();
+    }
     return Padding(
       padding: EdgeInsets.fromLTRB(
-          (isTablet ? 32 : 16).w, 12.h, (isTablet ? 32 : 16).w, 0),
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 5.h),
-        decoration: BoxDecoration(
-          color: accent.withOpacity(Get.isDarkMode ? 0.2 : 0.10),
-          borderRadius: BorderRadius.circular(20.r),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            InkWell(
-              onTap: controller.openFilterMenu,
-              borderRadius: BorderRadius.circular(20.r),
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8.w),
-                child: utils.tvCustom(_filterLabels[filter] ?? "", accent, 12),
-              ),
+        (isTablet ? 32 : 16).w,
+        12.h,
+        (isTablet ? 32 : 16).w,
+        0,
+      ),
+      child: Wrap(
+        spacing: 8.w,
+        runSpacing: 8.h,
+        children: [
+          if (typeFilter != "all")
+            _activeFilterChip(
+              _typeLabels[typeFilter] ?? typeFilter,
+              _typeAccents[typeFilter] ?? _typeAccent,
+              () => controller.switchServiceTypeFilter("all"),
             ),
-            InkWell(
-              onTap: () => controller.switchFilter("all"),
-              borderRadius: BorderRadius.circular(20.r),
-              child: Padding(
-                padding: EdgeInsets.all(4.w),
-                child: Icon(Icons.close, size: 14.sp, color: accent),
-              ),
+          if (paymentFilter != "all")
+            _activeFilterChip(
+              _filterLabels[paymentFilter] ?? "",
+              paymentFilter == "risk" ? AppColors.red : _typeAccent,
+              () => controller.switchFilter("all"),
             ),
-          ],
-        ),
+        ],
+      ),
+    );
+  }
+
+  Widget _activeFilterChip(String label, Color accent, VoidCallback onClear) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 5.h),
+      decoration: BoxDecoration(
+        color: accent.withOpacity(Get.isDarkMode ? 0.2 : 0.10),
+        borderRadius: BorderRadius.circular(20.r),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          InkWell(
+            onTap: controller.openFilterMenu,
+            borderRadius: BorderRadius.circular(20.r),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8.w),
+              child: utils.tvCustom(label, accent, 12),
+            ),
+          ),
+          InkWell(
+            onTap: onClear,
+            borderRadius: BorderRadius.circular(20.r),
+            child: Padding(
+              padding: EdgeInsets.all(4.w),
+              child: Icon(Icons.close, size: 14.sp, color: accent),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -349,25 +450,75 @@ class OrderListScreen extends GetView<OrderListController> {
           top: isTablet ? 74.h : 56.h,
           right: isTablet ? 32.w : 16.w,
           child: Container(
-            width: 168.w,
-            padding: EdgeInsets.all(6.w),
+            width: isTablet ? 260.w : 228.w,
+            padding: EdgeInsets.all(8.w),
             decoration: BoxDecoration(
               color: Get.isDarkMode ? AppColors.greyColor10 : Colors.white,
               borderRadius: BorderRadius.circular(14.r),
               boxShadow: [
                 BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 30,
-                    offset: const Offset(0, 10)),
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 30,
+                  offset: const Offset(0, 10),
+                ),
               ],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _filterMenuRow("All", "all", accent),
-                _filterMenuRow("PPD", "ppd", accent),
-                _filterMenuRow("COD", "cod", accent),
-                _filterMenuRow("At risk", "risk", AppColors.red),
+                _filterSectionLabel("Type"),
+                Wrap(
+                  spacing: 6.w,
+                  runSpacing: 6.h,
+                  children: [
+                    _filterChip(
+                      "All",
+                      controller.serviceTypeFilter.value == "all",
+                      AppColors.greyColor5,
+                      () => controller.switchServiceTypeFilter("all"),
+                    ),
+                    for (final type in const ["b2c", "c2c", "whatsapp"])
+                      _filterChip(
+                        _typeLabels[type]!,
+                        controller.serviceTypeFilter.value == type,
+                        _typeAccents[type]!,
+                        () => controller.switchServiceTypeFilter(type),
+                      ),
+                  ],
+                ),
+                SizedBox(height: 10.h),
+                _filterSectionLabel("Payment"),
+                Wrap(
+                  spacing: 6.w,
+                  runSpacing: 6.h,
+                  children: [
+                    _filterChip(
+                      "All",
+                      controller.paymentFilter.value == "all",
+                      AppColors.greyColor5,
+                      () => controller.switchFilter("all"),
+                    ),
+                    _filterChip(
+                      "PPD",
+                      controller.paymentFilter.value == "ppd",
+                      accent,
+                      () => controller.switchFilter("ppd"),
+                    ),
+                    _filterChip(
+                      "COD",
+                      controller.paymentFilter.value == "cod",
+                      accent,
+                      () => controller.switchFilter("cod"),
+                    ),
+                    _filterChip(
+                      "At risk",
+                      controller.paymentFilter.value == "risk",
+                      AppColors.red,
+                      () => controller.switchFilter("risk"),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -376,25 +527,40 @@ class OrderListScreen extends GetView<OrderListController> {
     );
   }
 
-  Widget _filterMenuRow(String label, String value, Color color) {
-    final selected = controller.paymentFilter.value == value;
+  Widget _filterSectionLabel(String label) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(4.w, 4.h, 4.w, 6.h),
+      child: utils.tvCustom(
+        label.toUpperCase(),
+        AppColors.greyColor4,
+        10,
+        textAlignment: TextAlign.left,
+      ),
+    );
+  }
+
+  Widget _filterChip(
+    String label,
+    bool selected,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return InkWell(
-      onTap: () => controller.switchFilter(value),
-      borderRadius: BorderRadius.circular(9.r),
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20.r),
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+        padding: EdgeInsets.symmetric(horizontal: 11.w, vertical: 6.h),
         decoration: BoxDecoration(
           color: selected
-              ? color.withOpacity(Get.isDarkMode ? 0.2 : 0.10)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(9.r),
+              ? color
+              : color.withOpacity(Get.isDarkMode ? 0.18 : 0.12),
+          borderRadius: BorderRadius.circular(20.r),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            utils.tvCustom(label, selected ? color : AppColors.greyColor5, 13),
-            if (selected) Icon(Icons.check, color: color, size: 15.sp),
-          ],
+        child: utils.tvCustom(
+          label,
+          selected ? Colors.white : color,
+          11.5,
+          textAlignment: TextAlign.left,
         ),
       ),
     );
@@ -404,274 +570,23 @@ class OrderListScreen extends GetView<OrderListController> {
   // Order card
   // ---------------------------------------------------------------------
   Widget _orderCard(BuildContext context, OrdersData order) {
-    final isTablet = !context.isPhone;
     final available = controller.statusTab.value == "available";
     final completed = controller.statusTab.value == "completed";
     final atRisk = !completed && controller.isAtRisk(order);
-    final cardBg = Get.isDarkMode ? AppColors.greyColor10 : Colors.white;
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(16.r),
-      onTap: () => Get.toNamed(Routes.orderDetailScreen, arguments: order)
-          ?.then((_) => controller.refreshCurrentTab()),
-      child: Container(
-      padding: EdgeInsets.all((isTablet ? 18 : 14).w),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(16.r),
-        border: available
-            ? Border.all(color: _typeAccent.withOpacity(0.35), width: 1.5)
-            : (Get.isDarkMode
-                ? Border.all(color: Colors.white.withOpacity(0.08))
-                : null),
-        boxShadow: Get.isDarkMode
-            ? []
-            : [
-                BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4)),
-              ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: (isTablet ? 46 : 38).w,
-                height: (isTablet ? 46 : 38).w,
-                decoration: BoxDecoration(
-                  color: _typeAccent.withOpacity(Get.isDarkMode ? 0.18 : 0.10),
-                  borderRadius: BorderRadius.circular(10.r),
-                ),
-                alignment: Alignment.center,
-                child: Icon(Icons.inventory_2_outlined,
-                    color: _typeAccent, size: (isTablet ? 22 : 19).sp),
-              ),
-              SizedBox(width: 12.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: utils.tvCustom(
-                              order.awbNo ?? order.orderRefNumber ?? "-",
-                              AppColors.black,
-                              13.5,
-                              textAlignment: TextAlign.left,
-                              maxLines: 1),
-                        ),
-                        if ((order.status ?? "").isNotEmpty) ...[
-                          SizedBox(width: 6.w),
-                          _statusBadge(order.status!),
-                        ],
-                      ],
-                    ),
-                    SizedBox(height: 1.h),
-                    utils.tvCustom(
-                        (order.consigneeName?.isNotEmpty ?? false)
-                            ? order.consigneeName!
-                            : (order.merchantName ?? ""),
-                        AppColors.greyColor4,
-                        12,
-                        textAlignment: TextAlign.left,
-                        maxLines: 1),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 10.h),
-          IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                SizedBox(
-                  width: 16.w,
-                  child: Column(
-                    children: [
-                      Padding(
-                        padding: EdgeInsets.only(top: 3.h),
-                        child: Container(
-                            width: 8.w,
-                            height: 8.w,
-                            decoration: const BoxDecoration(
-                                color: AppColors.greenLight,
-                                shape: BoxShape.circle)),
-                      ),
-                      Expanded(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 2.h),
-                          child: Container(
-                              width: 1.5, color: const Color(0xFFE0E0E0)),
-                        ),
-                      ),
-                      Icon(Icons.location_on,
-                          color: AppColors.primaryThemeColor, size: 14.sp),
-                    ],
-                  ),
-                ),
-                SizedBox(width: 8.w),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      utils.tvCustom(
-                          order.pickupLocationName ?? order.pickupAddress ?? "-",
-                          AppColors.greyColor10,
-                          11.5,
-                          textAlignment: TextAlign.left,
-                          maxLines: 2),
-                      SizedBox(height: 10.h),
-                      utils.tvCustom(order.consigneeAddress ?? "-",
-                          AppColors.greyColor10, 11.5,
-                          textAlignment: TextAlign.left, maxLines: 2),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: 10.h),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.social_distance,
-                      color: AppColors.greyColor4, size: 13.sp),
-                  SizedBox(width: 4.w),
-                  utils.tvCustom(order.distance ?? "-", AppColors.greyColor4, 11),
-                ],
-              ),
-              _paymentBadge(order),
-            ],
-          ),
-          SizedBox(height: 6.h),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.access_time,
-                      color: completed
-                          ? AppColors.greyColor4
-                          : (atRisk ? AppColors.red : AppColors.greyColor10),
-                      size: 13.sp),
-                  SizedBox(width: 4.w),
-                  utils.tvCustom(
-                      completed
-                          ? "Delivered"
-                          : _dueInLabel(controller.remainingSecondsFor(order)),
-                      completed
-                          ? AppColors.greyColor4
-                          : (atRisk ? AppColors.red : AppColors.greyColor10),
-                      11),
-                ],
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if ((order.sla_in_hours ?? "").isNotEmpty) ...[
-                    utils.tvCustom(
-                        "${order.sla_in_hours}h SLA", AppColors.greyColor4, 10.5),
-                    SizedBox(width: 6.w),
-                  ],
-                  Icon(Icons.chevron_right,
-                      color: const Color(0xFFC7C7C7), size: 18.sp),
-                ],
-              ),
-            ],
-          ),
-          if (available) ...[
-            SizedBox(height: 14.h),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => _confirmDecline(order),
-                    style: OutlinedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 11.h),
-                      side: const BorderSide(color: Color(0xFFE0E0E0)),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10.r)),
-                    ),
-                    child: utils.tvCustom("Decline", AppColors.black, 13),
-                  ),
-                ),
-                SizedBox(width: 10.w),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => _confirmAccept(order),
-                    style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 11.h),
-                      backgroundColor: AppColors.primaryThemeColor,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10.r)),
-                    ),
-                    child: utils.tvCustom("Accept order", Colors.white, 13),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ],
-      ),
-      ),
-    );
-  }
-
-  // Same status -> color mapping already used in orders_item.dart.
-  Color _statusColor(String status) {
-    switch (status) {
-      case ASSIGNED:
-      case RE_ASSIGNED:
-        return AppColors.linkColor;
-      case PICKED:
-        return AppColors.blue;
-      case OFD:
-        return _amberOFD;
-      case PLACED:
-      case DELIVERED:
-        return AppColors.greenLight;
-      case UNDELIVERED:
-        return AppColors.red;
-      default:
-        return AppColors.primaryThemeColor;
-    }
-  }
-
-  Widget _statusBadge(String status) {
-    final color = _statusColor(status);
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
-      decoration: BoxDecoration(
-        color: color.withOpacity(Get.isDarkMode ? 0.2 : 0.12),
-        borderRadius: BorderRadius.circular(6.r),
-      ),
-      child: utils.tvCustom(status, color, 9, textAlignment: TextAlign.left),
-    );
-  }
-
-  Widget _paymentBadge(OrdersData order) {
-    final isCod = controller.isCod(order);
-    final color = isCod ? _amberOFD : AppColors.greenLight;
-    final label = isCod
-        ? "COD · QAR ${order.orderAmount ?? '0'}"
-        : "${(order.paymentType ?? "").isNotEmpty ? "${order.paymentType} · " : ""}Paid";
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-      decoration: BoxDecoration(
-        color: color.withOpacity(Get.isDarkMode ? 0.22 : 0.14),
-        borderRadius: BorderRadius.circular(8.r),
-      ),
-      child: utils.tvCustom(label, color, 10.5, textAlignment: TextAlign.left),
+    return OrderCardWidget(
+      order: order,
+      available: available,
+      completed: completed,
+      atRisk: atRisk,
+      dueInLabel: _dueInLabel(controller.remainingSecondsFor(order)),
+      accentColor: _typeAccent,
+      isCod: controller.isCod(order),
+      onTap: () => Get.toNamed(
+        Routes.orderDetailScreen,
+        arguments: order,
+      )?.then((_) => controller.refreshCurrentTab()),
+      onAccept: available ? () => _confirmAccept(order) : null,
+      onDecline: available ? () => _confirmDecline(order) : null,
     );
   }
 
@@ -683,20 +598,28 @@ class OrderListScreen extends GetView<OrderListController> {
   }
 
   void _confirmAccept(OrdersData order) {
-    utils.simpleDialog("Accept Order", "Do you want to accept this order?",
-        () {
-      controller.acceptRejectOrder(acceptOrder, order.awbNo ?? "");
-    }, () {
-      Get.back();
-    });
+    utils.simpleDialog(
+      "Accept Order",
+      "Do you want to accept this order?",
+      () {
+        controller.acceptRejectOrder(acceptOrder, order.awbNo ?? "");
+      },
+      () {
+        Get.back();
+      },
+    );
   }
 
   void _confirmDecline(OrdersData order) {
-    utils.simpleDialog("Decline Order", "Do you want to decline this order?",
-        () {
-      controller.acceptRejectOrder(rejectOrder, order.awbNo ?? "");
-    }, () {
-      Get.back();
-    });
+    utils.simpleDialog(
+      "Decline Order",
+      "Do you want to decline this order?",
+      () {
+        controller.acceptRejectOrder(rejectOrder, order.awbNo ?? "");
+      },
+      () {
+        Get.back();
+      },
+    );
   }
 }

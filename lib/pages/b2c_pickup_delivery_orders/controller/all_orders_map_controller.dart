@@ -250,8 +250,6 @@ class AllOrdersMapController extends GetxController  {
       }
     }
 
-
-
     void onArrivalEvent(OnArrivalEvent onArrive){
       NavigationWaypoint arrivedWaypoint = onArrive.waypoint;
       filterCurrentLocationOrders(300);
