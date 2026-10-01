@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:signature/signature.dart';
 import '../../app_pages/app_pages.dart';
 import '../../global/app_bottom_nav.dart';
 import '../../global/order_card_widget.dart';
@@ -24,54 +26,59 @@ class OrderListScreen extends GetView<OrderListController> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Get.isDarkMode ? AppColors.black : AppColors.greyColor1,
-      bottomNavigationBar: const AppBottomNav(currentIndex: 1),
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Column(
-              children: [
-                _buildHeader(context),
-                Obx(() => _buildStatusPills(context)),
-                Obx(() => _buildActiveFilterIndicator(context)),
-                Expanded(
-                  child: Obx(() {
-                    if (controller.typeTab.value != "b2c") {
-                      return _emptyState(
-                        "${controller.typeTab.value == "c2c" ? "C2C" : "WhatsApp"} orders aren't available on this screen yet.",
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light
+          .copyWith(statusBarColor: AppColors.backgroundColorMain),
+      child: Scaffold(
+        backgroundColor: Get.isDarkMode ? AppColors.black : AppColors.greyColor1,
+        bottomNavigationBar: const AppBottomNav(currentIndex: 1),
+        body: SafeArea(
+          top: false,
+          child: Stack(
+            children: [
+              Column(
+                children: [
+                  _buildHeader(context),
+                  Obx(() => _buildStatusPills(context)),
+                  Obx(() => _buildActiveFilterIndicator(context)),
+                  Expanded(
+                    child: Obx(() {
+                      if (controller.typeTab.value != "b2c") {
+                        return _emptyState(
+                          "${controller.typeTab.value == "c2c" ? "C2C" : "WhatsApp"} orders aren't available on this screen yet.",
+                        );
+                      }
+                      if (controller.isLoading.value) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      final orders = controller.currentOrders;
+                      if (orders.isEmpty) {
+                        return _emptyState("No orders here right now.");
+                      }
+                      return RefreshIndicator(
+                        onRefresh: controller.refreshCurrentTab,
+                        child: ListView.separated(
+                          padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 20.h),
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          itemCount: orders.length,
+                          separatorBuilder: (_, __) => SizedBox(height: 12.h),
+                          itemBuilder: (context, index) =>
+                              _orderCard(context, orders[index]),
+                        ),
                       );
-                    }
-                    if (controller.isLoading.value) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    final orders = controller.currentOrders;
-                    if (orders.isEmpty) {
-                      return _emptyState("No orders here right now.");
-                    }
-                    return RefreshIndicator(
-                      onRefresh: controller.refreshCurrentTab,
-                      child: ListView.separated(
-                        padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 20.h),
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        itemCount: orders.length,
-                        separatorBuilder: (_, __) => SizedBox(height: 12.h),
-                        itemBuilder: (context, index) =>
-                            _orderCard(context, orders[index]),
-                      ),
-                    );
-                  }),
-                ),
-              ],
-            ),
-            Obx(
-              () => controller.filterMenuOpen.value
-                  ? _filterMenu(context)
-                  : const SizedBox.shrink(),
-            ),
-          ],
+                    }),
+                  ),
+                ],
+              ),
+              Obx(
+                () => controller.filterMenuOpen.value
+                    ? _filterMenu(context)
+                    : const SizedBox.shrink(),
+              ),
+            ],
+          ),
         ),
-      ),
+        ),
     );
   }
 
@@ -107,9 +114,11 @@ class OrderListScreen extends GetView<OrderListController> {
     // }
     return Container(
       width: double.infinity,
+      // Header extends up behind the status bar (body SafeArea has
+      // top: false), so the status bar strip is navy on edge-to-edge Android.
       padding: EdgeInsets.fromLTRB(
         (isTablet ? 32 : 16).w,
-        12.h,
+        MediaQuery.paddingOf(context).top + 12.h,
         (isTablet ? 32 : 16).w,
         (isTablet ? 20 : 14).h,
       ),
@@ -447,7 +456,7 @@ class OrderListScreen extends GetView<OrderListController> {
           ),
         ),
         Positioned(
-          top: isTablet ? 74.h : 56.h,
+          top: MediaQuery.paddingOf(context).top + (isTablet ? 74.h : 56.h),
           right: isTablet ? 32.w : 16.w,
           child: Container(
             width: isTablet ? 260.w : 228.w,
@@ -587,6 +596,9 @@ class OrderListScreen extends GetView<OrderListController> {
       )?.then((_) => controller.refreshCurrentTab()),
       onAccept: available ? () => _confirmAccept(order) : null,
       onDecline: available ? () => _confirmDecline(order) : null,
+      onDropback: (completed && order.status == UNDELIVERED)
+          ? () => _openDropbackSheet(context, order)
+          : null,
     );
   }
 
@@ -620,6 +632,238 @@ class OrderListScreen extends GetView<OrderListController> {
       () {
         Get.back();
       },
+    );
+  }
+
+  // ---------------------------------------------------------------------
+  // Back to warehouse (dropback) sheet - undelivered orders in Completed tab
+  // ---------------------------------------------------------------------
+
+  void _openDropbackSheet(BuildContext context, OrdersData order) {
+    controller.resetDropbackState();
+    Get.bottomSheet(
+      Container(
+        padding: EdgeInsets.fromLTRB(18.w, 14.h, 18.w, 20.h),
+        decoration: BoxDecoration(
+          color: Get.isDarkMode ? AppColors.greyColor10 : Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36.w,
+                height: 4.h,
+                margin: EdgeInsets.only(bottom: 16.h),
+                decoration: BoxDecoration(
+                  color: AppColors.greyColor2,
+                  borderRadius: BorderRadius.circular(2.r),
+                ),
+              ),
+            ),
+            utils.tvCustom(
+              "Return to warehouse",
+              AppColors.black,
+              16,
+              textAlignment: TextAlign.left,
+            ),
+            SizedBox(height: 2.h),
+            utils.tvCustom(
+              order.awbNo ?? order.orderRefNumber ?? "-",
+              AppColors.greyColor5,
+              12,
+              textAlignment: TextAlign.left,
+            ),
+            SizedBox(height: 14.h),
+            utils.tvCustom(
+              "Warehouse proof photo (required)",
+              AppColors.black,
+              13,
+              textAlignment: TextAlign.left,
+            ),
+            SizedBox(height: 8.h),
+            GetBuilder<OrderListController>(
+              builder: (_) => SizedBox(
+                width: 96.w,
+                child: _dropbackTile(
+                  icon: Icons.camera_alt_outlined,
+                  label: "Attempt photo",
+                  captured: controller.dropbackPhoto != null,
+                  onTap: controller.captureDropbackPhoto,
+                ),
+              ),
+            ),
+            SizedBox(height: 14.h),
+            utils.tvCustom(
+              "Signature (optional)",
+              AppColors.black,
+              13,
+              textAlignment: TextAlign.left,
+            ),
+            SizedBox(height: 8.h),
+            GetBuilder<OrderListController>(
+              builder: (_) => SizedBox(
+                width: 96.w,
+                child: _dropbackTile(
+                  icon: Icons.edit_outlined,
+                  label: "Signature",
+                  captured: controller.dropbackSignatureFile != null,
+                  onTap: () => _openDropbackSignatureSheet(context),
+                ),
+              ),
+            ),
+            SizedBox(height: 16.h),
+            GetBuilder<OrderListController>(
+              builder: (_) => SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: controller.dropbackPhoto == null
+                      ? null
+                      : () async {
+                          Get.back();
+                          await controller.confirmDropback(order);
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryThemeColor,
+                    disabledBackgroundColor: AppColors.primaryThemeColor
+                        .withOpacity(0.4),
+                    padding: EdgeInsets.symmetric(vertical: 14.h),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(28.r),
+                    ),
+                  ),
+                  child: utils.tvCustom(
+                    "Drop at warehouse",
+                    Colors.white,
+                    14.5,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
+
+  void _openDropbackSignatureSheet(BuildContext context) {
+    Get.bottomSheet(
+      Container(
+        padding: EdgeInsets.all(16.w),
+        decoration: BoxDecoration(
+          color: Get.isDarkMode ? AppColors.greyColor10 : Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(18.r)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            utils.tvCustom("Signature", AppColors.black, 16),
+            SizedBox(height: 12.h),
+            Container(
+              height: 220.h,
+              decoration: BoxDecoration(
+                border: Border.all(color: AppColors.greyColor2),
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+              child: Signature(
+                controller: controller.dropbackSignatureController,
+                backgroundColor: Colors.white,
+              ),
+            ),
+            SizedBox(height: 12.h),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: controller.clearDropbackSignature,
+                    style: OutlinedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(vertical: 12.h),
+                      side: const BorderSide(
+                        color: AppColors.primaryThemeColor,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24.r),
+                      ),
+                    ),
+                    child: utils.tvCustom(
+                      "Clear",
+                      AppColors.primaryThemeColor,
+                      14,
+                    ),
+                  ),
+                ),
+                SizedBox(width: 10.w),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      await controller.captureDropbackSignature();
+                      Get.back();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryThemeColor,
+                      padding: EdgeInsets.symmetric(vertical: 12.h),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24.r),
+                      ),
+                    ),
+                    child: utils.tvCustom("Save", Colors.white, 14),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
+
+  Widget _dropbackTile({
+    required IconData icon,
+    required String label,
+    required bool captured,
+    required VoidCallback onTap,
+  }) {
+    final color = captured ? AppColors.greenLight : AppColors.greyColor4;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12.r),
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 4.w),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12.r),
+          border: Border.all(
+            color: captured
+                ? AppColors.greenLight.withOpacity(0.5)
+                : (Get.isDarkMode
+                      ? Colors.white.withOpacity(0.25)
+                      : AppColors.greyColor2),
+            width: 1.4,
+            strokeAlign: BorderSide.strokeAlignInside,
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              captured ? Icons.check_circle : icon,
+              color: color,
+              size: 20.sp,
+            ),
+            SizedBox(height: 8.h),
+            utils.tvCustom(
+              label,
+              AppColors.greyColor5,
+              10.5,
+              textAlignment: TextAlign.center,
+              maxLines: 2,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

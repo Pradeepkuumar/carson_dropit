@@ -22,6 +22,11 @@ class OrderCardWidget extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback? onAccept;
   final VoidCallback? onDecline;
+  final VoidCallback? onDropback;
+  // Condensed layout for the dashboard's "New Requests" carousel: header
+  // row (icon/AWB/status/customer/distance + payment badge), no address
+  // block, no accent border - see the "Option A" design mockup.
+  final bool compact;
 
   const OrderCardWidget({
     super.key,
@@ -36,6 +41,8 @@ class OrderCardWidget extends StatelessWidget {
     required this.onTap,
     this.onAccept,
     this.onDecline,
+    this.onDropback,
+    this.compact = false,
   });
 
   static const Map<String, Color> typeAccents = {
@@ -99,6 +106,30 @@ class OrderCardWidget extends StatelessWidget {
     );
   }
 
+  Widget _priorityTag() {
+    final iconColor = Get.isDarkMode ? AppColors.white : AppColors.black;
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+      decoration: BoxDecoration(
+        color: AppColors.secondryThemeColor,
+        borderRadius: BorderRadius.circular(6.r),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.bolt, color: iconColor, size: 10.sp),
+          SizedBox(width: 2.w),
+          utils.tvCustom(
+            "PRIORITY",
+            AppColors.black,
+            9,
+            textAlignment: TextAlign.left,
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _paymentBadge() {
     final color = isCod ? _amberOFD : AppColors.greenLight;
     final label = isCod
@@ -123,11 +154,11 @@ class OrderCardWidget extends StatelessWidget {
       borderRadius: BorderRadius.circular(16.r),
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.all((isTablet ? 18 : 14).w),
+        padding: EdgeInsets.all((compact ? 12 : (isTablet ? 18 : 14)).w),
         decoration: BoxDecoration(
           color: cardBg,
           borderRadius: BorderRadius.circular(16.r),
-          border: available
+          border: (available && !compact)
               ? Border.all(color: accentColor.withOpacity(0.35), width: 1.5)
               : (Get.isDarkMode
                     ? Border.all(color: Colors.white.withOpacity(0.08))
@@ -142,7 +173,9 @@ class OrderCardWidget extends StatelessWidget {
                   ),
                 ],
         ),
-        child: Column(
+        child: compact
+            ? _buildCompactContent(context, isTablet)
+            : Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -161,7 +194,7 @@ class OrderCardWidget extends StatelessWidget {
                   child: Icon(
                     Icons.inventory_2_outlined,
                     color: accentColor,
-                    size: (isTablet ? 22 : 19).sp,
+                    size: (isTablet ? 19: 16).sp,
                   ),
                 ),
                 SizedBox(width: 12.w),
@@ -175,7 +208,7 @@ class OrderCardWidget extends StatelessWidget {
                             child: utils.tvCustom(
                               order.awbNo ?? order.orderRefNumber ?? "-",
                               AppColors.black,
-                              13.5,
+                              12,
                               textAlignment: TextAlign.left,
                               maxLines: 1,
                             ),
@@ -192,7 +225,7 @@ class OrderCardWidget extends StatelessWidget {
                             ? order.consigneeName!
                             : (order.merchantName ?? ""),
                         AppColors.greyColor4,
-                        12,
+                        11,
                         textAlignment: TextAlign.left,
                         maxLines: 1,
                       ),
@@ -201,9 +234,20 @@ class OrderCardWidget extends StatelessWidget {
                 ),
               ],
             ),
-            if ((order.serviceType ?? "").isNotEmpty) ...[
+            if ((order.serviceType ?? "").isNotEmpty ||
+                order.isPriorityOrder) ...[
               SizedBox(height: 8.h),
-              _typeBadge(order.serviceType!),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if ((order.serviceType ?? "").isNotEmpty)
+                    _typeBadge(order.serviceType!),
+                  if ((order.serviceType ?? "").isNotEmpty &&
+                      order.isPriorityOrder)
+                    SizedBox(width: 6.w),
+                  if (order.isPriorityOrder) _priorityTag(),
+                ],
+              ),
             ],
             SizedBox(height: 10.h),
             IntrinsicHeight(
@@ -252,7 +296,7 @@ class OrderCardWidget extends StatelessWidget {
                               order.pickupAddress ??
                               "-",
                           AppColors.greyColor10,
-                          11.5,
+                          10,
                           textAlignment: TextAlign.left,
                           maxLines: 2,
                         ),
@@ -260,7 +304,7 @@ class OrderCardWidget extends StatelessWidget {
                         utils.tvCustomRegular(
                           order.consigneeAddress ?? "-",
                           AppColors.greyColor10,
-                          11.5,
+                          10,
                           textAlignment: TextAlign.left,
                           maxLines: 2,
                         ),
@@ -371,11 +415,176 @@ class OrderCardWidget extends StatelessWidget {
                 ],
               ),
             ],
+            if (completed && order.status == UNDELIVERED && onDropback != null) ...[
+              SizedBox(height: 14.h),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: onDropback,
+                  icon: Icon(
+                    Icons.warehouse_outlined,
+                    size: 16.sp,
+                    color: AppColors.primaryThemeColor,
+                  ),
+                  label: utils.tvCustom(
+                    "Back to warehouse",
+                    AppColors.primaryThemeColor,
+                    12.5,
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(vertical: 11.h),
+                    side: const BorderSide(
+                      color: AppColors.primaryThemeColor,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
     );
 
     return width != null ? SizedBox(width: width, child: card) : card;
+  }
+
+  // "Option A" condensed layout: header row (icon/AWB/status/customer/
+  // distance + payment badge), no address block, small Decline/Accept
+  // buttons alongside the countdown instead of a full-width row.
+  Widget _buildCompactContent(BuildContext context, bool isTablet) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: (isTablet ? 40 : 34).w,
+              height: (isTablet ? 40 : 34).w,
+              decoration: BoxDecoration(
+                color: accentColor.withOpacity(Get.isDarkMode ? 0.18 : 0.10),
+                borderRadius: BorderRadius.circular(9.r),
+              ),
+              alignment: Alignment.center,
+              child: Icon(
+                Icons.inventory_2_outlined,
+                color: accentColor,
+                size: (isTablet ? 20 : 17).sp,
+              ),
+            ),
+            SizedBox(width: 10.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: utils.tvCustom(
+                          order.awbNo ?? order.orderRefNumber ?? "-",
+                          AppColors.black,
+                          13,
+                          textAlignment: TextAlign.left,
+                          maxLines: 1,
+                        ),
+                      ),
+                      if ((order.status ?? "").isNotEmpty) ...[
+                        SizedBox(width: 6.w),
+                        _statusBadge(order.status!),
+                      ],
+                      if (order.isPriorityOrder) ...[
+                        SizedBox(width: 6.w),
+                        _priorityTag(),
+                      ],
+                    ],
+                  ),
+                  SizedBox(height: 2.h),
+                  utils.tvCustom(
+                    "${(order.consigneeName?.isNotEmpty ?? false) ? order.consigneeName! : (order.merchantName ?? "-")}  ·  ${order.distance ?? "-"}",
+                    AppColors.greyColor4,
+                    11.5,
+                    textAlignment: TextAlign.left,
+                    maxLines: 1,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        if (available) ...[
+          SizedBox(height: 10.h),
+          Divider(
+            height: 1,
+            color: Get.isDarkMode
+                ? Colors.white.withOpacity(0.08)
+                : const Color(0xFFEFEFEF),
+          ),
+          SizedBox(height: 10.h),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _paymentBadge(),
+                  SizedBox(height: 4.h),
+                  utils.tvCustom(
+                    completed ? "Delivered" : dueInLabel,
+                    atRisk ? AppColors.red : AppColors.greyColor4,
+                    10.5,
+                    textAlignment: TextAlign.left,
+                  ),
+                ],
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  OutlinedButton(
+                    onPressed: onDecline,
+                    style: OutlinedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 14.w,
+                        vertical: 6.h,
+                      ),
+                      // Material's default 48dp minimum tap target would
+                      // otherwise balloon past this button's small visual
+                      // size and swallow taps meant for the card's own
+                      // onTap, on a card this short.
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      side: const BorderSide(color: Color(0xFFE0E0E0)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                    ),
+                    child: utils.tvCustom("Decline", AppColors.black, 11.5),
+                  ),
+                  SizedBox(width: 8.w),
+                  ElevatedButton(
+                    onPressed: onAccept,
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 16.w,
+                        vertical: 6.h,
+                      ),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      backgroundColor: AppColors.primaryThemeColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                    ),
+                    child: utils.tvCustom("Accept", Colors.white, 11.5),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
   }
 }

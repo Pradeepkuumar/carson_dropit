@@ -201,7 +201,7 @@ class C2COrdersController extends GetxController with GetTickerProviderStateMixi
           {'key': 'delivery_proof', 'file': deliveredImage},
         if (status == UNDELIVERED)
           {'key': 'failed_delivery_proof', 'file': deliveredImage},
-        if (status == DROPBACK_CLW)
+        if (status ==  DROPBACK_CLW)
           {'key': 'dropback_proof', 'file': deliveredImage},
         if (signatureFile != null) {'key': 'signature', 'file': signatureFile},
         //if (deliveryProof != null) {'key': 'delivery_proof_image_2', 'file': deliveryProof}
@@ -577,7 +577,6 @@ class C2COrdersController extends GetxController with GetTickerProviderStateMixi
 
   @override
   void onClose() {
-
     isSignDisbled.value = false;
 
   }

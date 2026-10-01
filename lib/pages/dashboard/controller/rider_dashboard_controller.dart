@@ -75,7 +75,6 @@ class RiderDashboardController extends GetxController {
 
   // Form key for validation
   final profileFormKey = GlobalKey<FormState>();
-  var updateProfileDialog = false.obs;
 
   // Account screen's Light/Dark toggle - persisted so it survives restarts,
   // see main.dart's _initialThemeMode.
@@ -497,7 +496,7 @@ class RiderDashboardController extends GetxController {
       Map<String, dynamic> model = {
         apiKeys.feCode: userData.code,
         //  apiKeys.channel: "ALL",
-        apiKeys.status: [ASSIGNED, RE_ASSIGNED, PICKED, OFD],
+        apiKeys.status: [ASSIGNED, RE_ASSIGNED, PICKED, OFD,REACHED],
       };
       var response = await apiProvider.postRequest(
         apiEndPoints.driverFetchOrderList,

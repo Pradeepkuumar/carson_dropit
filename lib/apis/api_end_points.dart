@@ -7,7 +7,7 @@
   final String driverCurrentLocation = "driver/current-location";
   final String driverFetchOrderList = "driver/fetch-orders-list";
   final String driverOrdersByCategory = "driver/orders-by-category";
-  final String upcomingOrders = "driver/upcoming-orders";
+final String upcomingOrders = "driver/upcoming-orders";
   //final String dashBoardDetails = "driver/fetch-dashboard-details";
   final String dashBoardDetails = "driver/unified-dashboard";
   final String updateOrderStatus  = "driver/update-order-status";

@@ -46,11 +46,12 @@ class AppBottomNav extends StatelessWidget {
         Get.toNamed(Routes.orderListScreen);
         break;
       case 2:
-        Get.toNamed(
-          (_dashboardController?.isAnyActiveOrder.value ?? false)
-              ? Routes.activeDeliveryScreen
-              : Routes.allOrdersMapScreen,
-        );
+        // ActiveDeliveryController fetches its own assigned orders and has
+        // a proper empty state (noOrdersAvailable) - unlike allOrdersMapScreen,
+        // which has no graceful handling when it finds zero orders and just
+        // pops itself. See rider_dashboard.dart's own Active Order tap for
+        // the same fix.
+        Get.toNamed(Routes.activeDeliveryScreen);
         break;
       case 3:
         _dashboardController?.getUserData();

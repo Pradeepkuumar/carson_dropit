@@ -58,6 +58,7 @@ class ActiveDeliveryController extends GetxController {
   File? packagePhoto;
   File? deliveryPhoto;
   File? signatureFile;
+  File? undeliveredPhoto;
   var isSubmitting = false.obs;
 
   var reasonsList = <CancelReason>[].obs;
@@ -316,6 +317,12 @@ class ActiveDeliveryController extends GetxController {
     update();
   }
 
+  Future<void> captureUndeliveredPhoto() async {
+    final file = await utils.pickImage(ImageSource.camera);
+    if (file != null) undeliveredPhoto = file;
+    update();
+  }
+
   Future<void> captureSignature() async {
     if (signatureController.isEmpty) return;
     final bytes = await signatureController.toPngBytes(width: 500, height: 500);
@@ -341,7 +348,7 @@ class ActiveDeliveryController extends GetxController {
       case 1:
         return "Confirm arrival at pickup";
       case 2:
-        return "Confirm pickup collected";
+        return "Confirm pickup";
       case 3:
         return "Start delivery";
       case 4:
@@ -404,6 +411,16 @@ class ActiveDeliveryController extends GetxController {
   String _orderKey(OrdersData model) =>
       model.awbNo ?? model.orderRefNumber ?? model.id?.toString() ?? '';
 
+  // First order flagged is_active_priority in a list, if any - the rider
+  // must clear a priority order before touching anything else, so this
+  // gates both which order is shown and whether switching is offered.
+  OrdersData? _priorityOrderIn(List<OrdersData> orders) {
+    for (final o in orders) {
+      if (o.isPriorityOrder) return o;
+    }
+    return null;
+  }
+
   // autoSelectFirst is true when this screen was opened without a specific
   // order - once the fetch resolves, `order` becomes the first one returned
   // (or noOrdersAvailable is set if the rider has none assigned at all).
@@ -411,7 +428,7 @@ class ActiveDeliveryController extends GetxController {
     try {
       final model = <String, dynamic>{
         apiKeys.feCode: order.feCode ?? user.code,
-        apiKeys.status: [ASSIGNED, RE_ASSIGNED, PICKED, OFD],
+        apiKeys.status: [ASSIGNED, RE_ASSIGNED, PICKED, OFD,REACHED],
       };
       final response = await apiProvider.postRequest(
         apiEndPoints.driverFetchOrderList,
@@ -422,9 +439,13 @@ class ActiveDeliveryController extends GetxController {
         _allAssignedOrders = (result.data as List)
             .map((json) => OrdersData.fromJson(json as Map<String, dynamic>))
             .toList();
+        final priorityOrder = _priorityOrderIn(_allAssignedOrders);
         if (autoSelectFirst) {
-          if (_allAssignedOrders.isNotEmpty) {
-            order = _allAssignedOrders.first;
+          final initial =
+              priorityOrder ??
+              (_allAssignedOrders.isNotEmpty ? _allAssignedOrders.first : null);
+          if (initial != null) {
+            order = initial;
             if (order.status == REACHED && pickupBufferSeconds > 0) {
               bufferWaitActive = true;
             }
@@ -432,9 +453,19 @@ class ActiveDeliveryController extends GetxController {
             noOrdersAvailable = true;
           }
           isLoadingOrder = false;
+          _recomputePickupSuggestions();
+          update();
+        } else {
+          _recomputePickupSuggestions();
+          update();
+          // A specific order was opened directly, but a different one is
+          // flagged priority - jump to the priority order instead of
+          // leaving the rider on a lower-priority one.
+          if (priorityOrder != null &&
+              _orderKey(priorityOrder) != _orderKey(order)) {
+            await switchToOrder(priorityOrder);
+          }
         }
-        _recomputePickupSuggestions();
-        update();
       } else if (autoSelectFirst) {
         noOrdersAvailable = true;
         isLoadingOrder = false;
@@ -451,6 +482,14 @@ class ActiveDeliveryController extends GetxController {
   }
 
   void _recomputePickupSuggestions() {
+    if (_priorityOrderIn(_allAssignedOrders) != null) {
+      // A priority order exists somewhere in the assigned list - hide the
+      // switcher entirely (nothing else should be selectable) until it's
+      // cleared, rather than just excluding it from the choices.
+      pickupSuggestions = [order];
+      pickupSuggestionsAreNearby = false;
+      return;
+    }
     final currentKey = _orderKey(order);
     final others = _allAssignedOrders
         .where((o) => _orderKey(o) != currentKey)
@@ -526,6 +565,7 @@ class ActiveDeliveryController extends GetxController {
     packagePhoto = null;
     deliveryPhoto = null;
     signatureFile = null;
+    undeliveredPhoto = null;
     signatureController.clear();
     hasOngoingCall = false;
     callType = null;
@@ -552,6 +592,11 @@ class ActiveDeliveryController extends GetxController {
         .toList();
     if (remaining.isEmpty) {
       Get.back();
+      return;
+    }
+    final priorityOrder = _priorityOrderIn(remaining);
+    if (priorityOrder != null) {
+      switchToOrder(priorityOrder);
       return;
     }
     final completedIndex = _allAssignedOrders.indexWhere(
@@ -637,7 +682,9 @@ class ActiveDeliveryController extends GetxController {
             .map((json) => CancelReason.fromJson(json as Map<String, dynamic>))
             .toList();
       }
-    } catch (_) {
+    } catch (ex,stackTrace) {
+      print("❌ FetchAvailable Exception: $ex");
+      print("❌ StackTrace: $stackTrace");
       // leave the list empty; the sheet just shows nothing to pick from
     }
   }
@@ -657,6 +704,7 @@ class ActiveDeliveryController extends GetxController {
       }
     }
     if (reason == null) return;
+    if (undeliveredPhoto == null) return;
     if (!await _isWithinUpdateRange()) return;
     _selectedUndeliveredReason = reason.reason;
     await _updateStatus(UNDELIVERED);
@@ -674,7 +722,10 @@ class ActiveDeliveryController extends GetxController {
           {'key': 'delivery_proof_image_2', 'file': deliveryPhoto},
         if (status == DELIVERED && signatureFile != null)
           {'key': 'signature', 'file': signatureFile},
+        if (status == UNDELIVERED && undeliveredPhoto != null)
+          {'key': 'failed_delivery_proof', 'file': undeliveredPhoto},
       ];
+      print(images);
       final data = <String, dynamic>{
         'status': status,
         'fe_code': user.code ?? "",

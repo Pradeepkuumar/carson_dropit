@@ -52,6 +52,14 @@ class OrdersData {
   String? pickup_buffer_time_in_minutes;
   String? dropoff_buffer_time_in_minutes;
   String? serviceType;
+  bool? isActivePriority;
+  String? deliveryType;
+
+  // The API actually flags a priority order via delivery_type == "PRIORITY",
+  // not is_active_priority (kept above as its own field/key regardless).
+  static const String _priorityDeliveryType = "PRIORITY";
+  bool get isPriorityOrder =>
+      isActivePriority == true || deliveryType == _priorityDeliveryType;
 
   OrdersData({
     this.id,
@@ -107,6 +115,8 @@ class OrdersData {
     this.pickup_buffer_time_in_minutes,
     this.dropoff_buffer_time_in_minutes,
     this.serviceType,
+    this.isActivePriority,
+    this.deliveryType,
   });
 
   OrdersData.fromJson(Map<String, dynamic> json) {
@@ -169,6 +179,8 @@ class OrdersData {
         ? double.tryParse(json['current_dropoff_distance_value'].toString())
         : null;
     serviceType = json['service_type'];
+    isActivePriority = json['is_active_priority'];
+    deliveryType = json['delivery_type'];
   }
 
   Map<String, dynamic> toJson() {
@@ -225,6 +237,8 @@ class OrdersData {
     data['current_pickup_distance_value'] = current_pickup_distance_value;
     data['current_dropoff_distance_value'] = current_dropoff_distance_value;
     data['service_type'] = serviceType;
+    data['is_active_priority'] = isActivePriority;
+    data['delivery_type'] = deliveryType;
     return data;
   }
 }

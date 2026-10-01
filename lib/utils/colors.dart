@@ -31,4 +31,5 @@ class AppColors {
   static const Color backgroundColorMain = Color.fromARGB(255, 41, 53, 64);
   static const Color backgroundColorLight = Color.fromARGB(255, 61, 74, 85);
   static const Color backgroundColorExtraLight= Color.fromARGB(255, 105, 113, 120);
+  static const Color blueLight= Color.fromARGB(255, 86, 142, 244);
 }

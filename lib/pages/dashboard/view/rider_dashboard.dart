@@ -12,6 +12,7 @@ import '../../../app_pages/app_pages.dart';
 import '../../../global/app_bar.dart';
 import '../../../global/consts.dart';
 import '../../../global/order_card_widget.dart';
+import '../../../global/update_profile_dialog.dart';
 
 const Color _amberOFD = Color(0xFFA67C00);
 const Color _whatsAppGreen = Color(0xFF0BA30B);
@@ -147,12 +148,6 @@ class _RiderDashboardState extends State<RiderDashboard>
                         ),
                       ),
                       _buildProfileMenuOverlay(context),
-                      Obx(
-                        () => Visibility(
-                          visible: controller.updateProfileDialog.value,
-                          child: _buildUpdateProfileDialog(),
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -1220,6 +1215,34 @@ class _RiderDashboardState extends State<RiderDashboard>
     }
     return Column(
       children: [
+        // Hidden pass: lay out every card with no height constraint so its
+        // real natural height can be measured (an intrinsic-height query
+        // was tried first but underestimates this card's nested button
+        // row, causing a bottom overflow once the visible PageView was
+        // sized off it).
+        Offstage(
+          offstage: true,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (int i = 0; i < orders.length; i++)
+                _MeasuredCarouselCard(
+                  onMeasured: (measuredHeight) {
+                    if (_newRequestsCardHeights[i] != measuredHeight) {
+                      _newRequestsCardHeights[i] = measuredHeight;
+                      if (i == _newRequestsPage.value) {
+                        _newRequestsCarouselHeight.value = measuredHeight;
+                      }
+                    }
+                  },
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 2.w),
+                    child: _newRequestCard(orders[i]),
+                  ),
+                ),
+            ],
+          ),
+        ),
         Obx(() {
           final height =
               _newRequestsCardHeights[_newRequestsPage.value] ??
@@ -1239,36 +1262,9 @@ class _RiderDashboardState extends State<RiderDashboard>
                 }
               },
               itemBuilder: (context, index) {
-                final order = orders[index];
                 return Padding(
                   padding: EdgeInsets.symmetric(horizontal: 2.w),
-                  child: _MeasuredCarouselCard(
-                    onMeasured: (measuredHeight) {
-                      if (_newRequestsCardHeights[index] != measuredHeight) {
-                        _newRequestsCardHeights[index] = measuredHeight;
-                        if (index == _newRequestsPage.value) {
-                          _newRequestsCarouselHeight.value = measuredHeight;
-                        }
-                      }
-                    },
-                    child: OrderCardWidget(
-                      order: order,
-                      available: true,
-                      completed: false,
-                      atRisk: controller.isAtRisk(order),
-                      dueInLabel: _newRequestDueInLabel(
-                        controller.remainingSecondsFor(order),
-                      ),
-                      accentColor: AppColors.primaryThemeColor,
-                      isCod: controller.isCod(order),
-                      onTap: () => Get.toNamed(
-                        Routes.orderDetailScreen,
-                        arguments: order,
-                      )?.then((_) => controller.fetchAvailableOrders()),
-                      onAccept: () => _confirmAcceptNewRequest(order),
-                      onDecline: () => _confirmDeclineNewRequest(order),
-                    ),
-                  ),
+                  child: _newRequestCard(orders[index]),
                 );
               },
             ),
@@ -1299,6 +1295,27 @@ class _RiderDashboardState extends State<RiderDashboard>
           ),
         ],
       ],
+    );
+  }
+
+  Widget _newRequestCard(OrdersData order) {
+    return OrderCardWidget(
+      order: order,
+      available: true,
+      completed: false,
+      compact: true,
+      atRisk: controller.isAtRisk(order),
+      dueInLabel: _newRequestDueInLabel(
+        controller.remainingSecondsFor(order),
+      ),
+      accentColor: AppColors.primaryThemeColor,
+      isCod: controller.isCod(order),
+      onTap: () => Get.toNamed(
+        Routes.orderDetailScreen,
+        arguments: order,
+      )?.then((_) => controller.fetchAvailableOrders()),
+      onAccept: () => _confirmAcceptNewRequest(order),
+      onDecline: () => _confirmDeclineNewRequest(order),
     );
   }
 
@@ -1385,7 +1402,7 @@ class _RiderDashboardState extends State<RiderDashboard>
     final isTablet = !context.isPhone;
     return Obx(() {
       final orders = controller.upcomingOrders;
-      if (orders.isEmpty) return const SizedBox.shrink();
+      final hasOrders = orders.isNotEmpty;
       final cardBg = controller.isDarkMode.value ? AppColors.greyColor10 : Colors.white;
       final dividerColor = controller.isDarkMode.value
           ? Colors.white.withOpacity(0.08)
@@ -1425,42 +1442,96 @@ class _RiderDashboardState extends State<RiderDashboard>
             ],
           ),
           SizedBox(height: isTablet ? 14.h : 10.h),
-          Container(
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(isTablet ? 20.r : 14.r),
-              border: controller.isDarkMode.value
-                  ? Border.all(color: Colors.white.withOpacity(0.08))
-                  : null,
-              boxShadow: controller.isDarkMode.value
-                  ? []
-                  : [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
+          if (!hasOrders)
+            _upcomingOrdersPlaceholder(context)
+          else
+            Container(
+              decoration: BoxDecoration(
+                color: cardBg,
+                borderRadius: BorderRadius.circular(isTablet ? 20.r : 14.r),
+                border: controller.isDarkMode.value
+                    ? Border.all(color: Colors.white.withOpacity(0.08))
+                    : null,
+                boxShadow: controller.isDarkMode.value
+                    ? []
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+              ),
+              child: Column(
+                children: [
+                  for (int i = 0; i < orders.length; i++) ...[
+                    _upcomingOrderRow(context, orders[i]),
+                    if (i != orders.length - 1)
+                      Container(
+                        height: 1,
+                        margin: EdgeInsets.symmetric(
+                          horizontal: isTablet ? 20.w : 14.w,
+                        ),
+                        color: dividerColor,
                       ),
-                    ],
-            ),
-            child: Column(
-              children: [
-                for (int i = 0; i < orders.length; i++) ...[
-                  _upcomingOrderRow(context, orders[i]),
-                  if (i != orders.length - 1)
-                    Container(
-                      height: 1,
-                      margin: EdgeInsets.symmetric(
-                        horizontal: isTablet ? 20.w : 14.w,
-                      ),
-                      color: dividerColor,
-                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
         ],
       );
     });
+  }
+
+  Widget _upcomingOrdersPlaceholder(BuildContext context) {
+    final isDark = controller.isDarkMode.value;
+    final isTablet = !context.isPhone;
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(
+        horizontal: 20.w,
+        vertical: isTablet ? 32.h : 24.h,
+      ),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.greyColor10 : Colors.white,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withOpacity(0.08)
+              : const Color(0xFFE0E0E0),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 52.w,
+            height: 52.w,
+            decoration: BoxDecoration(
+              color: AppColors.primaryThemeColor.withOpacity(
+                isDark ? 0.18 : 0.10,
+              ),
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: Icon(
+              Icons.event_note_outlined,
+              color: AppColors.primaryThemeColor,
+              size: 26.sp,
+            ),
+          ),
+          SizedBox(height: 12.h),
+          utils.tvCustom("No upcoming orders", AppColors.black, 13.5),
+          SizedBox(height: 4.h),
+          utils.tvCustom(
+            "Orders assigned to you will show up here as they come in.",
+            AppColors.greyColor4,
+            11.5,
+            maxLines: 3,
+          ),
+        ],
+      ),
+    );
   }
 
   Color _upcomingStatusColor(String status) {
@@ -2036,9 +2107,7 @@ class _RiderDashboardState extends State<RiderDashboard>
                             ],
                           ),
                           InkWell(
-                            onTap: () {
-                              controller.updateProfileDialog.value = true;
-                            },
+                            onTap: showUpdateProfileDialog,
                             child: Row(
                               children: [
                                 _buildAvatar(
@@ -2277,222 +2346,6 @@ class _RiderDashboardState extends State<RiderDashboard>
       ),
     );
   }
-
-  // ---------------------------------------------------------------------
-  // Update profile dialog (unchanged)
-  // ---------------------------------------------------------------------
-  Widget _buildUpdateProfileDialog() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Container(
-          decoration: utils.boxDecorationWhite(),
-          child: Container(
-            width: double.maxFinite,
-            padding: const EdgeInsets.all(20),
-            child: SingleChildScrollView(
-              child: Form(
-                key: controller.profileFormKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          "Update Profile",
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () =>
-                              controller.updateProfileDialog.value = false,
-                        ),
-                      ],
-                    ),
-                    const Divider(),
-                    const SizedBox(height: 16),
-
-                    // Avatar Section
-                    Center(
-                      child: Stack(
-                        children: [
-                          _buildAvatar(
-                            radius: 60,
-                            backgroundColor: Colors.grey[200]!,
-                            fallback: Icon(
-                              Icons.person,
-                              size: 50,
-                              color: Colors.grey[400],
-                            ),
-                          ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: GestureDetector(
-                              onTap: controller.showImageSourceDialog,
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primaryThemeColor,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Colors.white,
-                                    width: 2,
-                                  ),
-                                ),
-                                child: const Icon(
-                                  Icons.camera_alt,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Address Field
-                    Text(
-                      "Address",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey[700],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: controller.address,
-                      maxLines: 3,
-                      minLines: 1,
-                      decoration: InputDecoration(
-                        focusColor: AppColors.primaryThemeColor,
-                        hintText: "Enter your complete address",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        prefixIcon: const Icon(
-                          Icons.location_on,
-                          color: Colors.grey,
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(
-                            color: Colors.grey.shade400,
-                            width: 1,
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(
-                            color: AppColors.primaryThemeColor,
-                            width: 2,
-                          ),
-                        ),
-                      ),
-                      cursorColor: AppColors.primaryThemeColor,
-                      validator: controller.validateAddress,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      "Phone Number",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey[700],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: controller.phone,
-                      keyboardType: TextInputType.phone,
-                      decoration: InputDecoration(
-                        hintText: "Enter your phone number",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        prefixIcon: const Icon(Icons.phone, color: Colors.grey),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(
-                            color: Colors.grey.shade400,
-                            width: 1,
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(
-                            color: AppColors.primaryThemeColor,
-                            width: 2,
-                          ),
-                        ),
-                      ),
-                      cursorColor: AppColors.primaryThemeColor,
-                      validator: controller.validatePhone,
-                    ),
-                    const SizedBox(height: 10),
-                    // Buttons
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () =>
-                                controller.updateProfileDialog.value = false,
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              side: BorderSide(color: Colors.grey[300]!),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            child: const Text(
-                              "Cancel",
-                              style: TextStyle(color: Colors.black54),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () async {
-                              bool success = await controller
-                                  .updateProfileDetails();
-                              if (success) {
-                                controller.updateProfileDialog.value = false;
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              backgroundColor: AppColors.primaryThemeColor,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            child: const Text(
-                              "Update",
-                              style: TextStyle(color: Colors.white),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _PermissionRow extends StatelessWidget {
@@ -2553,6 +2406,11 @@ class _PermissionRow extends StatelessWidget {
 // Reports its child's natural (unconstrained) height after each layout, so
 // a fixed-height parent (e.g. a PageView page) can be resized to fit it
 // instead of leaving blank space when the content is shorter.
+// Renders `child` with no height constraint (a caller wraps this in an
+// Offstage Column so it lays out at its natural size) and reports the
+// real rendered height after each layout - more reliable than an
+// intrinsic-height query, which can underestimate nested Row/Column
+// button layouts.
 class _MeasuredCarouselCard extends StatefulWidget {
   final Widget child;
   final ValueChanged<double> onMeasured;
@@ -2572,7 +2430,7 @@ class _MeasuredCarouselCardState extends State<_MeasuredCarouselCard> {
       if (!mounted) return;
       final box = _key.currentContext?.findRenderObject() as RenderBox?;
       if (box != null && box.hasSize) {
-        final height = box.getMaxIntrinsicHeight(box.size.width);
+        final height = box.size.height;
         if (height.isFinite && height > 0) {
           widget.onMeasured(height);
         }

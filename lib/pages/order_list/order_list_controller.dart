@@ -1,7 +1,11 @@
+import 'dart:io';
 import 'dart:math' as Log;
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:signature/signature.dart';
 import '../../app_pages/app_pages.dart';
 import '../../apis/base_api_response.dart';
 import '../../global/consts.dart';
@@ -40,6 +44,19 @@ class OrderListController extends GetxController {
   var assignedOrders = <OrdersData>[].obs;
   var availableOrders = <OrdersData>[].obs;
   var completedOrders = <OrdersData>[].obs;
+
+  // Capture state for the "back to warehouse" (dropback) sheet on an
+  // undelivered order in the Completed tab - same shape as the photo/
+  // signature capture on ActiveDeliveryController, kept separate since this
+  // screen isn't driven by a single "current" order.
+  File? dropbackPhoto;
+  final SignatureController dropbackSignatureController = SignatureController(
+    penStrokeWidth: 3,
+    penColor: Colors.black,
+    exportBackgroundColor: Colors.white,
+  );
+  File? dropbackSignatureFile;
+  var isSubmittingDropback = false.obs;
 
   // Set when this screen is opened from a "NearByOrders" notification tap -
   // once the available list loads, the matching order is opened automatically.
@@ -137,7 +154,86 @@ class OrderListController extends GetxController {
   @override
   void onClose() {
     searchController.dispose();
+    dropbackSignatureController.dispose();
     super.onClose();
+  }
+
+  Future<void> captureDropbackPhoto() async {
+    final file = await utils.pickImage(ImageSource.camera);
+    if (file != null) dropbackPhoto = file;
+    update();
+  }
+
+  Future<void> captureDropbackSignature() async {
+    if (dropbackSignatureController.isEmpty) return;
+    final bytes = await dropbackSignatureController.toPngBytes(
+      width: 500,
+      height: 500,
+    );
+    if (bytes == null) return;
+    final directory = await getTemporaryDirectory();
+    final file = File(
+      '${directory.path}/dropback_signature_${DateTime.now().millisecondsSinceEpoch}.png',
+    );
+    await file.writeAsBytes(bytes);
+    dropbackSignatureFile = file;
+    update();
+  }
+
+  void clearDropbackSignature() {
+    dropbackSignatureController.clear();
+    dropbackSignatureFile = null;
+    update();
+  }
+
+  void resetDropbackState() {
+    dropbackPhoto = null;
+    dropbackSignatureFile = null;
+    dropbackSignatureController.clear();
+    update();
+  }
+
+  Future<bool> confirmDropback(OrdersData order) async {
+    if (dropbackPhoto == null) return false;
+    if (isSubmittingDropback.value) return false;
+    isSubmittingDropback.value = true;
+    utils.showLoadingDialog("Updating...");
+    try {
+      final images = <Map<String, dynamic>>[
+        {'key': 'dropback_proof', 'file': dropbackPhoto},
+        if (dropbackSignatureFile != null)
+          {'key': 'signature', 'file': dropbackSignatureFile},
+      ];
+      final data = <String, dynamic>{
+        'status': DROPBACK_CLW,
+        'fe_code': user.code ?? "",
+        'awb_no': order.awbNo ?? "",
+      };
+      final response = await apiProvider.postRequestWithImagesDio(
+        apiEndPoints.updateOrderStatus,
+        data,
+        images,
+      );
+      final result = BaseApiResponse.fromJson(response);
+      utils.closeLoadingDialog();
+      if (result.status_code == 200) {
+        completedOrders.removeWhere((o) => o.awbNo == order.awbNo);
+        if (Get.isRegistered<RiderDashboardController>()) {
+          Get.find<RiderDashboardController>().getDashBoardData();
+        }
+        resetDropbackState();
+        return true;
+      } else {
+        utils.errorSnackBar("Error", result.message.toString());
+        return false;
+      }
+    } catch (e) {
+      utils.closeLoadingDialog();
+      utils.errorSnackBar("Exception", e.toString());
+      return false;
+    } finally {
+      isSubmittingDropback.value = false;
+    }
   }
 
   // Only B2C is backed by a real order list today - C2C uses its own
@@ -164,7 +260,7 @@ class OrderListController extends GetxController {
     try {
       Map<String, dynamic> model = {
         apiKeys.feCode: user.code,
-        apiKeys.status: [ASSIGNED, RE_ASSIGNED, PICKED, OFD],
+        apiKeys.status: [ASSIGNED, RE_ASSIGNED, PICKED, OFD,REACHED],
       };
       var response = await apiProvider.postRequest(
         apiEndPoints.driverFetchOrderList,

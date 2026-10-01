@@ -9,7 +9,7 @@ import 'package:get/get_connect/http/src/request/request.dart';
 
 import '../global/global.dart';
 import 'package:http/http.dart' as http;
- import 'package:dio/dio.dart' show FormData, Dio, DioException, Options,MultipartFile;
+ import 'package:dio/dio.dart' show FormData, Dio, DioException, Options, MultipartFile, InterceptorsWrapper;
 
 import 'api_exceptions.dart';
 
@@ -19,7 +19,8 @@ class ApiProvider extends GetConnect {
   final String noCache = 'no-cache';
   File? file;
   final String devBaseUrl = "https://dev.zyppy.qa/api/v1/";
-  final String liveBaseUrl = "https://zyppy.qa/api/v1/";
+  final String liveBaseUrl = "https://dev.zyppy.qa/api/v1/";
+  //final String liveBaseUrl = "https://zyppy.qa/api/v1/";
   
 
   ApiProvider() {
@@ -298,7 +299,31 @@ Future<dynamic> postRequestWithImagesDio(
           (X509Certificate cert, String host, int port) => true;
       return client;
     };
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) async {
+          print("➡️ REQUEST");
+          print("URL: ${options.uri}");
+          print("METHOD: ${options.method}");
+          print("HEADERS: ${options.headers}");
+          print("QUERY: ${options.queryParameters}");
+          print("BODY: ${options.data}");
+          // Device ID (optional
+          return handler.next(options);
+        },
+        onResponse: (response, handler) {
+          print("✅ RESPONSE");
+          print("URL: ${response.requestOptions.uri}");
+          print("STATUS: ${response.statusCode}");
+          print("DATA: ${response.data}");
+          return handler.next(response);
+        },
+        onError: (DioException e, handler) {
 
+          return handler.next(e);
+        },
+      ),
+    );
     final response = await dio.post(
       baseUrl!+endpoint,
       data: form,

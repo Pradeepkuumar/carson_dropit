@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import '../../../app_pages/app_pages.dart';
@@ -18,84 +19,94 @@ class AccountScreen extends GetView<RiderDashboardController> {
     return Obx(() {
       final isDark = controller.isDarkMode.value;
       final cardBg = isDark ? AppColors.greyColor10 : Colors.white;
-      return Scaffold(
-        backgroundColor: isDark ? AppColors.black : AppColors.greyColor1,
-        bottomNavigationBar: const AppBottomNav(currentIndex: 3),
-        body: SafeArea(
-          child: Column(
-            children: [
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.symmetric(
-                    horizontal: (isTablet ? 32 : 16).w, vertical: 14.h),
-                color: AppColors.backgroundColorMain,
-                child: Row(
-                  children: [
-                    // InkWell(
-                    //   onTap: () => Get.back(),
-                    //   borderRadius: BorderRadius.circular(8.r),
-                    //   child: Padding(
-                    //     padding: EdgeInsets.only(right: 10.w),
-                    //     child:
-                    //         Icon(Icons.arrow_back, color: Colors.white, size: 20.sp),
-                    //   ),
-                    // ),
-                    utils.tvCustom("Account", Colors.white, isTablet ? 22 : 16,
-                        textAlignment: TextAlign.left),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.all((isTablet ? 32 : 16).w),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+  return AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle.light
+            .copyWith(statusBarColor: AppColors.backgroundColorMain),
+        child: Scaffold(
+          backgroundColor: isDark ? AppColors.black : AppColors.greyColor1,
+          bottomNavigationBar: const AppBottomNav(currentIndex: 3),
+          body: SafeArea(
+            top: false,
+            child: Column(
+              children: [
+                // Header extends up behind the status bar (SafeArea top: false)
+                // so the status bar strip is navy on edge-to-edge Android.
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.fromLTRB(
+                      (isTablet ? 32 : 16).w,
+                      MediaQuery.paddingOf(context).top + 14.h,
+                      (isTablet ? 32 : 16).w,
+                      14.h),
+                  color: AppColors.backgroundColorMain,
+                  child: Row(
                     children: [
-                      _profileCard(context, cardBg, isDark),
-                      SizedBox(height: 14.h),
-                      _settingsCard(context, cardBg, isDark),
-                      SizedBox(height: 14.h),
-                      _menuRow(
-                        cardBg: cardBg,
-                        isDark: isDark,
-                        icon: Icons.support_agent_outlined,
-                        iconColor: AppColors.greenLight,
-                        label: "Support",
-                        onTap: () {},
-                      ),
-                      SizedBox(height: 14.h),
-                      _menuRow(
-                        cardBg: cardBg,
-                        isDark: isDark,
-                        icon: Icons.logout,
-                        iconColor: AppColors.red,
-                        labelColor: AppColors.red,
-                        label: "Logout",
-                        showChevron: false,
-                        onTap: () async {
-                          bool isLoggedOut = await controller.logout();
-                          if (isLoggedOut) {
-                            utils.simpleDialog(
-                                "Do you want to Logout from app?", "",
-                                () async {
-                              var loggedOut = await controller.logout();
-                              if (loggedOut) {
-                                userRepository.deleteUser();
-                                Get.offAllNamed(Routes.auth);
-                              }
-                            }, () {
-                              Get.back();
-                            });
-                          }
-                        },
-                      ),
+                      // InkWell(
+                      //   onTap: () => Get.back(),
+                      //   borderRadius: BorderRadius.circular(8.r),
+                      //   child: Padding(
+                      //     padding: EdgeInsets.only(right: 10.w),
+                      //     child:
+                      //         Icon(Icons.arrow_back, color: Colors.white, size: 20.sp),
+                      //   ),
+                      // ),
+                      utils.tvCustom("Account", Colors.white, isTablet ? 22 : 16,
+                          textAlignment: TextAlign.left),
                     ],
                   ),
                 ),
-              ),
-            ],
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.all((isTablet ? 32 : 16).w),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _profileCard(context, cardBg, isDark),
+                        // SizedBox(height: 14.h),
+                        // _settingsCard(context, cardBg, isDark),
+                        SizedBox(height: 14.h),
+                        _menuRow(
+                          cardBg: cardBg,
+                          isDark: isDark,
+                          icon: Icons.support_agent_outlined,
+                          iconColor: AppColors.greenLight,
+                          label: "Support",
+                          onTap: () {},
+                        ),
+                        SizedBox(height: 14.h),
+                        _menuRow(
+                          cardBg: cardBg,
+                          isDark: isDark,
+                          icon: Icons.logout,
+                          iconColor: AppColors.red,
+                          labelColor: AppColors.red,
+                          label: "Logout",
+                          showChevron: false,
+                          onTap: () async {
+                            bool isLoggedOut = await controller.logout();
+                            if (isLoggedOut) {
+                              utils.simpleDialog(
+                                  "Do you want to Logout from app?", "",
+                                  () async {
+                                var loggedOut = await controller.logout();
+                                if (loggedOut) {
+                                  userRepository.deleteUser();
+                                  Get.offAllNamed(Routes.auth);
+                                }
+                              }, () {
+                                Get.back();
+                              });
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+          ),
       );
     });
   }
@@ -199,48 +210,48 @@ class AccountScreen extends GetView<RiderDashboardController> {
     );
   }
 
-  Widget _settingsCard(BuildContext context, Color cardBg, bool isDark) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.w),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(16.r),
-        boxShadow: isDark
-            ? []
-            : [
-                BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4)),
-              ],
-      ),
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 8.w),
-        child: Row(
-          children: [
-            Container(
-              width: 34.w,
-              height: 34.w,
-              decoration: BoxDecoration(
-                color: AppColors.greyColor4.withOpacity(isDark ? 0.2 : 0.14),
-                borderRadius: BorderRadius.circular(9.r),
-              ),
-              alignment: Alignment.center,
-              child: Icon(Icons.settings_outlined,
-                  color: isDark ? Colors.white : AppColors.greyColor5,
-                  size: 17.sp),
-            ),
-            SizedBox(width: 12.w),
-            Expanded(
-              child: utils.tvCustom("Theme", AppColors.black, 13.5,
-                  textAlignment: TextAlign.left),
-            ),
-            _themeToggle(isDark),
-          ],
-        ),
-      ),
-    );
-  }
+  // Widget _settingsCard(BuildContext context, Color cardBg, bool isDark) {
+  //   return Container(
+  //     padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.w),
+  //     decoration: BoxDecoration(
+  //       color: cardBg,
+  //       borderRadius: BorderRadius.circular(16.r),
+  //       boxShadow: isDark
+  //           ? []
+  //           : [
+  //               BoxShadow(
+  //                   color: Colors.black.withOpacity(0.05),
+  //                   blurRadius: 12,
+  //                   offset: const Offset(0, 4)),
+  //             ],
+  //     ),
+  //     child: Padding(
+  //       padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 8.w),
+  //       child: Row(
+  //         children: [
+  //           Container(
+  //             width: 34.w,
+  //             height: 34.w,
+  //             decoration: BoxDecoration(
+  //               color: AppColors.greyColor4.withOpacity(isDark ? 0.2 : 0.14),
+  //               borderRadius: BorderRadius.circular(9.r),
+  //             ),
+  //             alignment: Alignment.center,
+  //             child: Icon(Icons.settings_outlined,
+  //                 color: isDark ? Colors.white : AppColors.greyColor5,
+  //                 size: 17.sp),
+  //           ),
+  //           SizedBox(width: 12.w),
+  //           Expanded(
+  //             child: utils.tvCustom("Theme", AppColors.black, 13.5,
+  //                 textAlignment: TextAlign.left),
+  //           ),
+  //           _themeToggle(isDark),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _themeToggle(bool isDark) {
     return Container(

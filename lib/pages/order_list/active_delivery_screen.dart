@@ -4,6 +4,7 @@ import 'package:circular_countdown_timer/circular_countdown_timer.dart';
 import 'package:flutter/foundation.dart' show Factory;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:google_navigation_flutter/google_navigation_flutter.dart'
@@ -291,64 +292,88 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
     final isTablet = !context.isPhone;
     final cardBg = Get.isDarkMode ? AppColors.greyColor10 : Colors.white;
 
-    return Scaffold(
-      backgroundColor: Get.isDarkMode ? AppColors.black : AppColors.greyColor1,
-      bottomNavigationBar: const AppBottomNav(currentIndex: 2),
-      body: SafeArea(
-        child: Column(
-          children: [
-            GetBuilder<ActiveDeliveryController>(
-              builder: (_) => _header(context, isTablet),
-            ),
-            Expanded(
-              child: GetBuilder<ActiveDeliveryController>(
-                builder: (_) {
-                  if (controller.isLoadingOrder) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (controller.noOrdersAvailable) {
-                    return _noActiveOrderState();
-                  }
-                  return SingleChildScrollView(
-                    padding: EdgeInsets.all((isTablet ? 32 : 16).w),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (!controller.isDelivered) ...[
-                          controller.isCod ? _codBanner() : _ppdBanner(),
-                          SizedBox(height: 12.h),
-                        ],
-                        if (controller.pickupSuggestions.length > 1) ...[
-                          _pickupSuggestionsCard(cardBg),
-                          SizedBox(height: 14.h),
-                        ],
-                        if (controller.hasOngoingCall) ...[
-                          _ongoingCallCard(),
-                          SizedBox(height: 14.h),
-                        ],
-                        if (controller.isTerminal) ...[
-                          _terminalCard(cardBg),
-                          SizedBox(height: 14.h),
-                        ] else ...[
-                          _nextStopCard(context, cardBg),
-                          SizedBox(height: 14.h),
-                        ],
-                        _progressCard(context, cardBg),
-                        SizedBox(height: 14.h),
-                        _evidenceCard(context, cardBg),
-                        SizedBox(height: 14.h),
-                        controller.isCod
-                            ? _codStatusCard(cardBg)
-                            : _ppdStatusCard(cardBg),
-                        SizedBox(height: 14.h),
-                        _infoBanner(),
-                      ],
-                    ),
-                  );
-                },
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light.copyWith(
+        statusBarColor: AppColors.backgroundColorMain,
+      ),
+      child: Scaffold(
+        backgroundColor: Get.isDarkMode
+            ? AppColors.black
+            : AppColors.greyColor1,
+        bottomNavigationBar: const AppBottomNav(currentIndex: 2),
+        body: SafeArea(
+          top: false,
+          child: Column(
+            children: [
+              GetBuilder<ActiveDeliveryController>(
+                builder: (_) => _header(context, isTablet),
               ),
-            ),
-          ],
+              Expanded(
+                child: GetBuilder<ActiveDeliveryController>(
+                  builder: (_) {
+                    if (controller.isLoadingOrder) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (controller.noOrdersAvailable) {
+                      return _noActiveOrderState();
+                    }
+                    return SingleChildScrollView(
+                      padding: EdgeInsets.all((isTablet ? 32 : 16).w),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if ((controller.order.serviceType ?? "").isNotEmpty ||
+                              controller.order.isPriorityOrder) ...[
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if ((controller.order.serviceType ?? "")
+                                    .isNotEmpty)
+                                  _typeBadge(controller.order.serviceType!),
+                                if ((controller.order.serviceType ?? "")
+                                        .isNotEmpty &&
+                                    controller.order.isPriorityOrder)
+                                  SizedBox(width: 8.w),
+                                if (controller.order.isPriorityOrder)
+                                  _priorityTag(),
+                              ],
+                            ),
+                            SizedBox(height: 12.h),
+                          ],
+                          if (!controller.isDelivered) ...[
+                            controller.isCod ? _codBanner() : _ppdBanner(),
+                            SizedBox(height: 12.h),
+                          ],
+                          if (controller.pickupSuggestions.length > 1) ...[
+                            _pickupSuggestionsCard(cardBg),
+                            SizedBox(height: 14.h),
+                          ],
+                          if (controller.isTerminal) ...[
+                            _terminalCard(cardBg),
+                            SizedBox(height: 14.h),
+                          ] else ...[
+                            _nextStopCard(context, cardBg),
+                            SizedBox(height: 14.h),
+                          ],
+                          if (controller.currentStep == 4) ...[
+                            _evidenceCard(context, cardBg),
+                            SizedBox(height: 14.h),
+                          ],
+                          _progressCard(context, cardBg),
+                          SizedBox(height: 14.h),
+                          controller.isCod
+                              ? _codStatusCard(cardBg)
+                              : _ppdStatusCard(cardBg),
+                          SizedBox(height: 14.h),
+                          _infoBanner(),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -387,32 +412,84 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
     final order = controller.order;
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.symmetric(
-        horizontal: (isTablet ? 32 : 16).w,
-        vertical: 14.h,
+      // Extends up behind the status bar (body SafeArea has top: false), so
+      // the status bar strip is navy on edge-to-edge Android.
+      padding: EdgeInsets.fromLTRB(
+        (isTablet ? 32 : 16).w,
+        MediaQuery.paddingOf(context).top + 14.h,
+        (isTablet ? 32 : 16).w,
+        14.h,
       ),
       color: AppColors.backgroundColorMain,
       child: Row(
         children: [
           Expanded(
-            child: Column(
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 utils.tvCustom(
-                  "Active delivery",
+                  "Active :- ",
                   Colors.white,
-                  isTablet ? 22 : 16,
+                  isTablet ? 16 : 14,
                   textAlignment: TextAlign.left,
                 ),
-                SizedBox(height: 2.h),
+
                 utils.tvCustom(
                   order.awbNo ?? order.orderRefNumber ?? "-",
                   Colors.white,
-                  isTablet ? 13.5 : 12,
+                  isTablet ? 15 : 14,
                   textAlignment: TextAlign.left,
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static const Map<String, Color> _typeAccents = {
+    "b2c": AppColors.primaryThemeColor,
+    "c2c": AppColors.blue,
+    "whatsapp": Color(0xFF0BA30B),
+  };
+  static const Map<String, String> _typeLabels = {
+    "b2c": "B2C",
+    "c2c": "C2C",
+    "whatsapp": "WhatsApp",
+  };
+
+  Widget _typeBadge(String serviceType) {
+    final key = serviceType.toLowerCase();
+    final color = _typeAccents[key] ?? AppColors.primaryThemeColor;
+    final label = _typeLabels[key] ?? serviceType.toUpperCase();
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+      decoration: BoxDecoration(
+        color: color.withOpacity(Get.isDarkMode ? 0.2 : 0.12),
+        borderRadius: BorderRadius.circular(20.r),
+      ),
+      child: utils.tvCustom(label, color, 11.5),
+    );
+  }
+
+  Widget _priorityTag() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+      decoration: BoxDecoration(
+        color: AppColors.secondryThemeColor,
+        borderRadius: BorderRadius.circular(6.r),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.bolt, color: AppColors.black, size: 10.sp),
+          SizedBox(width: 2.w),
+          utils.tvCustom(
+            "PRIORITY",
+            AppColors.black,
+            9,
+            textAlignment: TextAlign.left,
           ),
         ],
       ),
@@ -551,7 +628,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
             child: utils.tvCustom(
               "COD · Collect QAR ${controller.order.orderAmount ?? '0'} from customer",
               _amberOFD,
-              13,
+              10,
               textAlignment: TextAlign.left,
             ),
           ),
@@ -581,7 +658,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
             child: utils.tvCustom(
               "Prepaid · Paid online, no collection needed",
               AppColors.blue,
-              13,
+              10,
               textAlignment: TextAlign.left,
             ),
           ),
@@ -749,7 +826,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
           utils.tvCustom(
             controller.nextStopName,
             AppColors.black,
-            15,
+            12,
             textAlignment: TextAlign.left,
             maxLines: 1,
           ),
@@ -757,7 +834,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
           utils.tvCustom(
             controller.nextStopAddress,
             AppColors.greyColor5,
-            12,
+            10,
             textAlignment: TextAlign.left,
             maxLines: 2,
           ),
@@ -811,49 +888,33 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
                         size: 22.sp,
                       ),
                     )
-                  : Stack(
-                      children: [
-                        GoogleMapsMapView(
-                          onViewCreated: controller.onMapViewCreated,
-                          initialMapToolbarEnabled: false,
-                          initialZoomControlsEnabled: true,
-                          initialZoomGesturesEnabled: true,
-                          gestureRecognizers: {
-                            Factory<EagerGestureRecognizer>(
-                              () => EagerGestureRecognizer(),
-                            ),
-                          },
+                  : GoogleMapsMapView(
+                      onViewCreated: controller.onMapViewCreated,
+                      initialMapToolbarEnabled: false,
+                      initialZoomControlsEnabled: true,
+                      initialZoomGesturesEnabled: true,
+                      gestureRecognizers: {
+                        Factory<EagerGestureRecognizer>(
+                          () => EagerGestureRecognizer(),
                         ),
-                        Positioned(
-                          top: 10.h,
-                          right: 10.w,
-                          child: InkWell(
-                            onTap: controller.openNavigation,
-                            borderRadius: BorderRadius.circular(18.r),
-                            child: Container(
-                              width: 34.w,
-                              height: 34.w,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.2),
-                                    blurRadius: 6,
-                                  ),
-                                ],
-                              ),
-                              alignment: Alignment.center,
-                              child: Icon(
-                                Icons.navigation,
-                                color: AppColors.primaryThemeColor,
-                                size: 17.sp,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                      },
                     ),
+            ),
+          ),
+          SizedBox(height: 10.h),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: dest == null ? null : controller.openNavigation,
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.symmetric(vertical: 12.h),
+                backgroundColor: AppColors.blueLight,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+              ),
+              icon: Icon(Icons.navigation, color: Colors.white, size: 16.sp),
+              label: utils.tvCustom("Navigate", Colors.white, 13.5),
             ),
           ),
         ],
@@ -893,20 +954,9 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
             14,
             textAlignment: TextAlign.left,
           ),
-          SizedBox(height: 14.h),
-          for (int i = 0; i < _stepLabels.length; i++)
-            _stepRow(
-              index: i,
-              label: _stepLabels[i],
-              isLast: i == _stepLabels.length - 1,
-              state: i < step - 1
-                  ? _StepState.done
-                  : i == step - 1
-                  ? (failed && i == _stepLabels.length - 1
-                        ? _StepState.failed
-                        : _StepState.current)
-                  : _StepState.pending,
-            ),
+          SizedBox(height: 6.h),
+          _stepTracker(step: step, failed: failed),
+          SizedBox(height: 8.h),
           if (!controller.isTerminal) ...[
             SizedBox(height: 6.h),
             if (controller.showPickupBuffer) ...[
@@ -937,6 +987,10 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
               ),
             ),
             SizedBox(height: 10.h),
+            if (controller.hasOngoingCall) ...[
+              _ongoingCallCard(),
+              SizedBox(height: 14.h),
+            ],
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
@@ -973,7 +1027,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
                 ),
               ),
             ),
-            if (controller.currentStep == 4) ...[
+            if (controller.currentStep == 4 || controller.currentStep == 2) ...[
               SizedBox(height: 12.h),
               InkWell(
                 onTap: () => _openUndeliveredSheet(context),
@@ -1190,78 +1244,113 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
     controller.ensureReasonsLoaded();
     Get.bottomSheet(
       Container(
+        // Cap the sheet so a long reasons list scrolls instead of
+        // overflowing past the photo tile and confirm button.
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
         padding: EdgeInsets.fromLTRB(18.w, 14.h, 18.w, 20.h),
         decoration: BoxDecoration(
           color: Get.isDarkMode ? AppColors.greyColor10 : Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 36.w,
-                height: 4.h,
-                margin: EdgeInsets.only(bottom: 16.h),
-                decoration: BoxDecoration(
-                  color: AppColors.greyColor2,
-                  borderRadius: BorderRadius.circular(2.r),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36.w,
+                  height: 4.h,
+                  margin: EdgeInsets.only(bottom: 16.h),
+                  decoration: BoxDecoration(
+                    color: AppColors.greyColor2,
+                    borderRadius: BorderRadius.circular(2.r),
+                  ),
                 ),
               ),
-            ),
-            utils.tvCustom(
-              "Why couldn't you deliver this order?",
-              AppColors.black,
-              16,
-              textAlignment: TextAlign.left,
-            ),
-            SizedBox(height: 6.h),
-            Obx(() {
-              if (controller.reasonsList.isEmpty) {
-                return Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24.h),
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      color: AppColors.primaryThemeColor,
+              utils.tvCustom(
+                "Why couldn't you deliver this order?",
+                AppColors.black,
+                14,
+                textAlignment: TextAlign.left,
+              ),
+              SizedBox(height: 6.h),
+              Obx(() {
+                if (controller.reasonsList.isEmpty) {
+                  return Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24.h),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.primaryThemeColor,
+                      ),
+                    ),
+                  );
+                }
+                return Flexible(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: controller.reasonsList
+                          .map((r) => _reasonRow(r))
+                          .toList(),
                     ),
                   ),
                 );
-              }
-              return Column(
-                children: controller.reasonsList
-                    .map((r) => _reasonRow(r))
-                    .toList(),
-              );
-            }),
-            SizedBox(height: 14.h),
-            Obx(
-              () => SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: controller.selectedReasonId.value == null
-                      ? null
-                      : () async {
-                          Get.back();
-                          await controller.confirmUndelivered();
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.red,
-                    disabledBackgroundColor: AppColors.red.withOpacity(0.4),
-                    padding: EdgeInsets.symmetric(vertical: 14.h),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(28.r),
-                    ),
-                  ),
-                  child: utils.tvCustom(
-                    "Confirm - Mark as undelivered",
-                    Colors.white,
-                    14.5,
+              }),
+              SizedBox(height: 14.h),
+              utils.tvCustom(
+                "Delivery proof (required)",
+                AppColors.black,
+                14,
+                textAlignment: TextAlign.left,
+              ),
+              SizedBox(height: 8.h),
+              GetBuilder<ActiveDeliveryController>(
+                builder: (_) => SizedBox(
+                  width: 150.w,
+                  child: _evidenceTile(
+                    icon: Icons.camera_alt_outlined,
+                    label: "Attempt photo",
+                    captured: controller.undeliveredPhoto != null,
+                    onTap: controller.captureUndeliveredPhoto,
                   ),
                 ),
               ),
-            ),
-          ],
+              SizedBox(height: 14.h),
+              GetBuilder<ActiveDeliveryController>(
+                builder: (_) => Obx(
+                  () => SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed:
+                          controller.selectedReasonId.value == null ||
+                              controller.undeliveredPhoto == null
+                          ? null
+                          : () async {
+                              Get.back();
+                              await controller.confirmUndelivered();
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.red,
+                        disabledBackgroundColor: AppColors.red.withOpacity(0.4),
+                        padding: EdgeInsets.symmetric(vertical: 14.h),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(28.r),
+                        ),
+                      ),
+                      child: utils.tvCustom(
+                        "Confirm - Mark as undelivered",
+                        Colors.white,
+                        14.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
       isScrollControlled: true,
@@ -1314,7 +1403,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
                 child: utils.tvCustom(
                   reason.reason,
                   AppColors.black,
-                  14,
+                  12,
                   textAlignment: TextAlign.left,
                 ),
               ),
@@ -1325,100 +1414,145 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
     });
   }
 
-  Widget _stepRow({
-    required int index,
-    required String label,
-    required bool isLast,
-    required _StepState state,
-  }) {
-    Color dotColor;
-    Widget dot;
+  // Horizontal step tracker: one connected row of dots instead of a tall
+  // vertical list, so "Delivery progress" reads at a glance.
+  Widget _stepTracker({required int step, required bool failed}) {
+    final count = _stepLabels.length;
+    final states = List.generate(count, (i) {
+      if (i < step - 1) return _StepState.done;
+      if (i == step - 1) {
+        return failed && i == count - 1
+            ? _StepState.failed
+            : _StepState.current;
+      }
+      return _StepState.pending;
+    });
+
+    Color segmentColor(int i) => states[i] == _StepState.done
+        ? AppColors.greenLight
+        : (Get.isDarkMode
+              ? Colors.white.withOpacity(0.15)
+              : const Color(0xFFE0E0E0));
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (int i = 0; i < count; i++)
+          Expanded(
+            child: Column(
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Container(
+                        height: 2,
+                        color: i == 0
+                            ? Colors.transparent
+                            : segmentColor(i - 1),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 22.w,
+                      height: 22.w,
+                      child: Center(child: _stepDot(states[i])),
+                    ),
+                    Expanded(
+                      child: Container(
+                        height: 2,
+                        color: i == count - 1
+                            ? Colors.transparent
+                            : segmentColor(i),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 6.h),
+                // Bypasses tvCustom: each step's label needs a distinct
+                // per-state color (current/done/failed/pending) that
+                // tvCustom's fixed dark-mode-white logic can't express -
+                // same precedent as the bottom-nav tab labels in
+                // rider_dashboard.dart.
+                Text(
+                  _stepLabels[i],
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  style:
+                      AppTextStyle.tsCustom(
+                        _stepLabelColor(states[i]),
+                        utils.responsiveFontSize(9.5.sp),
+                      ).copyWith(
+                        fontWeight: states[i] == _StepState.current
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                      ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Color _stepLabelColor(_StepState state) {
+    switch (state) {
+      case _StepState.current:
+        return Get.isDarkMode ? Colors.white : AppColors.black;
+      case _StepState.failed:
+        return AppColors.red;
+      case _StepState.pending:
+        return AppColors.greyColor4;
+      case _StepState.done:
+        return Get.isDarkMode
+            ? Colors.white.withOpacity(0.7)
+            : AppColors.greyColor5;
+    }
+  }
+
+  Widget _stepDot(_StepState state) {
     switch (state) {
       case _StepState.done:
-        dotColor = AppColors.greenLight;
-        dot = Icon(Icons.check_circle, color: dotColor, size: 22.sp);
-        break;
+        return Container(
+          width: 22.w,
+          height: 22.w,
+          decoration: const BoxDecoration(
+            color: AppColors.greenLight,
+            shape: BoxShape.circle,
+          ),
+          alignment: Alignment.center,
+          child: Icon(Icons.check, color: Colors.white, size: 13.sp),
+        );
       case _StepState.current:
-        dotColor = AppColors.primaryThemeColor;
-        dot = Container(
+        return Container(
           width: 22.w,
           height: 22.w,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: dotColor, width: 2),
+            color: Get.isDarkMode ? AppColors.greyColor10 : Colors.white,
+            border: Border.all(color: AppColors.primaryThemeColor, width: 2),
           ),
           alignment: Alignment.center,
-          child: Icon(Icons.circle, color: dotColor, size: 8.sp),
+          child: Container(
+            width: 8.w,
+            height: 8.w,
+            decoration: const BoxDecoration(
+              color: AppColors.primaryThemeColor,
+              shape: BoxShape.circle,
+            ),
+          ),
         );
-        break;
       case _StepState.failed:
-        dotColor = AppColors.red;
-        dot = Icon(Icons.cancel, color: dotColor, size: 22.sp);
-        break;
+        return Icon(Icons.cancel, color: AppColors.red, size: 22.sp);
       case _StepState.pending:
-        dotColor = AppColors.greyColor2;
-        dot = Container(
+        return Container(
           width: 16.w,
           height: 16.w,
-          margin: EdgeInsets.all(3.w),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: dotColor, width: 2),
+            border: Border.all(color: AppColors.greyColor2, width: 2),
           ),
         );
-        break;
     }
-
-    final labelColor = state == _StepState.pending
-        ? AppColors.greyColor4
-        : AppColors.black;
-    final labelWeight = state == _StepState.current
-        ? FontWeight.w400
-        : FontWeight.w300;
-
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SizedBox(
-            width: 22.w,
-            child: Column(
-              children: [
-                dot,
-                if (!isLast)
-                  Expanded(
-                    child: Container(
-                      width: 2,
-                      color: state == _StepState.done
-                          ? AppColors.greenLight
-                          : (Get.isDarkMode
-                                ? Colors.white.withOpacity(0.15)
-                                : const Color(0xFFE0E0E0)),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(bottom: isLast ? 0 : 18.h),
-              // Bypasses tvCustom directly: the stepper needs the current
-              // step bolder than done/pending, a per-state weight tvCustom
-              // (fixed w600) can't express - same precedent as the
-              // bottom-nav tab labels in rider_dashboard.dart.
-              child: Text(
-                label,
-                style: AppTextStyle.tsCustom(
-                  Get.isDarkMode ? Colors.white : labelColor,
-                  utils.responsiveFontSize(14.sp),
-                ).copyWith(fontWeight: labelWeight),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   // ---------------------------------------------------------------------
@@ -1635,14 +1769,14 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
                 utils.tvCustom(
                   "COD collection status",
                   AppColors.greyColor4,
-                  11.5,
+                  10.5,
                   textAlignment: TextAlign.left,
                 ),
                 SizedBox(height: 4.h),
                 utils.tvCustom(
                   collected ? "Collected" : "Pending",
                   statusColor,
-                  15,
+                  14,
                   textAlignment: TextAlign.left,
                 ),
               ],
@@ -1664,7 +1798,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
                   child: utils.tvCustom(
                     "Collect QAR ${controller.order.orderAmount ?? '0'} from customer",
                     _amberOFD,
-                    11,
+                    10,
                     textAlignment: TextAlign.left,
                     maxLines: 2,
                   ),
@@ -1712,7 +1846,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
                 utils.tvCustom(
                   "Prepaid",
                   AppColors.greenLight,
-                  15,
+                  14,
                   textAlignment: TextAlign.left,
                 ),
               ],
