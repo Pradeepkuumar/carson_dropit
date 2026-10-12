@@ -81,15 +81,15 @@ class RiderDashboardController extends GetxController {
   var isDarkMode = Get.isDarkMode.obs;
 
   void setThemeMode(bool dark) {
-    // Get.changeThemeMode must land (and its MaterialApp rebuild finish)
-    // before isDarkMode.value flips - otherwise screens' Obx rebuilds can
-    // run a frame early and read a stale Get.isDarkMode, leaving text
-    // colors (from utils.tvCustom, which reads Get.isDarkMode directly)
-    // out of sync with the already-updated backgrounds until some other
-    // rebuild happens to catch them up.
+    // Get.isDarkMode reads Theme.of(context), which MaterialApp cross-fades
+    // over kThemeAnimationDuration and only flips brightness midway through.
+    // Flipping isDarkMode.value before that fade ends makes screens' Obx
+    // rebuilds read a stale Get.isDarkMode, leaving text colors (from
+    // utils.tvCustom, which reads Get.isDarkMode directly) stuck on the old
+    // theme - so wait for the fade to finish first.
     Get.changeThemeMode(dark ? ThemeMode.dark : ThemeMode.light);
     box.write(THEME_MODE_KEY, dark ? 'dark' : 'light');
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    Future.delayed(kThemeAnimationDuration, () {
       isDarkMode.value = dark;
     });
   }
@@ -278,17 +278,33 @@ class RiderDashboardController extends GetxController {
   updateLocation() async {
     //driverCheckAttendance();
     final walletFuture = fetchWalletAmount();
+    // One-shot fix only (needed for the check-in lat/lng) - the continuous
+    // background stream starts once attendance is marked, see
+    // startLocationTracking().
     await getCurrentLocation();
-    await getCountinuesLocation();
+    if (isAttendanceMarked.value) {
+      await startLocationTracking();
+    }
     await walletFuture;
+  }
+
+  Future<void> startLocationTracking() async {
+    if (!isConsentGiven.value) return;
+    await getCountinuesLocation();
+  }
+
+  Future<void> stopLocationTracking() async {
+    await locationUtils.stopListeningToLocationUpdates();
   }
 
   void checkAttendance(AttendanceModel attendance) {
     print(attendance.markAttendance);
     if (attendance.markAttendance ??false) {
       isAttendanceMarked.value =  true;
+      startLocationTracking();
      } else {
        isAttendanceMarked.value = false;
+       stopLocationTracking();
     }
      isAttendanceLoaded.value = true;
   }
@@ -628,6 +644,12 @@ class RiderDashboardController extends GetxController {
       if (result.status_code == 200) {
         utils.closeLoadingDialog();
         workingHours.value = result.data["working_hours"].toString();
+        isAttendanceMarked.value = status;
+        if (status) {
+          await startLocationTracking();
+        } else {
+          await stopLocationTracking();
+        }
         update();
         return true;
       } else {
@@ -692,14 +714,17 @@ class RiderDashboardController extends GetxController {
     if (location == null) return;
     startLocation = location;
     currentLocation = location;
-    await sendDriverLocation(location);
+    // Only report the rider's position to the server while on duty.
+    if (isAttendanceMarked.value) {
+      await sendDriverLocation(location);
+    }
     print(
       'Current Location: ${location.latitude}, ${location.longitude}',
     );
   }
 
-  getCountinuesLocation() {
-    locationUtils.startListeningToLocationUpdates(
+  Future<void> getCountinuesLocation() async {
+    await locationUtils.startListeningToLocationUpdates(
       onLocationChanged: (LocationData locationData) async {
         currentLocation = locationData;
         final baseline = startLocation;
@@ -850,6 +875,7 @@ class RiderDashboardController extends GetxController {
   @override
   void onClose() {
     _notificationWorker?.dispose();
+    stopLocationTracking();
     address.dispose();
     phone.dispose();
     feCode.dispose();

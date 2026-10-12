@@ -754,7 +754,7 @@ class _RiderDashboardState extends State<RiderDashboard>
                       () => utils.tvCustom(
                         controller.riderName.value.toUpperCase(),
                         Colors.white,
-                        19,
+                        14,
                         textAlignment: TextAlign.left,
                         maxLines: 1,
                       ),
@@ -843,24 +843,19 @@ class _RiderDashboardState extends State<RiderDashboard>
           (c2c.allOrdersCount?.dELIVERED ?? 0) +
           (wa.allOrdersCount?.dELIVERED ?? 0);
 
-      final cardBg = controller.isDarkMode.value ? AppColors.greyColor10 : Colors.white;
+      final isDark = controller.isDarkMode.value;
+      final cardBg = isDark ? AppColors.backgroundColorLight : Colors.white;
 
       return Container(
         padding: EdgeInsets.all(isTablet ? 22.w : 16.w),
         decoration: BoxDecoration(
           color: cardBg,
           borderRadius: BorderRadius.circular(isTablet ? 20.r : 16.r),
-          border: controller.isDarkMode.value
-              ? Border.all(color: Colors.white.withOpacity(0.08))
+          border: isDark
+              ? Border.all(color: Colors.white.withOpacity(0.06))
               : null,
-          boxShadow: controller.isDarkMode.value
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.4),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ]
+          boxShadow: isDark
+              ? []
               : [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.08),
@@ -906,7 +901,7 @@ class _RiderDashboardState extends State<RiderDashboard>
                   child: _statTile(
                     context,
                     Icons.shopping_bag_outlined,
-                    AppColors.blue,
+                    isDark ? AppColors.blueLight : AppColors.blue,
                     todayPicked,
                     "Picked",
                   ),
@@ -916,7 +911,7 @@ class _RiderDashboardState extends State<RiderDashboard>
                   child: _statTile(
                     context,
                     Icons.local_shipping_outlined,
-                    _amberOFD,
+                    isDark ? AppColors.secondryThemeColor : _amberOFD,
                     todayOfd,
                     "OFD",
                   ),
@@ -926,7 +921,7 @@ class _RiderDashboardState extends State<RiderDashboard>
                   child: _statTile(
                     context,
                     Icons.check_circle_outline,
-                    AppColors.greenLight,
+                    isDark ? AppColors.green : AppColors.greenLight,
                     todayDelivered,
                     "Delivered",
                   ),
@@ -947,17 +942,21 @@ class _RiderDashboardState extends State<RiderDashboard>
     String label,
   ) {
     final isTablet = !context.isPhone;
+    final isDark = controller.isDarkMode.value;
     return Container(
       padding: EdgeInsets.symmetric(vertical: isTablet ? 18.h : 10.h),
       decoration: BoxDecoration(
-        color: color.withOpacity(controller.isDarkMode.value ? 0.18 : 0.08),
+        color: color.withOpacity(isDark ? 0.15 : 0.08),
         borderRadius: BorderRadius.circular(isTablet ? 16.r : 12.r),
+        border: isDark
+            ? Border.all(color: color.withOpacity(0.28))
+            : null,
       ),
       child: Column(
         children: [
           Icon(icon, size: (isTablet ? 24 : 18).sp, color: color),
           SizedBox(height: isTablet ? 10.h : 2.h),
-          utils.tvCustom(value.toString(), AppColors.black, 12),
+          utils.tvCustom(value.toString(), AppColors.black, 14),
           const SizedBox(height: 2),
           utils.tvCustom(label, AppColors.greyColor5, 9.5),
         ],
@@ -1403,9 +1402,11 @@ class _RiderDashboardState extends State<RiderDashboard>
     return Obx(() {
       final orders = controller.upcomingOrders;
       final hasOrders = orders.isNotEmpty;
-      final cardBg = controller.isDarkMode.value ? AppColors.greyColor10 : Colors.white;
+      final cardBg = controller.isDarkMode.value
+          ? AppColors.backgroundColorLight
+          : Colors.white;
       final dividerColor = controller.isDarkMode.value
-          ? Colors.white.withOpacity(0.08)
+          ? Colors.white.withOpacity(0.07)
           : const Color(0xFFF0F0F0);
 
       return Column(
@@ -1450,7 +1451,7 @@ class _RiderDashboardState extends State<RiderDashboard>
                 color: cardBg,
                 borderRadius: BorderRadius.circular(isTablet ? 20.r : 14.r),
                 border: controller.isDarkMode.value
-                    ? Border.all(color: Colors.white.withOpacity(0.08))
+                    ? Border.all(color: Colors.white.withOpacity(0.06))
                     : null,
                 boxShadow: controller.isDarkMode.value
                     ? []
@@ -1493,11 +1494,11 @@ class _RiderDashboardState extends State<RiderDashboard>
         vertical: isTablet ? 32.h : 24.h,
       ),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.greyColor10 : Colors.white,
+        color: isDark ? AppColors.backgroundColorLight : Colors.white,
         borderRadius: BorderRadius.circular(16.r),
         border: Border.all(
           color: isDark
-              ? Colors.white.withOpacity(0.08)
+              ? Colors.white.withOpacity(0.06)
               : const Color(0xFFE0E0E0),
           width: 1.5,
         ),
@@ -1548,6 +1549,22 @@ class _RiderDashboardState extends State<RiderDashboard>
     }
   }
 
+  // Brighter icon hues for dark mode - the light-mode blues/amber are too
+  // dark to read on the slate card.
+  Color _upcomingStatusIconColor(String status) {
+    if (!controller.isDarkMode.value) return _upcomingStatusColor(status);
+    switch (status) {
+      case ASSIGNED:
+      case RE_ASSIGNED:
+      case PICKED:
+        return AppColors.blueLight;
+      case OFD:
+        return AppColors.secondryThemeColor;
+      default:
+        return AppColors.primaryThemeColor;
+    }
+  }
+
   IconData _upcomingStatusIcon(String status) {
     switch (status) {
       case PICKED:
@@ -1569,7 +1586,9 @@ class _RiderDashboardState extends State<RiderDashboard>
   Widget _upcomingOrderRow(BuildContext context, OrdersData order) {
     final isTablet = !context.isPhone;
     final status = order.status ?? "";
+    final isDark = controller.isDarkMode.value;
     final statusColor = _upcomingStatusColor(status);
+    final iconColor = _upcomingStatusIconColor(status);
     final remaining = controller.remainingSecondsFor(order);
     final overdue = remaining <= 0;
 
@@ -1590,13 +1609,16 @@ class _RiderDashboardState extends State<RiderDashboard>
               width: isTablet ? 48.w : 38.w,
               height: isTablet ? 48.w : 38.w,
               decoration: BoxDecoration(
-                color: statusColor.withOpacity(controller.isDarkMode.value ? 0.18 : 0.10),
+                color: iconColor.withOpacity(isDark ? 0.15 : 0.10),
                 borderRadius: BorderRadius.circular(isTablet ? 12.r : 10.r),
+                border: isDark
+                    ? Border.all(color: iconColor.withOpacity(0.28))
+                    : null,
               ),
               alignment: Alignment.center,
               child: Icon(
                 _upcomingStatusIcon(status),
-                color: statusColor,
+                color: iconColor,
                 size: (isTablet ? 22 : 19).sp,
               ),
             ),
@@ -1628,10 +1650,12 @@ class _RiderDashboardState extends State<RiderDashboard>
                       horizontal: 6,
                       vertical: 2,
                     ),
+                    // Dark mode: solid fill so tvCustom's forced-white
+                    // text stays readable.
                     decoration: BoxDecoration(
-                      color: statusColor.withOpacity(
-                        controller.isDarkMode.value ? 0.2 : 0.12,
-                      ),
+                      color: isDark
+                          ? statusColor
+                          : statusColor.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: utils.tvCustom(
@@ -1648,19 +1672,45 @@ class _RiderDashboardState extends State<RiderDashboard>
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                utils.tvCustom(
-                  _dueInLabel(remaining),
-                  overdue ? AppColors.red : AppColors.black,
-                  12,
-                ),
+                if (overdue && isDark)
+                  // tvCustom renders white in dark mode, so overdue is
+                  // flagged with a red tag instead of red text.
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.red,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.access_time,
+                          color: AppColors.white,
+                          size: (isTablet ? 14 : 12).sp,
+                        ),
+                        const SizedBox(width: 4),
+                        utils.tvCustom(_dueInLabel(remaining), AppColors.white, 12),
+                      ],
+                    ),
+                  )
+                else
+                  utils.tvCustom(
+                    _dueInLabel(remaining),
+                    overdue ? AppColors.red : AppColors.black,
+                    12,
+                  ),
                 const SizedBox(height: 4),
                 _paymentBadge(order),
               ],
             ),
             Icon(
               Icons.chevron_right,
-              color: controller.isDarkMode.value
-                  ? AppColors.greyColor4
+              color: isDark
+                  ? AppColors.greyColor2
                   : const Color(0xFFC7C7C7),
               size: 18,
             ),
@@ -1682,7 +1732,9 @@ class _RiderDashboardState extends State<RiderDashboard>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withOpacity(controller.isDarkMode.value ? 0.22 : 0.14),
+        // Dark mode: solid fill so tvCustom's forced-white text stays
+        // readable.
+        color: controller.isDarkMode.value ? color : color.withOpacity(0.14),
         borderRadius: BorderRadius.circular(8),
       ),
       child: utils.tvCustom(label, color, 10, textAlignment: TextAlign.left),
@@ -2218,30 +2270,30 @@ class _RiderDashboardState extends State<RiderDashboard>
                       ),
                       child: Column(
                         children: [
-                          _menuRow(
-                            icon: Icons.inventory_2_outlined,
-                            iconColor: AppColors.primaryThemeColor,
-                            iconBg: AppColors.primaryThemeColor.withOpacity(
-                              0.10,
-                            ),
-                            label: "My Orders",
-                            onTap: () {
-                              controller.showMenu.value = false;
-                              selectedNavIndex.value = 0;
-                              Get.toNamed(Routes.orderListScreen);
-                            },
-                          ),
-                          _menuRow(
-                            icon: Icons.near_me_outlined,
-                            iconColor: AppColors.blue,
-                            iconBg: AppColors.blue.withOpacity(0.08),
-                            label: "Nearby Orders",
-                            onTap: () {
-                              controller.showMenu.value = false;
-                              selectedNavIndex.value = 0;
-                              Get.toNamed(Routes.nearByOrders);
-                            },
-                          ),
+                          // _menuRow(
+                          //   icon: Icons.inventory_2_outlined,
+                          //   iconColor: AppColors.primaryThemeColor,
+                          //   iconBg: AppColors.primaryThemeColor.withOpacity(
+                          //     0.10,
+                          //   ),
+                          //   label: "My Orders",
+                          //   onTap: () {
+                          //     controller.showMenu.value = false;
+                          //     selectedNavIndex.value = 0;
+                          //     Get.toNamed(Routes.orderListScreen);
+                          //   },
+                          // ),
+                          // _menuRow(
+                          //   icon: Icons.near_me_outlined,
+                          //   iconColor: AppColors.blue,
+                          //   iconBg: AppColors.blue.withOpacity(0.08),
+                          //   label: "Nearby Orders",
+                          //   onTap: () {
+                          //     controller.showMenu.value = false;
+                          //     selectedNavIndex.value = 0;
+                          //     Get.toNamed(Routes.nearByOrders);
+                          //   },
+                          // ),
                           _menuRow(
                             icon: Icons.support_agent_outlined,
                             iconColor: AppColors.greenLight,

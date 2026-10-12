@@ -49,8 +49,10 @@ const String PICKED = "PICKED";
 const String OFD = "OFD";
 const String DELIVERED = "DELIVERED";
 const String UNDELIVERED = "UNDELIVERED";
+const String NOT_PICKED = "NOTPICKED";
 const String DROPBACK_CLW = "DROPBACK_CLW";
 const String DROPBACK_ML = "DROPBACK_ML";
+const String DRIVER_ASSIGNMENT_PENDING = "DRIVER_ASSIGNMENT_PENDING";
 
 
 

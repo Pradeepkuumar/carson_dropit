@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:location/location.dart';
 
 class LocationUtils {
   final Location _location = Location();
+  StreamSubscription<LocationData>? _locationSubscription;
 
   Future<LocationData?> getCurrentLocation() async {
     bool serviceEnabled;
@@ -32,12 +35,26 @@ class LocationUtils {
   }
 
 
-  void startListeningToLocationUpdates({
+  Future<void> startListeningToLocationUpdates({
     required Function(LocationData) onLocationChanged,
-  }) {
-    _location.enableBackgroundMode(enable: true);
-    _location.changeSettings(interval: 10000, distanceFilter: 0);
-    _location.onLocationChanged.listen(onLocationChanged);
+  }) async {
+    // Drop any previous listener so repeated starts don't stack up streams.
+    await _locationSubscription?.cancel();
+    try {
+      await _location.enableBackgroundMode(enable: true);
+    } catch (_) {
+      // Background permission denied - keep foreground updates going.
+    }
+    await _location.changeSettings(interval: 10000, distanceFilter: 0);
+    _locationSubscription = _location.onLocationChanged.listen(onLocationChanged);
+  }
+
+  Future<void> stopListeningToLocationUpdates() async {
+    await _locationSubscription?.cancel();
+    _locationSubscription = null;
+    try {
+      await _location.enableBackgroundMode(enable: false);
+    } catch (_) {}
   }
 }
 

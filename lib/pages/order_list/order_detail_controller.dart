@@ -41,8 +41,7 @@ class OrderDetailController extends GetxController {
       user = value;
     }
   }
-  bool get isAvailable => order.status == PLACED;
-
+  bool get isAvailable => order.status == PLACED || order.status == DRIVER_ASSIGNMENT_PENDING ;
   LatLng? get pickupLatLng =>
       utils.parseLatLng(order.pickupLatitude, order.pickupLongitude);
 
@@ -116,6 +115,7 @@ class OrderDetailController extends GetxController {
         if (Get.isRegistered<RiderDashboardController>()) {
           Get.find<RiderDashboardController>().getDashBoardData();
         }
+        Get.back(result: true);
         if (type == acceptOrder) {
           utils.successSnackBar("Order Accepted",
               "Please find the accepted order under Assigned");
@@ -123,7 +123,7 @@ class OrderDetailController extends GetxController {
           utils.errorSnackBar(
               "Order Rejected", "This order no longer belongs to you");
         }
-        Get.back(result: true);
+
       } else {
         utils.errorSnackBar("Error", result.message.toString());
       }

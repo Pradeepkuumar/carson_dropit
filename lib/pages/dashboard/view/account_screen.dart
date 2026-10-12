@@ -8,6 +8,7 @@ import '../../../global/global.dart';
 import '../../../global/rider_avatar.dart';
 import '../../../global/update_profile_dialog.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/text_style_util.dart';
 import '../controller/rider_dashboard_controller.dart';
 
 class AccountScreen extends GetView<RiderDashboardController> {
@@ -62,8 +63,8 @@ class AccountScreen extends GetView<RiderDashboardController> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _profileCard(context, cardBg, isDark),
-                        // SizedBox(height: 14.h),
-                        // _settingsCard(context, cardBg, isDark),
+                        SizedBox(height: 14.h),
+                        _settingsCard(context, cardBg, isDark),
                         SizedBox(height: 14.h),
                         _menuRow(
                           cardBg: cardBg,
@@ -210,48 +211,47 @@ class AccountScreen extends GetView<RiderDashboardController> {
     );
   }
 
-  // Widget _settingsCard(BuildContext context, Color cardBg, bool isDark) {
-  //   return Container(
-  //     padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.w),
-  //     decoration: BoxDecoration(
-  //       color: cardBg,
-  //       borderRadius: BorderRadius.circular(16.r),
-  //       boxShadow: isDark
-  //           ? []
-  //           : [
-  //               BoxShadow(
-  //                   color: Colors.black.withOpacity(0.05),
-  //                   blurRadius: 12,
-  //                   offset: const Offset(0, 4)),
-  //             ],
-  //     ),
-  //     child: Padding(
-  //       padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 8.w),
-  //       child: Row(
-  //         children: [
-  //           Container(
-  //             width: 34.w,
-  //             height: 34.w,
-  //             decoration: BoxDecoration(
-  //               color: AppColors.greyColor4.withOpacity(isDark ? 0.2 : 0.14),
-  //               borderRadius: BorderRadius.circular(9.r),
-  //             ),
-  //             alignment: Alignment.center,
-  //             child: Icon(Icons.settings_outlined,
-  //                 color: isDark ? Colors.white : AppColors.greyColor5,
-  //                 size: 17.sp),
-  //           ),
-  //           SizedBox(width: 12.w),
-  //           Expanded(
-  //             child: utils.tvCustom("Theme", AppColors.black, 13.5,
-  //                 textAlignment: TextAlign.left),
-  //           ),
-  //           _themeToggle(isDark),
-  //         ],
-  //       ),
-  //     ),
-  //   );
-  // }
+  Widget _settingsCard(BuildContext context, Color cardBg, bool isDark) {
+    return Container(
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16.r),
+        boxShadow: isDark
+            ? []
+            : [
+                BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4)),
+              ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
+        child: Row(
+          children: [
+            Container(
+              width: 34.w,
+              height: 34.w,
+              decoration: BoxDecoration(
+                color: AppColors.greyColor4.withOpacity(isDark ? 0.2 : 0.14),
+                borderRadius: BorderRadius.circular(9.r),
+              ),
+              alignment: Alignment.center,
+              child: Icon(Icons.contrast,
+                  color: isDark ? Colors.white : AppColors.greyColor5,
+                  size: 17.sp),
+            ),
+            SizedBox(width: 12.w),
+            Expanded(
+              child: utils.tvCustom("Theme", AppColors.black, 13.5,
+                  textAlignment: TextAlign.left),
+            ),
+            _themeToggle(isDark),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _themeToggle(bool isDark) {
     return Container(
@@ -309,13 +309,14 @@ class AccountScreen extends GetView<RiderDashboardController> {
             SizedBox(width: 5.w),
             Text(
               label,
-              style: TextStyle(
-                fontSize: 11.sp,
-                fontWeight: FontWeight.w700,
-                color: selected
-                    ? Colors.white
-                    : (isDark ? Colors.white54 : AppColors.greyColor4),
-              ),
+              // tsCustom directly (not tvCustom) - unselected label must stay
+              // muted in dark mode and the weight is w700.
+              style: AppTextStyle.tsCustom(
+                      selected
+                          ? Colors.white
+                          : (isDark ? Colors.white54 : AppColors.greyColor4),
+                      11.sp)
+                  .copyWith(fontWeight: FontWeight.w700),
             ),
           ],
         ),

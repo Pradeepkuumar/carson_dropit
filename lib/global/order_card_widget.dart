@@ -71,6 +71,7 @@ class OrderCardWidget extends StatelessWidget {
       case DELIVERED:
         return AppColors.greenLight;
       case UNDELIVERED:
+      case NOT_PICKED:
         return AppColors.red;
       default:
         return AppColors.primaryThemeColor;
@@ -213,12 +214,14 @@ class OrderCardWidget extends StatelessWidget {
                               maxLines: 1,
                             ),
                           ),
-                          if ((order.status ?? "").isNotEmpty) ...[
-                            SizedBox(width: 6.w),
-                            _statusBadge(order.status!),
-                          ],
+
                         ],
                       ),
+                      SizedBox(height: 1.h),
+                      if ((order.status ?? "").isNotEmpty) ...[
+                        SizedBox(width: 6.w),
+                        _statusBadge(order.status!),
+                      ],
                       SizedBox(height: 1.h),
                       utils.tvCustom(
                         (order.consigneeName?.isNotEmpty ?? false)
@@ -491,10 +494,7 @@ class OrderCardWidget extends StatelessWidget {
                           maxLines: 1,
                         ),
                       ),
-                      if ((order.status ?? "").isNotEmpty) ...[
-                        SizedBox(width: 6.w),
-                        _statusBadge(order.status!),
-                      ],
+
                       if (order.isPriorityOrder) ...[
                         SizedBox(width: 6.w),
                         _priorityTag(),
@@ -502,6 +502,10 @@ class OrderCardWidget extends StatelessWidget {
                     ],
                   ),
                   SizedBox(height: 2.h),
+                  if ((order.status ?? "").isNotEmpty) ...[
+                    SizedBox(width: 6.w),
+                    _statusBadge(order.status!),
+                  ],
                   utils.tvCustom(
                     "${(order.consigneeName?.isNotEmpty ?? false) ? order.consigneeName! : (order.merchantName ?? "-")}  ·  ${order.distance ?? "-"}",
                     AppColors.greyColor4,

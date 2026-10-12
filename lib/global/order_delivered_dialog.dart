@@ -10,16 +10,218 @@ import 'global.dart';
 // festive/varied, not to match the brand palette like normal chrome does.
 const _kConfettiExtraColors = [Color(0xFFFFC107), Color(0xFF3B82F6), Color(0xFFEC4899)];
 
+// cashCollected: the amount actually collected for COD (half the order
+// amount for split payment) - falls back to the full order amount.
 void showOrderDeliveredDialog({
   required OrdersData order,
   required bool isCod,
+  String? cashCollected,
   required VoidCallback onContinue,
 }) {
   Get.dialog(
-    _OrderDeliveredDialog(order: order, isCod: isCod, onContinue: onContinue),
+    _OrderDeliveredDialog(
+      order: order,
+      isCod: isCod,
+      cashCollected: cashCollected ?? order.orderAmount ?? "0",
+      onContinue: onContinue,
+    ),
     barrierDismissible: false,
     barrierColor: Colors.black.withOpacity(0.55),
   );
+}
+
+// Result dialog for a failed order - undelivered (red) or not picked
+// (amber). Same card as the delivered dialog, without the celebration.
+void showOrderFailedDialog({
+  required OrdersData order,
+  required bool notPicked,
+  required VoidCallback onContinue,
+}) {
+  Get.dialog(
+    _OrderFailedDialog(
+      order: order,
+      notPicked: notPicked,
+      onContinue: onContinue,
+    ),
+    barrierDismissible: false,
+    barrierColor: Colors.black.withOpacity(0.55),
+  );
+}
+
+class _OrderFailedDialog extends StatelessWidget {
+  final OrdersData order;
+  final bool notPicked;
+  final VoidCallback onContinue;
+
+  const _OrderFailedDialog({
+    required this.order,
+    required this.notPicked,
+    required this.onContinue,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Get.isDarkMode;
+    final isTablet = !context.isPhone;
+    final accent = notPicked ? AppColors.amber : AppColors.red;
+    final cardBg = isDark ? AppColors.greyColor10 : Colors.white;
+    final textColor = isDark ? Colors.white : AppColors.black;
+    final subtextColor = isDark
+        ? Colors.white.withOpacity(0.62)
+        : AppColors.greyColor4;
+    final infoBg = isDark ? Colors.white.withOpacity(0.06) : AppColors.greyColor1;
+    final divider = isDark
+        ? Colors.white.withOpacity(0.08)
+        : AppColors.greyColor2.withOpacity(0.4);
+
+    // Same transparent Material wrapper as the delivered dialog, so Text
+    // doesn't fall back to Flutter's debug style on this overlay route.
+    return Material(
+      type: MaterialType.transparency,
+      child: Center(
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: 1),
+          duration: const Duration(milliseconds: 450),
+          curve: Curves.easeOutBack,
+          builder: (context, t, child) => Opacity(
+            opacity: t.clamp(0.0, 1.0),
+            child: Transform.translate(
+              offset: Offset(0, (1 - t) * 24),
+              child: child,
+            ),
+          ),
+          child: Container(
+            width: isTablet ? 380.0.sp : 320.0.sp,
+            padding: EdgeInsets.fromLTRB(22.sp, 28.sp, 22.sp, 22.sp),
+            decoration: BoxDecoration(
+              color: cardBg,
+              borderRadius: BorderRadius.circular(20.r),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.35),
+                  blurRadius: 48,
+                  offset: const Offset(0, 20),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 88.sp,
+                  height: 88.sp,
+                  decoration: BoxDecoration(
+                    color: accent.withOpacity(isDark ? 0.3 : 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: Container(
+                    width: 72.sp,
+                    height: 72.sp,
+                    decoration: BoxDecoration(
+                      color: accent,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      notPicked ? Icons.priority_high_rounded : Icons.close_rounded,
+                      color: Colors.white,
+                      size: 38.sp,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 18.h),
+                utils.tvCustom(
+                  notPicked ? "Marked as not picked" : "Marked as undelivered",
+                  textColor,
+                  19,
+                ),
+                SizedBox(height: 6.h),
+                utils.tvCustom(
+                  notPicked
+                      ? "The pickup is recorded as failed and the merchant is updated."
+                      : "The order is recorded as not delivered. Return it as instructed.",
+                  subtextColor,
+                  13.5,
+                  maxLines: 2,
+                ),
+                SizedBox(height: 20.h),
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 16.sp,
+                    vertical: 14.sp,
+                  ),
+                  decoration: BoxDecoration(
+                    color: infoBg,
+                    borderRadius: BorderRadius.circular(14.r),
+                  ),
+                  child: Column(
+                    children: [
+                      _failedInfoRow(
+                        "AWB Number",
+                        order.awbNo ?? "-",
+                        textColor,
+                        subtextColor,
+                      ),
+                      Divider(height: 20.h, thickness: 1, color: divider),
+                      _failedInfoRow(
+                        "Reason",
+                        order.reason ?? "-",
+                        textColor,
+                        subtextColor,
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 20.h),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Get.back();
+                      onContinue();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryThemeColor,
+                      padding: EdgeInsets.symmetric(vertical: 14.sp),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12.r),
+                      ),
+                    ),
+                    child: utils.tvCustom("Continue", Colors.white, 15),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _failedInfoRow(
+    String label,
+    String value,
+    Color valueColor,
+    Color labelColor,
+  ) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        utils.tvCustom(label, labelColor, 12.5, textAlignment: TextAlign.left),
+        SizedBox(width: 12.w),
+        Expanded(
+          child: utils.tvCustom(
+            value,
+            valueColor,
+            13.5,
+            textAlignment: TextAlign.right,
+            maxLines: 2,
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _ConfettiPiece {
@@ -51,11 +253,13 @@ class _ConfettiPiece {
 class _OrderDeliveredDialog extends StatefulWidget {
   final OrdersData order;
   final bool isCod;
+  final String cashCollected;
   final VoidCallback onContinue;
 
   const _OrderDeliveredDialog({
     required this.order,
     required this.isCod,
+    required this.cashCollected,
     required this.onContinue,
   });
 
@@ -207,7 +411,7 @@ class _OrderDeliveredDialogState extends State<_OrderDeliveredDialog>
                           Divider(height: 20.h, thickness: 1, color: divider),
                           _infoRow(
                             "Cash Collected",
-                            "QAR ${widget.order.orderAmount ?? "0"}",
+                            "QAR ${widget.cashCollected}",
                             AppColors.greenLight,
                             subtextColor,
                             valueBold: true,

@@ -19,6 +19,12 @@
         <intent>
             <action android:name="android.intent.action.TTS_SERVICE"/>
         </intent>
+        <!-- Lets canLaunchUrl(tel:) see the dialer on Android 11+ (utils.openDialPad).
+             Must stay here, not on MainActivity, or Drop-It offers itself as a dialer. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="tel"/>
+        </intent>
     </queries>
     <application android:label="Drop-It" android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
@@ -31,11 +37,6 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-                <data android:scheme="tel"/>
             </intent-filter>
         </activity>
          <meta-data

@@ -42,31 +42,13 @@ class OrderListScreen extends GetView<OrderListController> {
                   Obx(() => _buildStatusPills(context)),
                   Obx(() => _buildActiveFilterIndicator(context)),
                   Expanded(
-                    child: Obx(() {
-                      if (controller.typeTab.value != "b2c") {
-                        return _emptyState(
-                          "${controller.typeTab.value == "c2c" ? "C2C" : "WhatsApp"} orders aren't available on this screen yet.",
-                        );
-                      }
-                      if (controller.isLoading.value) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      final orders = controller.currentOrders;
-                      if (orders.isEmpty) {
-                        return _emptyState("No orders here right now.");
-                      }
-                      return RefreshIndicator(
-                        onRefresh: controller.refreshCurrentTab,
-                        child: ListView.separated(
-                          padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 20.h),
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          itemCount: orders.length,
-                          separatorBuilder: (_, __) => SizedBox(height: 12.h),
-                          itemBuilder: (context, index) =>
-                              _orderCard(context, orders[index]),
-                        ),
-                      );
-                    }),
+                    child: TabBarView(
+                      controller: controller.tabController,
+                      children: [
+                        for (final status in OrderListController.statuses)
+                          _buildOrderList(context, status),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -82,11 +64,58 @@ class OrderListScreen extends GetView<OrderListController> {
     );
   }
 
+  // One page of the status TabBarView - renders the already-fetched list for
+  // [status]; switching tabs never triggers an API call.
+  Widget _buildOrderList(BuildContext context, String status) {
+    // RefreshIndicator stays mounted across loading/empty/list states - if it
+    // were swapped out mid-pull (e.g. for the loading spinner), the pull
+    // gesture would be cut off.
+    return RefreshIndicator(
+      onRefresh: () => controller.refreshTab(status),
+      child: Obx(() {
+        if (controller.typeTab.value != "b2c") {
+          return _emptyState(
+            "${controller.typeTab.value == "c2c" ? "C2C" : "WhatsApp"} orders aren't available on this screen yet.",
+          );
+        }
+        final orders = controller.ordersFor(status);
+        // Full-page spinner only for the first load; on pull-to-refresh the
+        // existing list stays visible under the RefreshIndicator's spinner.
+        if (controller.loadingFor(status).value && orders.isEmpty) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (orders.isEmpty) {
+          return _emptyState("No orders here right now.");
+        }
+        return ListView.separated(
+          padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 20.h),
+          physics: const AlwaysScrollableScrollPhysics(),
+          itemCount: orders.length,
+          separatorBuilder: (_, __) => SizedBox(height: 12.h),
+          itemBuilder: (context, index) =>
+              _orderCard(context, orders[index], status),
+        );
+      }),
+    );
+  }
+
+  // Scrollable (always) and filling the viewport, so an empty tab can still
+  // be pulled down to refresh.
   Widget _emptyState(String message) {
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.all(32.w),
-        child: utils.tvCustom(message, AppColors.greyColor4, 13),
+    return LayoutBuilder(
+      builder: (context, constraints) => ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.all(32.w),
+                child: utils.tvCustom(message, AppColors.greyColor4, 13),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -275,31 +304,34 @@ class OrderListScreen extends GetView<OrderListController> {
         (isTablet ? 32 : 16).w,
         0,
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _statusPill(
-              context,
-              "Assigned",
-              "assigned",
-              controller.assignedOrders.length,
-              accent,
-            ),
+      // TabBar is driven by controller.tabController, which is shared with
+      // the TabBarView below - so tapping a label and swiping the list stay
+      // in sync, and the indicator follows the swipe.
+      child: TabBar(
+        controller: controller.tabController,
+        dividerColor: Colors.transparent,
+        indicatorSize: TabBarIndicatorSize.tab,
+        labelPadding: EdgeInsets.symmetric(horizontal: 4.w),
+        indicator: UnderlineTabIndicator(
+          borderSide: BorderSide(color: accent, width: (isTablet ? 3 : 2.5).h),
+          borderRadius: BorderRadius.circular(2.r),
+        ),
+        tabs: [
+          _statusPill(
+            context,
+            "Assigned",
+            "assigned",
+            controller.assignedOrders.length,
+            accent,
           ),
-          SizedBox(width: 8.w),
-          Expanded(
-            child: _statusPill(
-              context,
-              "Available",
-              "available",
-              controller.availableOrders.length,
-              accent,
-            ),
+          _statusPill(
+            context,
+            "Available",
+            "available",
+            controller.availableOrders.length,
+            accent,
           ),
-          SizedBox(width: 8.w),
-          Expanded(
-            child: _statusPill(context, "Completed", "completed", null, accent),
-          ),
+          _statusPill(context, "Completed", "completed", null, accent),
         ],
       ),
     );
@@ -318,52 +350,32 @@ class OrderListScreen extends GetView<OrderListController> {
         ? AppColors.greyColor3
         : AppColors.greyColor4;
     final color = selected ? accent : inactiveColor;
-    return InkWell(
-      onTap: () => controller.switchStatus(value),
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: (isTablet ? 8 : 6).h),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(
-                  child: utils.tvCustom(
-                    label,
-                    color,
-                    isTablet ? 15 : 13,
-                    maxLines: 1,
-                  ),
-                ),
-                if (count != null) ...[
-                  SizedBox(width: 6.w),
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 6.w,
-                      vertical: 1.h,
-                    ),
-                    decoration: BoxDecoration(
-                      color: accent.withOpacity(Get.isDarkMode ? 0.22 : 0.14),
-                      borderRadius: BorderRadius.circular(8.r),
-                    ),
-                    child: utils.tvCustom(count.toString(), accent, 10.5),
-                  ),
-                ],
-              ],
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: (isTablet ? 14 : 11).h),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: utils.tvCustom(
+              label,
+              color,
+              isTablet ? 15 : 13,
+              maxLines: 1,
             ),
-            SizedBox(height: (isTablet ? 8 : 6).h),
+          ),
+          if (count != null) ...[
+            SizedBox(width: 6.w),
             Container(
-              height: (isTablet ? 3 : 2.5).h,
+              padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 1.h),
               decoration: BoxDecoration(
-                color: selected ? accent : Colors.transparent,
-                borderRadius: BorderRadius.circular(2.r),
+                color: accent.withOpacity(Get.isDarkMode ? 0.22 : 0.14),
+                borderRadius: BorderRadius.circular(8.r),
               ),
+              child: utils.tvCustom(count.toString(), accent, 10.5),
             ),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -578,10 +590,10 @@ class OrderListScreen extends GetView<OrderListController> {
   // ---------------------------------------------------------------------
   // Order card
   // ---------------------------------------------------------------------
-  Widget _orderCard(BuildContext context, OrdersData order) {
-    final available = controller.statusTab.value == "available";
-    final completed = controller.statusTab.value == "completed";
-    final atRisk = !completed && controller.isAtRisk(order);
+  Widget _orderCard(BuildContext context, OrdersData order, String status) {
+    final available = status == "available";
+    final completed = status == "completed";
+    final atRisk = controller.isAtRisk(order, status);
     return OrderCardWidget(
       order: order,
       available: available,
@@ -593,7 +605,9 @@ class OrderListScreen extends GetView<OrderListController> {
       onTap: () => Get.toNamed(
         Routes.orderDetailScreen,
         arguments: order,
-      )?.then((_) => controller.refreshCurrentTab()),
+      // Order status can change in detail (e.g. delivered), moving it to
+      // another tab - refresh all cached lists, not just this one.
+      )?.then((_) => controller.refreshAllTabs()),
       onAccept: available ? () => _confirmAccept(order) : null,
       onDecline: available ? () => _confirmDecline(order) : null,
       onDropback: (completed && order.status == UNDELIVERED)
@@ -636,8 +650,117 @@ class OrderListScreen extends GetView<OrderListController> {
   }
 
   // ---------------------------------------------------------------------
-  // Back to warehouse (dropback) sheet - undelivered orders in Completed tab
+  // Return (dropback) sheet - undelivered orders in Completed tab, returned
+  // either to the merchant (DROPBACK_ML) or the warehouse (DROPBACK_CLW)
   // ---------------------------------------------------------------------
+
+  // Section label with a red required "*". The star bypasses tvCustom so it
+  // stays red in dark mode, where tvCustom would force it white.
+  Widget _requiredLabel(String label) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        utils.tvCustom(label, AppColors.black, 13, textAlignment: TextAlign.left),
+        Text(
+          " *",
+          style: AppTextStyle.tsCustom(
+            AppColors.red,
+            utils.responsiveFontSize(13.sp),
+          ).copyWith(fontWeight: FontWeight.w700),
+        ),
+      ],
+    );
+  }
+
+  Widget _dropbackTargetOption({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    const accent = AppColors.primaryThemeColor;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12.r),
+      child: Container(
+        padding: EdgeInsets.all(10.w),
+        decoration: BoxDecoration(
+          color: selected
+              ? accent.withOpacity(Get.isDarkMode ? 0.16 : 0.06)
+              : (Get.isDarkMode
+                    ? Colors.white.withOpacity(0.06)
+                    : AppColors.greyColor1),
+          borderRadius: BorderRadius.circular(12.r),
+          border: Border.all(
+            color: selected ? accent : Colors.transparent,
+            width: 1.6,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 30.w,
+                  height: 30.w,
+                  decoration: BoxDecoration(
+                    color: accent.withOpacity(Get.isDarkMode ? 0.22 : 0.10),
+                    borderRadius: BorderRadius.circular(9.r),
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(icon, color: accent, size: 16.sp),
+                ),
+                const Spacer(),
+                Container(
+                  width: 16.w,
+                  height: 16.w,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: selected ? accent : Colors.transparent,
+                    border: Border.all(
+                      color: selected ? accent : AppColors.greyColor2,
+                      width: 2,
+                    ),
+                  ),
+                  alignment: Alignment.center,
+                  child: selected
+                      ? Container(
+                          width: 6.w,
+                          height: 6.w,
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                        )
+                      : null,
+                ),
+              ],
+            ),
+            SizedBox(height: 6.h),
+            utils.tvCustom(
+              title,
+              AppColors.black,
+              12,
+              textAlignment: TextAlign.left,
+            ),
+            if (subtitle.isNotEmpty) ...[
+              SizedBox(height: 2.h),
+              utils.tvCustom(
+                subtitle,
+                AppColors.greyColor5,
+                10,
+                textAlignment: TextAlign.left,
+                maxLines: 1,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 
   void _openDropbackSheet(BuildContext context, OrdersData order) {
     controller.resetDropbackState();
@@ -664,7 +787,7 @@ class OrderListScreen extends GetView<OrderListController> {
               ),
             ),
             utils.tvCustom(
-              "Return to warehouse",
+              "Return order",
               AppColors.black,
               16,
               textAlignment: TextAlign.left,
@@ -677,70 +800,161 @@ class OrderListScreen extends GetView<OrderListController> {
               textAlignment: TextAlign.left,
             ),
             SizedBox(height: 14.h),
-            utils.tvCustom(
-              "Warehouse proof photo (required)",
-              AppColors.black,
-              13,
-              textAlignment: TextAlign.left,
-            ),
+            _requiredLabel("Return to"),
             SizedBox(height: 8.h),
             GetBuilder<OrderListController>(
-              builder: (_) => SizedBox(
-                width: 96.w,
-                child: _dropbackTile(
-                  icon: Icons.camera_alt_outlined,
-                  label: "Attempt photo",
-                  captured: controller.dropbackPhoto != null,
-                  onTap: controller.captureDropbackPhoto,
-                ),
+              builder: (_) => Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: _dropbackTargetOption(
+                      icon: Icons.storefront_outlined,
+                      title: "Merchant",
+                      subtitle: [
+                        order.merchantName,
+                        order.pickupLocationName ?? order.pickupAddress,
+                      ].where((s) => (s ?? "").isNotEmpty).join(" · "),
+                      selected: controller.isDropbackToMerchant,
+                      onTap: () => controller.selectDropbackTarget("merchant"),
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: _dropbackTargetOption(
+                      icon: Icons.warehouse_outlined,
+                      title: "Warehouse",
+                      subtitle: "Drop at the hub",
+                      selected: !controller.isDropbackToMerchant,
+                      onTap: () =>
+                          controller.selectDropbackTarget("warehouse"),
+                    ),
+                  ),
+                ],
               ),
             ),
             SizedBox(height: 14.h),
-            utils.tvCustom(
-              "Signature (optional)",
-              AppColors.black,
-              13,
-              textAlignment: TextAlign.left,
-            ),
-            SizedBox(height: 8.h),
             GetBuilder<OrderListController>(
-              builder: (_) => SizedBox(
-                width: 96.w,
-                child: _dropbackTile(
-                  icon: Icons.edit_outlined,
-                  label: "Signature",
-                  captured: controller.dropbackSignatureFile != null,
-                  onTap: () => _openDropbackSignatureSheet(context),
-                ),
+              builder: (_) => Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _requiredLabel("Proof photo"),
+                      SizedBox(height: 8.h),
+                      SizedBox(
+                        width: 120.w,
+                        child: _dropbackTile(
+                          icon: Icons.camera_alt_outlined,
+                          label: controller.isDropbackToMerchant
+                              ? "Merchant photo"
+                              : "Warehouse photo",
+                          captured: controller.dropbackPhoto != null,
+                          onTap: controller.captureDropbackPhoto,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(width: 14.w),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      utils.tvCustom(
+                        "Signature (optional)",
+                        AppColors.black,
+                        13,
+                        textAlignment: TextAlign.left,
+                      ),
+                      SizedBox(height: 8.h),
+                      SizedBox(
+                        width: 120.w,
+                        child: _dropbackTile(
+                          icon: Icons.edit_outlined,
+                          label: "Signature",
+                          captured: controller.dropbackSignatureFile != null,
+                          onTap: () => _openDropbackSignatureSheet(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
             SizedBox(height: 16.h),
             GetBuilder<OrderListController>(
-              builder: (_) => SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: controller.dropbackPhoto == null
-                      ? null
-                      : () async {
-                          Get.back();
-                          await controller.confirmDropback(order);
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryThemeColor,
-                    disabledBackgroundColor: AppColors.primaryThemeColor
-                        .withOpacity(0.4),
-                    padding: EdgeInsets.symmetric(vertical: 14.h),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(28.r),
+              builder: (_) {
+                final missingPhoto = controller.dropbackPhoto == null;
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Says what's still needed while the button is disabled;
+                    // the signature is optional, so it's never mentioned.
+                    if (missingPhoto) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 10.w,
+                          vertical: 8.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.red.withOpacity(
+                            Get.isDarkMode ? 0.16 : 0.06,
+                          ),
+                          borderRadius: BorderRadius.circular(10.r),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              color: AppColors.red,
+                              size: 14.sp,
+                            ),
+                            SizedBox(width: 8.w),
+                            Expanded(
+                              child: utils.tvCustom(
+                                "Add a ${controller.isDropbackToMerchant ? "merchant" : "warehouse"} proof photo to continue",
+                                AppColors.red,
+                                10.5,
+                                textAlignment: TextAlign.left,
+                                maxLines: 2,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 10.h),
+                    ],
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: missingPhoto
+                            ? null
+                            : () async {
+                                Get.back();
+                                await controller.confirmDropback(order);
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryThemeColor,
+                          disabledBackgroundColor: AppColors.primaryThemeColor
+                              .withOpacity(0.4),
+                          padding: EdgeInsets.symmetric(vertical: 14.h),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(28.r),
+                          ),
+                        ),
+                        child: utils.tvCustom(
+                          controller.isDropbackToMerchant
+                              ? "Return to merchant"
+                              : "Drop at warehouse",
+                          Colors.white,
+                          14.5,
+                        ),
+                      ),
                     ),
-                  ),
-                  child: utils.tvCustom(
-                    "Drop at warehouse",
-                    Colors.white,
-                    14.5,
-                  ),
-                ),
-              ),
+                  ],
+                );
+              },
             ),
           ],
         ),
