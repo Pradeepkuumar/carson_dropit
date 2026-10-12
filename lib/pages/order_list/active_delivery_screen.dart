@@ -314,60 +314,52 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
                     if (controller.isLoadingOrder) {
                       return const Center(child: CircularProgressIndicator());
                     }
+                    if (controller.isLoadingNextOrder) {
+                      return _loadingNextOrderState();
+                    }
                     if (controller.noOrdersAvailable) {
                       return _noActiveOrderState();
                     }
-                    return SingleChildScrollView(
-                      padding: EdgeInsets.all((isTablet ? 32 : 16).w),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if ((controller.order.serviceType ?? "").isNotEmpty ||
-                              controller.order.isPriorityOrder) ...[
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
+                    return Column(
+                      children: [
+                        Expanded(
+                          child: SingleChildScrollView(
+                            padding: EdgeInsets.all((isTablet ? 32 : 16).w),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                if ((controller.order.serviceType ?? "")
-                                    .isNotEmpty)
-                                  _typeBadge(controller.order.serviceType!),
-                                if ((controller.order.serviceType ?? "")
-                                        .isNotEmpty &&
-                                    controller.order.isPriorityOrder)
-                                  SizedBox(width: 8.w),
-                                if (controller.order.isPriorityOrder)
-                                  _priorityTag(),
+                                _progressCard(context, cardBg),
+                                SizedBox(height: 12.h),
+                                if (controller.pickupSuggestions.length >
+                                    1) ...[
+                                  _pickupSuggestionsCard(cardBg),
+                                  SizedBox(height: 14.h),
+                                ],
+                                if (controller.isTerminal) ...[
+                                  _terminalCard(cardBg),
+                                  SizedBox(height: 14.h),
+                                ] else ...[
+                                  _nextStopCard(context, cardBg),
+                                  SizedBox(height: 14.h),
+                                ],
+                                if (_hasPackageInfo) ...[
+                                  _packageCard(cardBg),
+                                  SizedBox(height: 14.h),
+                                ],
+                                if (controller.currentStep == 4) ...[
+                                  _evidenceCard(context, cardBg),
+                                  SizedBox(height: 14.h),
+                                ],
+                                _paymentStrip(),
+
+
                               ],
                             ),
-                            SizedBox(height: 12.h),
-                          ],
-                          if (!controller.isDelivered) ...[
-                            controller.isCod ? _codBanner() : _ppdBanner(),
-                            SizedBox(height: 12.h),
-                          ],
-                          if (controller.pickupSuggestions.length > 1) ...[
-                            _pickupSuggestionsCard(cardBg),
-                            SizedBox(height: 14.h),
-                          ],
-                          if (controller.isTerminal) ...[
-                            _terminalCard(cardBg),
-                            SizedBox(height: 14.h),
-                          ] else ...[
-                            _nextStopCard(context, cardBg),
-                            SizedBox(height: 14.h),
-                          ],
-                          if (controller.currentStep == 4) ...[
-                            _evidenceCard(context, cardBg),
-                            SizedBox(height: 14.h),
-                          ],
-                          _progressCard(context, cardBg),
-                          SizedBox(height: 14.h),
-                          controller.isCod
-                              ? _codStatusCard(cardBg)
-                              : _ppdStatusCard(cardBg),
-                          SizedBox(height: 14.h),
-                          _infoBanner(),
-                        ],
-                      ),
+                          ),
+                        ),
+                        if (!controller.isTerminal)
+                          _primaryActionBar(isTablet, cardBg),
+                      ],
                     );
                   },
                 ),
@@ -385,22 +377,83 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
   // and the rider turns out to have nothing assigned by the time the fetch
   // that picks the first one comes back.
   // ---------------------------------------------------------------------
+  // Also shown after the rider finishes their last order ("All done").
   Widget _noActiveOrderState() {
+    final allDone = controller.finishedAllOrders;
     return Center(
       child: Padding(
         padding: EdgeInsets.all(32.w),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.two_wheeler, color: AppColors.greyColor4, size: 40.sp),
-            SizedBox(height: 12.h),
+            Container(
+              width: 64.w,
+              height: 64.w,
+              decoration: BoxDecoration(
+                color: (allDone ? AppColors.greenLight : AppColors.greyColor4)
+                    .withOpacity(Get.isDarkMode ? 0.22 : 0.12),
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: Icon(
+                allDone ? Icons.check_rounded : Icons.two_wheeler,
+                color: allDone ? AppColors.greenLight : AppColors.greyColor4,
+                size: 30.sp,
+              ),
+            ),
+            SizedBox(height: 14.h),
             utils.tvCustom(
-              "No active orders right now",
+              allDone ? "All done for now" : "No active orders right now",
+              AppColors.black,
+              15,
+            ),
+            SizedBox(height: 4.h),
+            utils.tvCustom(
+              "New assignments will show up here.",
               AppColors.greyColor4,
-              14,
+              12,
+              maxLines: 2,
+            ),
+            SizedBox(height: 16.h),
+            OutlinedButton.icon(
+              onPressed: controller.refreshAssignedOrders,
+              style: OutlinedButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 9.h),
+                side: const BorderSide(color: AppColors.primaryThemeColor),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20.r),
+                ),
+              ),
+              icon: Icon(
+                Icons.refresh,
+                color: AppColors.primaryThemeColor,
+                size: 16.sp,
+              ),
+              label: utils.tvCustom(
+                "Refresh",
+                AppColors.primaryThemeColor,
+                12.5,
+              ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // Shown while the assigned-orders list is re-fetched after a finished
+  // order's result dialog.
+  Widget _loadingNextOrderState() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const CircularProgressIndicator(
+            color: AppColors.primaryThemeColor,
+          ),
+          SizedBox(height: 14.h),
+          utils.tvCustom("Loading next order…", AppColors.black, 13),
+        ],
       ),
     );
   }
@@ -422,29 +475,44 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
       ),
       color: AppColors.backgroundColorMain,
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
         children: [
+          // Bypasses tvCustom: muted white-on-navy label in both themes,
+          // which tvCustom's fixed w600 white can't give.
+          Text(
+            "Active order : ",
+            style: AppTextStyle.tsCustom(
+              AppColors.whiteFade,
+              utils.responsiveFontSize(13.sp),
+            ).copyWith(fontWeight: FontWeight.w500),
+          ),
           Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                utils.tvCustom(
-                  "Active :- ",
-                  Colors.white,
-                  isTablet ? 16 : 14,
-                  textAlignment: TextAlign.left,
-                ),
-
-                utils.tvCustom(
-                  order.awbNo ?? order.orderRefNumber ?? "-",
-                  Colors.white,
-                  isTablet ? 15 : 14,
-                  textAlignment: TextAlign.left,
-                ),
-              ],
+            child: utils.tvCustom(
+              order.awbNo ?? order.orderRefNumber ?? "-",
+              Colors.white,
+              16,
+              textAlignment: TextAlign.left,
+              maxLines: 1,
             ),
           ),
         ],
       ),
+    );
+  }
+
+  // Service type + priority tags - shown at the right end of the "Delivery
+  // progress" title row; renders nothing when neither applies.
+  Widget _orderTags() {
+    final order = controller.order;
+    final hasType = (order.serviceType ?? "").isNotEmpty;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (hasType) _typeBadge(order.serviceType!),
+        if (hasType && order.isPriorityOrder) SizedBox(width: 8.w),
+        if (order.isPriorityOrder) _priorityTag(),
+      ],
     );
   }
 
@@ -610,57 +678,82 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
   }
 
   // ---------------------------------------------------------------------
-  // COD warning banner
+  // Payment strip - amount to collect (COD / split) or prepaid, plus its
+  // collection status. Replaces the old top banner + bottom status card.
   // ---------------------------------------------------------------------
-  Widget _codBanner() {
+  Widget _paymentStrip() {
+    final isCod = controller.isCod;
+    final color = isCod ? _amberOFD : AppColors.greenLight;
+    final String label;
+    final String value;
+    final String status;
+    if (isCod) {
+      label = controller.isSplitPayment
+          ? "Split · COD · collect from customer"
+          : "COD · collect from customer";
+      value = "QAR ${controller.codAmountToCollect}";
+      status = controller.isDelivered
+          ? "Collected"
+          : (controller.isFailed ? "Not collected" : "Pending");
+    } else {
+      label = "Prepaid";
+      value = "Paid online";
+      status = "Paid";
+    }
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
       decoration: BoxDecoration(
-        color: _amberOFD.withOpacity(Get.isDarkMode ? 0.16 : 0.10),
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: _amberOFD.withOpacity(0.35)),
+        color: color.withOpacity(Get.isDarkMode ? 0.16 : 0.10),
+        borderRadius: BorderRadius.circular(14.r),
+        border: Border.all(color: color.withOpacity(0.35)),
       ),
       child: Row(
         children: [
-          Icon(Icons.warning_amber_rounded, color: _amberOFD, size: 20.sp),
-          SizedBox(width: 10.w),
-          Expanded(
-            child: utils.tvCustom(
-              "COD · Collect QAR ${controller.order.orderAmount ?? '0'} from customer",
-              _amberOFD,
-              10,
-              textAlignment: TextAlign.left,
+          Container(
+            width: 36.w,
+            height: 36.w,
+            decoration: BoxDecoration(
+              color: color.withOpacity(Get.isDarkMode ? 0.24 : 0.14),
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: Icon(
+              isCod ? Icons.payments_outlined : Icons.check_circle_outline,
+              color: color,
+              size: 18.sp,
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------------------
-  // PPD (prepaid) info banner - parity with _codBanner for non-COD orders
-  // ---------------------------------------------------------------------
-  Widget _ppdBanner() {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
-      decoration: BoxDecoration(
-        color: Get.isDarkMode
-            ? AppColors.blue.withOpacity(0.16)
-            : AppColors.headerColor,
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: AppColors.blue.withOpacity(0.35)),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.info_outline, color: AppColors.blue, size: 20.sp),
-          SizedBox(width: 10.w),
+          SizedBox(width: 12.w),
           Expanded(
-            child: utils.tvCustom(
-              "Prepaid · Paid online, no collection needed",
-              AppColors.blue,
-              10,
-              textAlignment: TextAlign.left,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                utils.tvCustom(
+                  label,
+                  color,
+                  10,
+                  textAlignment: TextAlign.left,
+                  maxLines: 1,
+                ),
+                SizedBox(height: 2.h),
+                utils.tvCustom(
+                  value,
+                  color,
+                  16,
+                  textAlignment: TextAlign.left,
+                  maxLines: 1,
+                ),
+              ],
             ),
+          ),
+          SizedBox(width: 8.w),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 4.h),
+            decoration: BoxDecoration(
+              color: color.withOpacity(Get.isDarkMode ? 0.3 : 0.16),
+              borderRadius: BorderRadius.circular(20.r),
+            ),
+            child: utils.tvCustom(status, color, 10),
           ),
         ],
       ),
@@ -816,17 +909,36 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          utils.tvCustom(
-            "Next stop",
-            AppColors.greyColor4,
-            11.5,
-            textAlignment: TextAlign.left,
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                decoration: BoxDecoration(
+                  color: AppColors.blueLight.withOpacity(
+                    Get.isDarkMode ? 0.3 : 0.14,
+                  ),
+                  borderRadius: BorderRadius.circular(6.r),
+                ),
+                child: utils.tvCustom(
+                  controller.isPickupPhase ? "PICKUP" : "DROP-OFF",
+                  AppColors.blueLight,
+                  9.5,
+                ),
+              ),
+              SizedBox(width: 8.w),
+              utils.tvCustom(
+                "Next stop",
+                AppColors.greyColor4,
+                10.5,
+                textAlignment: TextAlign.left,
+              ),
+            ],
           ),
-          SizedBox(height: 4.h),
+          SizedBox(height: 8.h),
           utils.tvCustom(
             controller.nextStopName,
             AppColors.black,
-            12,
+            13,
             textAlignment: TextAlign.left,
             maxLines: 1,
           ),
@@ -834,89 +946,359 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
           utils.tvCustom(
             controller.nextStopAddress,
             AppColors.greyColor5,
-            10,
+            10.5,
             textAlignment: TextAlign.left,
             maxLines: 2,
           ),
-          SizedBox(height: 10.h),
-          Row(
-            children: [
-              Icon(
-                Icons.location_on_outlined,
-                color: AppColors.greyColor5,
-                size: 13.sp,
-              ),
-              SizedBox(width: 5.w),
-              utils.tvCustom(
-                controller.nextStopDistance,
-                AppColors.greyColor5,
-                12,
-                textAlignment: TextAlign.left,
-              ),
-              SizedBox(width: 16.w),
-              Icon(Icons.access_time, color: AppColors.greyColor4, size: 13.sp),
-              SizedBox(width: 5.w),
-              utils.tvCustom(
-                "ETA ",
-                AppColors.greyColor5,
-                12,
-                textAlignment: TextAlign.left,
-              ),
-              utils.tvCustom(
-                controller.nextStopEta,
-                AppColors.primaryThemeColor,
-                12,
-                textAlignment: TextAlign.left,
-              ),
-            ],
-          ),
-          SizedBox(height: 14.h),
+          SizedBox(height: 12.h),
           ClipRRect(
             borderRadius: BorderRadius.circular(12.r),
             child: SizedBox(
               width: double.infinity,
               height: context.isPhone ? 160.h : 220.h,
-              child: dest == null
-                  ? Container(
-                      color: Get.isDarkMode
-                          ? AppColors.backgroundColorLight
-                          : AppColors.greyColor1,
-                      alignment: Alignment.center,
-                      child: Icon(
-                        Icons.map_outlined,
-                        color: AppColors.greyColor4,
-                        size: 22.sp,
-                      ),
-                    )
-                  : GoogleMapsMapView(
-                      onViewCreated: controller.onMapViewCreated,
-                      initialMapToolbarEnabled: false,
-                      initialZoomControlsEnabled: true,
-                      initialZoomGesturesEnabled: true,
-                      gestureRecognizers: {
-                        Factory<EagerGestureRecognizer>(
-                          () => EagerGestureRecognizer(),
-                        ),
-                      },
-                    ),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: dest == null
+                        ? Container(
+                            color: Get.isDarkMode
+                                ? AppColors.backgroundColorLight
+                                : AppColors.greyColor1,
+                            alignment: Alignment.center,
+                            child: Icon(
+                              Icons.map_outlined,
+                              color: AppColors.greyColor4,
+                              size: 22.sp,
+                            ),
+                          )
+                        : GoogleMapsMapView(
+                            onViewCreated: controller.onMapViewCreated,
+                            initialMapToolbarEnabled: false,
+                            initialZoomControlsEnabled: true,
+                            initialZoomGesturesEnabled: true,
+                            gestureRecognizers: {
+                              Factory<EagerGestureRecognizer>(
+                                () => EagerGestureRecognizer(),
+                              ),
+                            },
+                          ),
+                  ),
+                  // Top-left, clear of the map's bottom-right zoom controls.
+                  Positioned(
+                    top: 8.h,
+                    left: 8.w,
+                    child: _distanceChip(controller.nextStopDistance),
+                  ),
+                ],
+              ),
             ),
           ),
           SizedBox(height: 10.h),
+          if (controller.hasOngoingCall) ...[
+            _ongoingCallCard(),
+            SizedBox(height: 10.h),
+          ],
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: dest == null ? null : controller.openNavigation,
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(vertical: 12.h),
+                    backgroundColor: AppColors.blueLight,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                  ),
+                  icon: Icon(
+                    Icons.navigation,
+                    color: Colors.white,
+                    size: 16.sp,
+                  ),
+                  label: utils.tvCustom("Navigate", Colors.white, 12.5),
+                ),
+              ),
+              SizedBox(width: 8.w),
+              Expanded(child: _callButton()),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _distanceChip(String distance) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+      decoration: BoxDecoration(
+        color: Get.isDarkMode ? AppColors.greyColor10 : Colors.white,
+        borderRadius: BorderRadius.circular(20.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.location_on,
+            color: AppColors.primaryThemeColor,
+            size: 13.sp,
+          ),
+          SizedBox(width: 4.w),
+          utils.tvCustom(distance, AppColors.black, 11),
+        ],
+      ),
+    );
+  }
+
+  // Call merchant (pickup phase) / customer (delivery phase). Disabled while
+  // a call is already being tracked - the ongoing-call card in the progress
+  // card takes over until it's ended and logged.
+  Widget _callButton() {
+    final callDisabled = controller.hasOngoingCall;
+    final color = callDisabled
+        ? AppColors.greyColor4
+        : AppColors.primaryThemeColor;
+    return OutlinedButton.icon(
+      onPressed: callDisabled ? null : _startCall,
+      style: OutlinedButton.styleFrom(
+        padding: EdgeInsets.symmetric(vertical: 12.h),
+        side: BorderSide(
+          color: callDisabled
+              ? AppColors.greyColor2
+              : AppColors.primaryThemeColor,
+          width: 1.4,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12.r),
+        ),
+      ),
+      icon: Icon(Icons.call_outlined, color: color, size: 16.sp),
+      label: utils.tvCustom(
+        callDisabled
+            ? "In call"
+            : (controller.isPickupPhase ? "Call merchant" : "Call customer"),
+        color,
+        12.5,
+        maxLines: 1,
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------
+  // Package card - what the rider is carrying. Hidden when the order has
+  // no item details at all.
+  // ---------------------------------------------------------------------
+  bool get _hasPackageInfo {
+    final o = controller.order;
+    return (o.itemName ?? "").isNotEmpty ||
+        (o.itemDescription ?? "").isNotEmpty ||
+        (o.weight ?? "").isNotEmpty ||
+        (o.quantity ?? 0) > 0 ||
+        (o.remarks ?? "").isNotEmpty;
+  }
+
+  Widget _packageCard(Color cardBg) {
+    final o = controller.order;
+    final quantity = o.quantity ?? 0;
+    final facts = <String>[
+      if (quantity > 0) "$quantity item${quantity > 1 ? 's' : ''}",
+      if ((o.weight ?? "").isNotEmpty) "${o.weight} kg",
+    ];
+    final description = o.itemDescription ?? "";
+    final remarks = o.remarks ?? "";
+    final factBg = Get.isDarkMode
+        ? Colors.white.withOpacity(0.08)
+        : AppColors.greyColor1;
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(14.w),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16.r),
+        boxShadow: Get.isDarkMode
+            ? []
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42.w,
+                height: 42.w,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryThemeColor.withOpacity(
+                    Get.isDarkMode ? 0.22 : 0.10,
+                  ),
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+                alignment: Alignment.center,
+                child: Icon(
+                  Icons.inventory_2_outlined,
+                  color: AppColors.primaryThemeColor,
+                  size: 20.sp,
+                ),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    utils.tvCustom(
+                      "Package",
+                      AppColors.greyColor4,
+                      10.5,
+                      textAlignment: TextAlign.left,
+                    ),
+                    SizedBox(height: 2.h),
+                    utils.tvCustom(
+                      (o.itemName ?? "").isNotEmpty ? o.itemName! : "-",
+                      AppColors.black,
+                      13,
+                      textAlignment: TextAlign.left,
+                      maxLines: 2,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (facts.isNotEmpty) ...[
+            SizedBox(height: 10.h),
+            Wrap(
+              spacing: 6.w,
+              runSpacing: 6.h,
+              children: [
+                for (final fact in facts)
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 9.w,
+                      vertical: 5.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: factBg,
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                    child: utils.tvCustom(fact, AppColors.black, 10.5),
+                  ),
+              ],
+            ),
+          ],
+          if (description.isNotEmpty) ...[
+            SizedBox(height: 10.h),
+            utils.tvCustom(
+              description,
+              AppColors.greyColor5,
+              10.5,
+              textAlignment: TextAlign.left,
+              maxLines: 4,
+            ),
+          ],
+          if (remarks.isNotEmpty) ...[
+            SizedBox(height: 10.h),
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+              decoration: BoxDecoration(
+                color: Get.isDarkMode
+                    ? AppColors.blue.withOpacity(0.3)
+                    : AppColors.headerColor,
+                borderRadius: BorderRadius.circular(10.r),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: Get.isDarkMode ? AppColors.white : AppColors.blue,
+                    size: 14.sp,
+                  ),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: utils.tvCustom(
+                      remarks,
+                      AppColors.blue,
+                      10.5,
+                      textAlignment: TextAlign.left,
+                      maxLines: 4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------
+  // Pinned primary action - stays above the bottom nav so the next step is
+  // always reachable without scrolling.
+  // ---------------------------------------------------------------------
+  Widget _primaryActionBar(bool isTablet, Color cardBg) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(
+        (isTablet ? 32 : 20).w, 5.h,
+        (isTablet ? 32 : 20).w,
+        5.h,
+      ),
+      decoration: BoxDecoration(
+        color: cardBg,
+        border: Border(
+          top: BorderSide(
+            color: Get.isDarkMode
+                ? Colors.white.withOpacity(0.12)
+                : AppColors.greyColor2.withOpacity(0.5),
+          ),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: dest == null ? null : controller.openNavigation,
+              onPressed: _onPrimaryActionPressed,
               style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(vertical: 12.h),
-                backgroundColor: AppColors.blueLight,
+                backgroundColor: AppColors.primaryThemeColor,
+                padding: EdgeInsets.symmetric(vertical: 14.h),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.r),
+                  borderRadius: BorderRadius.circular(28.r),
                 ),
               ),
-              icon: Icon(Icons.navigation, color: Colors.white, size: 16.sp),
-              label: utils.tvCustom("Navigate", Colors.white, 13.5),
+              icon: Icon(
+                controller.primaryActionIcon,
+                color: Colors.white,
+                size: 18.sp,
+              ),
+              label: utils.tvCustom(
+                controller.primaryActionLabel.toUpperCase(),
+                Colors.white,
+                12,
+              ),
             ),
           ),
+          // SizedBox(height: 6.h),
+          // utils.tvCustom(
+          //   "Status updates reach the merchant in real time",
+          //   AppColors.greyColor4,
+          //   9.5,
+          // ),
         ],
       ),
     );
@@ -927,8 +1309,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
   // ---------------------------------------------------------------------
   Widget _progressCard(BuildContext context, Color cardBg) {
     final step = controller.currentStep;
-    final failed = controller.isUndelivered;
-    final callDisabled = controller.hasOngoingCall;
+    final failed = controller.isFailed;
 
     return Container(
       padding: EdgeInsets.all(14.w),
@@ -948,11 +1329,19 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          utils.tvCustom(
-            "Delivery progress",
-            AppColors.black,
-            14,
-            textAlignment: TextAlign.left,
+          Row(
+            children: [
+              Expanded(
+                child: utils.tvCustom(
+                  "Delivery progress",
+                  AppColors.black,
+                  14,
+                  textAlignment: TextAlign.left,
+                  maxLines: 1,
+                ),
+              ),
+              _orderTags(),
+            ],
           ),
           SizedBox(height: 6.h),
           _stepTracker(step: step, failed: failed),
@@ -963,93 +1352,35 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
               _bufferTimerCard(),
               SizedBox(height: 10.h),
             ],
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _onPrimaryActionPressed,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryThemeColor,
-                  padding: EdgeInsets.symmetric(vertical: 14.h),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28.r),
-                  ),
-                ),
-                icon: Icon(
-                  controller.primaryActionIcon,
-                  color: Colors.white,
-                  size: 18.sp,
-                ),
-                label: utils.tvCustom(
-                  controller.primaryActionLabel.toUpperCase(),
-                  Colors.white,
-                  12,
-                ),
-              ),
-            ),
-            SizedBox(height: 10.h),
-            if (controller.hasOngoingCall) ...[
-              _ongoingCallCard(),
-              SizedBox(height: 14.h),
-            ],
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: callDisabled ? null : _startCall,
-                style: OutlinedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(vertical: 13.h),
-                  side: BorderSide(
-                    color: callDisabled
-                        ? AppColors.greyColor2
-                        : AppColors.primaryThemeColor,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28.r),
-                  ),
-                ),
-                icon: Icon(
-                  Icons.call_outlined,
-                  color: callDisabled
-                      ? AppColors.greyColor4
-                      : AppColors.primaryThemeColor,
-                  size: 16.sp,
-                ),
-                label: utils.tvCustom(
-                  callDisabled
-                      ? "Call in progress"
-                      : (controller.isPickupPhase
-                                ? "Call merchant"
-                                : "Call customer")
-                            .toUpperCase(),
-                  callDisabled
-                      ? AppColors.greyColor4
-                      : AppColors.primaryThemeColor,
-                  12,
-                ),
-              ),
-            ),
+
             if (controller.currentStep == 4 || controller.currentStep == 2) ...[
-              SizedBox(height: 12.h),
-              InkWell(
-                onTap: () => _openUndeliveredSheet(context),
-                borderRadius: BorderRadius.circular(8.r),
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 4.h, horizontal: 2.w),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.warning_amber_rounded,
-                        color: AppColors.red,
-                        size: 15.sp,
-                      ),
-                      SizedBox(width: 8.w),
-                      utils.tvCustom(
-                        "Report a delivery issue",
-                        AppColors.red,
-                        13,
-                        textAlignment: TextAlign.left,
-                      ),
-                    ],
+              SizedBox(height: 4.h),
+              // Outlined red with a light red fill - clearly a button, but
+              // quieter than the pinned primary action so it's hard to hit
+              // by mistake.
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _openUndeliveredSheet(context),
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: AppColors.red.withOpacity(
+                      Get.isDarkMode ? 0.16 : 0.06,
+                    ),
+                    padding: EdgeInsets.symmetric(vertical: 12.h),
+                    side: const BorderSide(color: AppColors.red, width: 1.4),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                  ),
+                  icon: Icon(
+                    Icons.warning_amber_rounded,
+                    color: AppColors.red,
+                    size: 16.sp,
+                  ),
+                  label: utils.tvCustom(
+                    "Report a delivery issue",
+                    AppColors.red,
+                    12.5,
                   ),
                 ),
               ),
@@ -1180,7 +1511,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
             ),
             SizedBox(height: 8.h),
             utils.tvCustom(
-              "Collect QAR ${controller.order.orderAmount ?? '0'} from the customer before completing this delivery.",
+              "Collect QAR ${controller.codAmountToCollect} from the customer before completing this delivery.",
               AppColors.greyColor5,
               13,
               textAlignment: TextAlign.left,
@@ -1217,7 +1548,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
                   Get.back();
                   utils.errorSnackBar(
                     "Payment required",
-                    "Collect QAR ${controller.order.orderAmount ?? '0'} from the customer before confirming delivery.",
+                    "Collect QAR ${controller.codAmountToCollect} from the customer before confirming delivery.",
                   );
                 },
                 style: OutlinedButton.styleFrom(
@@ -1272,7 +1603,10 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
                 ),
               ),
               utils.tvCustom(
-                "Why couldn't you deliver this order?",
+                // Step 2 = arrived at pickup: this sheet marks NOT_PICKED.
+                controller.currentStep == 2
+                    ? "Why couldn't you pick up this order?"
+                    : "Why couldn't you deliver this order?",
                 AppColors.black,
                 14,
                 textAlignment: TextAlign.left,
@@ -1320,34 +1654,89 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
               ),
               SizedBox(height: 14.h),
               GetBuilder<ActiveDeliveryController>(
-                builder: (_) => Obx(
-                  () => SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed:
-                          controller.selectedReasonId.value == null ||
-                              controller.undeliveredPhoto == null
-                          ? null
-                          : () async {
-                              Get.back();
-                              await controller.confirmUndelivered();
-                            },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.red,
-                        disabledBackgroundColor: AppColors.red.withOpacity(0.4),
-                        padding: EdgeInsets.symmetric(vertical: 14.h),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(28.r),
+                builder: (_) => Obx(() {
+                  final missingReason =
+                      controller.selectedReasonId.value == null;
+                  final missingPhoto = controller.undeliveredPhoto == null;
+                  // Names exactly what's still needed while the confirm
+                  // button is disabled; hidden once both are in.
+                  final hint = missingReason && missingPhoto
+                      ? "Select a reason and add an attempt photo to continue"
+                      : missingReason
+                      ? "Select a reason to continue"
+                      : missingPhoto
+                      ? "Add an attempt photo to continue"
+                      : null;
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (hint != null) ...[
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 10.w,
+                            vertical: 8.h,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.red.withOpacity(
+                              Get.isDarkMode ? 0.16 : 0.06,
+                            ),
+                            borderRadius: BorderRadius.circular(10.r),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.info_outline,
+                                color: AppColors.red,
+                                size: 14.sp,
+                              ),
+                              SizedBox(width: 8.w),
+                              Expanded(
+                                child: utils.tvCustom(
+                                  hint,
+                                  AppColors.red,
+                                  10.5,
+                                  textAlignment: TextAlign.left,
+                                  maxLines: 2,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: 10.h),
+                      ],
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: hint != null
+                              ? null
+                              : () async {
+                                  Get.back();
+                                  await controller.confirmUndelivered();
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.red,
+                            disabledBackgroundColor: AppColors.red.withOpacity(
+                              0.4,
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 14.h),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(28.r),
+                            ),
+                          ),
+                          child: utils.tvCustom(
+                            controller.currentStep == 2
+                                ? "Confirm - Mark as not picked"
+                                : "Confirm - Mark as undelivered",
+                            Colors.white,
+                            14.5,
+                          ),
                         ),
                       ),
-                      child: utils.tvCustom(
-                        "Confirm - Mark as undelivered",
-                        Colors.white,
-                        14.5,
-                      ),
-                    ),
-                  ),
-                ),
+                    ],
+                  );
+                }),
               ),
             ],
           ),
@@ -1420,10 +1809,10 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
     final count = _stepLabels.length;
     final states = List.generate(count, (i) {
       if (i < step - 1) return _StepState.done;
+      // A failed order stops at its current step - "Delivered" for
+      // undelivered, "Collected" for not picked.
       if (i == step - 1) {
-        return failed && i == count - 1
-            ? _StepState.failed
-            : _StepState.current;
+        return failed ? _StepState.failed : _StepState.current;
       }
       return _StepState.pending;
     });
@@ -1738,156 +2127,6 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
   }
 
   // ---------------------------------------------------------------------
-  // COD collection status
-  // ---------------------------------------------------------------------
-  Widget _codStatusCard(Color cardBg) {
-    final collected = controller.isDelivered;
-    final statusColor = collected
-        ? AppColors.greenLight
-        : AppColors.primaryThemeColor;
-    return Container(
-      padding: EdgeInsets.all(14.w),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(16.r),
-        boxShadow: Get.isDarkMode
-            ? []
-            : [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                utils.tvCustom(
-                  "COD collection status",
-                  AppColors.greyColor4,
-                  10.5,
-                  textAlignment: TextAlign.left,
-                ),
-                SizedBox(height: 4.h),
-                utils.tvCustom(
-                  collected ? "Collected" : "Pending",
-                  statusColor,
-                  14,
-                  textAlignment: TextAlign.left,
-                ),
-              ],
-            ),
-          ),
-          Container(
-            constraints: BoxConstraints(maxWidth: 170.w),
-            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
-            decoration: BoxDecoration(
-              color: _amberOFD.withOpacity(Get.isDarkMode ? 0.16 : 0.10),
-              borderRadius: BorderRadius.circular(12.r),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.payments_outlined, color: _amberOFD, size: 18.sp),
-                SizedBox(width: 8.w),
-                Flexible(
-                  child: utils.tvCustom(
-                    "Collect QAR ${controller.order.orderAmount ?? '0'} from customer",
-                    _amberOFD,
-                    10,
-                    textAlignment: TextAlign.left,
-                    maxLines: 2,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------------------
-  // PPD (prepaid) payment status - parity with _codStatusCard
-  // ---------------------------------------------------------------------
-  Widget _ppdStatusCard(Color cardBg) {
-    return Container(
-      padding: EdgeInsets.all(14.w),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(16.r),
-        boxShadow: Get.isDarkMode
-            ? []
-            : [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                utils.tvCustom(
-                  "Payment status",
-                  AppColors.greyColor4,
-                  11.5,
-                  textAlignment: TextAlign.left,
-                ),
-                SizedBox(height: 4.h),
-                utils.tvCustom(
-                  "Prepaid",
-                  AppColors.greenLight,
-                  14,
-                  textAlignment: TextAlign.left,
-                ),
-              ],
-            ),
-          ),
-          Container(
-            constraints: BoxConstraints(maxWidth: 170.w),
-            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
-            decoration: BoxDecoration(
-              color: AppColors.greenLight.withOpacity(
-                Get.isDarkMode ? 0.16 : 0.10,
-              ),
-              borderRadius: BorderRadius.circular(12.r),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.check_circle_outline,
-                  color: AppColors.greenLight,
-                  size: 18.sp,
-                ),
-                SizedBox(width: 8.w),
-                Flexible(
-                  child: utils.tvCustom(
-                    "Paid online",
-                    AppColors.greenLight,
-                    11,
-                    textAlignment: TextAlign.left,
-                    maxLines: 2,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------------------
   // Terminal state (delivered / undelivered) summary card
   // ---------------------------------------------------------------------
   Widget _terminalCard(Color cardBg) {
@@ -1930,7 +2169,11 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 utils.tvCustom(
-                  delivered ? "Delivered" : "Delivery unsuccessful",
+                  delivered
+                      ? "Delivered"
+                      : (controller.isNotPicked
+                            ? "Not picked up"
+                            : "Delivery unsuccessful"),
                   color,
                   15,
                   textAlignment: TextAlign.left,
@@ -1946,35 +2189,6 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
                   maxLines: 2,
                 ),
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------------------
-  // Info banner
-  // ---------------------------------------------------------------------
-  Widget _infoBanner() {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
-      decoration: BoxDecoration(
-        color: Get.isDarkMode
-            ? AppColors.blue.withOpacity(0.18)
-            : AppColors.headerColor,
-        borderRadius: BorderRadius.circular(12.r),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.info_outline, color: AppColors.blue, size: 16.sp),
-          SizedBox(width: 8.w),
-          Expanded(
-            child: utils.tvCustom(
-              "Status actions update the merchant in real time.",
-              AppColors.blue,
-              12,
-              textAlignment: TextAlign.left,
             ),
           ),
         ],

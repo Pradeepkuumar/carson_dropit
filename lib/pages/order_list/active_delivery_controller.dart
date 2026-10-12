@@ -48,6 +48,12 @@ class ActiveDeliveryController extends GetxController {
   // assigned-orders fetch below resolves and picks the first one.
   bool isLoadingOrder = false;
   bool noOrdersAvailable = false;
+  // After a finished order's result dialog: true while the assigned-orders
+  // list is re-fetched to pick the next one.
+  bool isLoadingNextOrder = false;
+  // noOrdersAvailable reached by finishing the last order (shows "All done")
+  // rather than by opening the screen with nothing assigned.
+  bool finishedAllOrders = false;
 
   final SignatureController signatureController = SignatureController(
     penStrokeWidth: 3,
@@ -100,7 +106,21 @@ class ActiveDeliveryController extends GetxController {
     super.onClose();
   }
 
-  bool get isCod => (order.paymentType ?? "").toLowerCase() == "cod";
+  bool get isCod => (order.paymentType ?? "").toLowerCase() == "cod" || (order.paymentType ?? "").toLowerCase() == "split_payment";
+
+  // Split payment: half is prepaid, the other half is collected as COD.
+  bool get isSplitPayment =>
+      (order.paymentType ?? "").toLowerCase() == "split_payment";
+
+  // Amount the rider collects from the customer - the full order amount for
+  // COD, half of it for split payment. Whole numbers render without decimals.
+  String get codAmountToCollect {
+    final total = double.tryParse(order.orderAmount ?? "") ?? 0;
+    final amount = isSplitPayment ? total  : total;
+    return amount == amount.roundToDouble()
+        ? amount.toStringAsFixed(0)
+        : amount.toStringAsFixed(2);
+  }
 
   // 1 = confirm arrival at pickup, 2 = confirm pickup collected,
   // 3 = start delivery, 4 = confirm delivery, 5 = delivered/terminal.
@@ -112,6 +132,8 @@ class ActiveDeliveryController extends GetxController {
       case REACHED:
         return 2;
       case PICKED:
+      // Failed at pickup - the step tracker marks "Collected" as failed.
+      case NOT_PICKED:
         return 3;
       case OFD:
         return 4;
@@ -123,7 +145,10 @@ class ActiveDeliveryController extends GetxController {
   bool get isPickupPhase => currentStep <= 2;
   bool get isDelivered => order.status == DELIVERED;
   bool get isUndelivered => order.status == UNDELIVERED;
-  bool get isTerminal => isDelivered || isUndelivered;
+  bool get isNotPicked => order.status == NOT_PICKED;
+  // Any failed end state - undelivered at drop-off or not picked at pickup.
+  bool get isFailed => isUndelivered || isNotPicked;
+  bool get isTerminal => isDelivered || isFailed;
 
   String get nextStopName => isPickupPhase
       ? (order.merchantName ?? "-")
@@ -424,21 +449,31 @@ class ActiveDeliveryController extends GetxController {
   // autoSelectFirst is true when this screen was opened without a specific
   // order - once the fetch resolves, `order` becomes the first one returned
   // (or noOrdersAvailable is set if the rider has none assigned at all).
+  // The rider's currently-active orders from the API, in API order, or null
+  // if the request failed.
+  Future<List<OrdersData>?> _requestAssignedOrders() async {
+    final model = <String, dynamic>{
+      apiKeys.feCode: order.feCode ?? user.code,
+      apiKeys.status: [ASSIGNED, RE_ASSIGNED, PICKED, OFD, REACHED],
+    };
+    final response = await apiProvider.postRequest(
+      apiEndPoints.driverFetchOrderList,
+      model,
+    );
+    final result = BaseApiResponse.fromJson(response);
+    if (result.status_code == 200 && result.data != null) {
+      return (result.data as List)
+          .map((json) => OrdersData.fromJson(json as Map<String, dynamic>))
+          .toList();
+    }
+    return null;
+  }
+
   Future<void> _fetchAssignedOrders({bool autoSelectFirst = false}) async {
     try {
-      final model = <String, dynamic>{
-        apiKeys.feCode: order.feCode ?? user.code,
-        apiKeys.status: [ASSIGNED, RE_ASSIGNED, PICKED, OFD,REACHED],
-      };
-      final response = await apiProvider.postRequest(
-        apiEndPoints.driverFetchOrderList,
-        model,
-      );
-      final result = BaseApiResponse.fromJson(response);
-      if (result.status_code == 200 && result.data != null) {
-        _allAssignedOrders = (result.data as List)
-            .map((json) => OrdersData.fromJson(json as Map<String, dynamic>))
-            .toList();
+      final orders = await _requestAssignedOrders();
+      if (orders != null) {
+        _allAssignedOrders = orders;
         final priorityOrder = _priorityOrderIn(_allAssignedOrders);
         if (autoSelectFirst) {
           final initial =
@@ -562,14 +597,7 @@ class ActiveDeliveryController extends GetxController {
   Future<void> switchToOrder(OrdersData next) async {
     if (_orderKey(next) == _orderKey(order)) return;
     order = next;
-    packagePhoto = null;
-    deliveryPhoto = null;
-    signatureFile = null;
-    undeliveredPhoto = null;
-    signatureController.clear();
-    hasOngoingCall = false;
-    callType = null;
-    bufferWaitActive = order.status == REACHED && pickupBufferSeconds > 0;
+    _resetPerOrderState();
     update();
 
     final mapController = mapViewController;
@@ -580,40 +608,87 @@ class ActiveDeliveryController extends GetxController {
     }
   }
 
-  // Called after an order is marked delivered/undelivered - moves on to the
-  // next order in the original API response sequence (wrapping back to the
-  // first remaining one if the completed order was last), instead of
-  // leaving the rider sitting on a finished order's terminal card.
-  void _advanceToNextOrderIfAny() {
-    if (_allAssignedOrders.isEmpty) return;
+  // Per-order capture/call state - cleared whenever a different order takes
+  // over the screen.
+  void _resetPerOrderState() {
+    packagePhoto = null;
+    deliveryPhoto = null;
+    signatureFile = null;
+    undeliveredPhoto = null;
+    signatureController.clear();
+    selectedReasonId.value = null;
+    hasOngoingCall = false;
+    callType = null;
+    bufferWaitActive = order.status == REACHED && pickupBufferSeconds > 0;
+  }
+
+  // Called from the result dialog's "Continue" after an order is delivered,
+  // undelivered or not picked: re-fetches the assigned-orders list from the
+  // API (so it reflects the server, not the list cached when the screen
+  // opened) and opens the next order - a priority order first, otherwise the
+  // one after the finished order in API sequence. With nothing left, shows
+  // the "All done" state instead of closing the screen.
+  Future<void> loadNextOrder() async {
     final completedKey = _orderKey(order);
-    final remaining = _allAssignedOrders
+    final previousKeys = _allAssignedOrders.map(_orderKey).toList();
+    isLoadingNextOrder = true;
+    // The loading state replaces the map, disposing its platform view - the
+    // next order's map registers a fresh controller via onMapViewCreated.
+    mapViewController = null;
+    update();
+
+    List<OrdersData>? fresh;
+    try {
+      fresh = await _requestAssignedOrders();
+    } catch (_) {
+      fresh = null;
+    }
+    // On a failed request, fall back to the cached list minus this order.
+    _allAssignedOrders = (fresh ?? _allAssignedOrders)
         .where((o) => _orderKey(o) != completedKey)
         .toList();
-    if (remaining.isEmpty) {
-      Get.back();
+    isLoadingNextOrder = false;
+
+    if (_allAssignedOrders.isEmpty) {
+      noOrdersAvailable = true;
+      finishedAllOrders = true;
+      pickupSuggestions = [];
+      update();
       return;
     }
-    final priorityOrder = _priorityOrderIn(remaining);
-    if (priorityOrder != null) {
-      switchToOrder(priorityOrder);
-      return;
-    }
-    final completedIndex = _allAssignedOrders.indexWhere(
-      (o) => _orderKey(o) == completedKey,
-    );
-    OrdersData? next;
-    if (completedIndex != -1) {
-      for (var i = completedIndex + 1; i < _allAssignedOrders.length; i++) {
-        final candidate = _allAssignedOrders[i];
-        if (_orderKey(candidate) != completedKey) {
-          next = candidate;
-          break;
+
+    OrdersData? next = _priorityOrderIn(_allAssignedOrders);
+    if (next == null) {
+      final completedIndex = previousKeys.indexOf(completedKey);
+      if (completedIndex != -1) {
+        for (final key in previousKeys.skip(completedIndex + 1)) {
+          final match = _allAssignedOrders.where((o) => _orderKey(o) == key);
+          if (match.isNotEmpty) {
+            next = match.first;
+            break;
+          }
         }
       }
     }
-    next ??= remaining.first;
-    switchToOrder(next);
+    order = next ?? _allAssignedOrders.first;
+    _resetPerOrderState();
+    _recomputePickupSuggestions();
+    update();
+  }
+
+  // "Refresh" on the empty / all-done state - asks the API again in case a
+  // new order has been assigned since.
+  Future<void> refreshAssignedOrders() async {
+    isLoadingOrder = true;
+    noOrdersAvailable = false;
+    finishedAllOrders = false;
+    mapViewController = null;
+    update();
+    await _fetchAssignedOrders(autoSelectFirst: true);
+    if (!noOrdersAvailable) {
+      _resetPerOrderState();
+      update();
+    }
   }
 
   // ---------------------------------------------------------------------
@@ -707,8 +782,37 @@ class ActiveDeliveryController extends GetxController {
     if (undeliveredPhoto == null) return;
     if (!await _isWithinUpdateRange()) return;
     _selectedUndeliveredReason = reason.reason;
-    await _updateStatus(UNDELIVERED);
+    // Step 2 (arrived at pickup) means the parcel was never collected.
+    await _updateStatus(currentStep == 2 ? NOT_PICKED : UNDELIVERED);
   }
+
+  // Short green toast confirming a step update (the order stays on screen).
+  void _showStepSuccess(String status) {
+    switch (status) {
+      case REACHED:
+        utils.successSnackBar(
+          "Arrived at pickup",
+          "Collect the package from the merchant",
+        );
+        break;
+      case PICKED:
+        utils.successSnackBar(
+          "Package collected",
+          "Start the delivery when you're ready",
+        );
+        break;
+      case OFD:
+        utils.successSnackBar(
+          "Out for delivery",
+          "Head to the customer's address",
+        );
+        break;
+    }
+  }
+
+  // Failed outcomes share the issue sheet's reason + attempt photo.
+  bool _isFailureStatus(String status) =>
+      status == UNDELIVERED || status == NOT_PICKED;
 
   Future<bool> _updateStatus(String status) async {
     if (isSubmitting.value) return false;
@@ -722,7 +826,7 @@ class ActiveDeliveryController extends GetxController {
           {'key': 'delivery_proof_image_2', 'file': deliveryPhoto},
         if (status == DELIVERED && signatureFile != null)
           {'key': 'signature', 'file': signatureFile},
-        if (status == UNDELIVERED && undeliveredPhoto != null)
+        if (_isFailureStatus(status) && undeliveredPhoto != null)
           {'key': 'failed_delivery_proof', 'file': undeliveredPhoto},
       ];
       print(images);
@@ -730,8 +834,10 @@ class ActiveDeliveryController extends GetxController {
         'status': status,
         'fe_code': user.code ?? "",
         'awb_no': order.awbNo ?? "",
-        if (status == UNDELIVERED) 'reason': _selectedUndeliveredReason ?? "",
+        if (_isFailureStatus(status))
+          'reason': _selectedUndeliveredReason ?? "",
       };
+      print(data);
       final response = await apiProvider.postRequestWithImagesDio(
         apiEndPoints.updateOrderStatus,
         data,
@@ -741,7 +847,9 @@ class ActiveDeliveryController extends GetxController {
       utils.closeLoadingDialog();
       if (result.status_code == 200) {
         order.status = status;
-        if (status == UNDELIVERED) order.reason = _selectedUndeliveredReason;
+        if (_isFailureStatus(status)) {
+          order.reason = _selectedUndeliveredReason;
+        }
         if (Get.isRegistered<RiderDashboardController>()) {
           Get.find<RiderDashboardController>().getDashBoardData();
         }
@@ -750,10 +858,17 @@ class ActiveDeliveryController extends GetxController {
           showOrderDeliveredDialog(
             order: order,
             isCod: isCod,
-            onContinue: _advanceToNextOrderIfAny,
+            cashCollected: codAmountToCollect,
+            onContinue: loadNextOrder,
           );
-        } else if (status == UNDELIVERED) {
-          _advanceToNextOrderIfAny();
+        } else if (_isFailureStatus(status)) {
+          showOrderFailedDialog(
+            order: order,
+            notPicked: status == NOT_PICKED,
+            onContinue: loadNextOrder,
+          );
+        } else {
+          _showStepSuccess(status);
         }
         return true;
       } else {

@@ -32,4 +32,7 @@ class AppColors {
   static const Color backgroundColorLight = Color.fromARGB(255, 61, 74, 85);
   static const Color backgroundColorExtraLight= Color.fromARGB(255, 105, 113, 120);
   static const Color blueLight= Color.fromARGB(255, 86, 142, 244);
+  // Warning amber (COD / OFD / not-picked) - same value as the screen-local
+  // _amberOFD constants.
+  static const Color amber = Color(0xFFA67C00);
 }

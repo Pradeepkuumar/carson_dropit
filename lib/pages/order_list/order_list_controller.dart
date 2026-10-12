@@ -17,7 +17,8 @@ import '../dashboard/controller/rider_dashboard_controller.dart';
 import '../my_orders/orders/models/orders_model.dart';
 import 'models/driver_config_model.dart';
 
-class OrderListController extends GetxController {
+class OrderListController extends GetxController
+    with GetSingleTickerProviderStateMixin {
   var user = UserData();
   final locationUtils = LocationUtils();
 
@@ -28,8 +29,10 @@ class OrderListController extends GetxController {
 
   // "b2c" | "c2c" | "whatsapp"
   var typeTab = "b2c".obs;
-  // "assigned" | "available" | "completed"
+  // "assigned" | "available" | "completed" - kept in sync with tabController.
+  static const statuses = ["assigned", "available", "completed"];
   var statusTab = "assigned".obs;
+  late final TabController tabController;
   // "all" | "ppd" | "cod" | "risk"
   var paymentFilter = "all".obs;
   // "all" | "b2c" | "c2c" | "whatsapp"
@@ -39,7 +42,10 @@ class OrderListController extends GetxController {
   var searchQuery = "".obs;
   final searchController = TextEditingController();
 
-  var isLoading = false.obs;
+  // One loading flag per status tab, so a slow list doesn't spin the others.
+  var isLoadingAssigned = false.obs;
+  var isLoadingAvailable = false.obs;
+  var isLoadingCompleted = false.obs;
 
   var assignedOrders = <OrdersData>[].obs;
   var availableOrders = <OrdersData>[].obs;
@@ -57,6 +63,10 @@ class OrderListController extends GetxController {
   );
   File? dropbackSignatureFile;
   var isSubmittingDropback = false.obs;
+  // "merchant" | "warehouse" - where the undelivered order is being returned.
+  // Merchant is the default each time the sheet opens.
+  String dropbackTarget = "merchant";
+  bool get isDropbackToMerchant => dropbackTarget == "merchant";
 
   // Set when this screen is opened from a "NearByOrders" notification tap -
   // once the available list loads, the matching order is opened automatically.
@@ -75,6 +85,17 @@ class OrderListController extends GetxController {
         _focusOrderRef = focusOrderRef;
       }
     }
+    final initialIndex = statuses.indexOf(statusTab.value);
+    tabController = TabController(
+      length: statuses.length,
+      vsync: this,
+      initialIndex: initialIndex < 0 ? 0 : initialIndex,
+    );
+    // Tapping or swiping only switches which cached list is shown - all
+    // three lists are fetched up front, so no API call here.
+    tabController.addListener(() {
+      statusTab.value = statuses[tabController.index];
+    });
     getUser();
     super.onInit();
   }
@@ -85,7 +106,7 @@ class OrderListController extends GetxController {
       user = value;
     }
     await getDriverConfig();
-    await refreshCurrentTab();
+    await refreshAllTabs();
   }
 
   static const _knownChannels = {"b2c", "c2c", "whatsapp"};
@@ -121,13 +142,7 @@ class OrderListController extends GetxController {
   void switchType(String type) {
     if (typeTab.value == type) return;
     typeTab.value = type;
-    refreshCurrentTab();
-  }
-
-  void switchStatus(String status) {
-    if (statusTab.value == status) return;
-    statusTab.value = status;
-    refreshCurrentTab();
+    refreshAllTabs();
   }
 
   // Type and Payment are independent filter groups shown side by side in the
@@ -153,6 +168,7 @@ class OrderListController extends GetxController {
 
   @override
   void onClose() {
+    tabController.dispose();
     searchController.dispose();
     dropbackSignatureController.dispose();
     super.onClose();
@@ -187,9 +203,17 @@ class OrderListController extends GetxController {
   }
 
   void resetDropbackState() {
+    dropbackTarget = "merchant";
     dropbackPhoto = null;
     dropbackSignatureFile = null;
     dropbackSignatureController.clear();
+    update();
+  }
+
+  // Switching destination keeps any photo/signature already captured.
+  void selectDropbackTarget(String target) {
+    if (dropbackTarget == target) return;
+    dropbackTarget = target;
     update();
   }
 
@@ -205,7 +229,9 @@ class OrderListController extends GetxController {
           {'key': 'signature', 'file': dropbackSignatureFile},
       ];
       final data = <String, dynamic>{
-        'status': DROPBACK_CLW,
+        // DROPBACK_ML = returned to merchant, DROPBACK_CLW = dropped at
+        // warehouse.
+        'status': isDropbackToMerchant ? DROPBACK_ML : DROPBACK_CLW,
         'fe_code': user.code ?? "",
         'awb_no': order.awbNo ?? "",
       };
@@ -240,9 +266,14 @@ class OrderListController extends GetxController {
   // model/endpoint and WhatsApp has no order-list endpoint yet, only the
   // dashboard's summary counts. Those two tabs show an empty state instead
   // of fabricated data until a data source exists for them.
-  Future<void> refreshCurrentTab() async {
+  Future<void> refreshAllTabs() async {
     if (typeTab.value != "b2c") return;
-    switch (statusTab.value) {
+    await Future.wait([fetchAssigned(), fetchAvailable(), fetchCompleted()]);
+  }
+
+  Future<void> refreshTab(String status) async {
+    if (typeTab.value != "b2c") return;
+    switch (status) {
       case "assigned":
         await fetchAssigned();
         break;
@@ -256,7 +287,7 @@ class OrderListController extends GetxController {
   }
 
   Future<void> fetchAssigned() async {
-    isLoading.value = true;
+    isLoadingAssigned.value = true;
     try {
       Map<String, dynamic> model = {
         apiKeys.feCode: user.code,
@@ -279,16 +310,16 @@ class OrderListController extends GetxController {
       print("❌ StackTrace: $stackTrace");
       assignedOrders.value = [];
     } finally {
-      isLoading.value = false;
+      isLoadingAssigned.value = false;
     }
   }
 
   Future<void> fetchCompleted() async {
-    isLoading.value = true;
+    isLoadingCompleted.value = true;
     try {
       Map<String, dynamic> model = {
         apiKeys.feCode: user.code,
-        apiKeys.status: [DELIVERED, UNDELIVERED],
+        apiKeys.status: [DELIVERED, UNDELIVERED, NOT_PICKED],
       };
       var response = await apiProvider.postRequest(
         apiEndPoints.driverFetchOrderList,
@@ -307,12 +338,12 @@ class OrderListController extends GetxController {
       print("❌ StackTrace: $stackTrace");
       completedOrders.value = [];
     } finally {
-      isLoading.value = false;
+      isLoadingCompleted.value = false;
     }
   }
 
   Future<void> fetchAvailable() async {
-    isLoading.value = true;
+    isLoadingAvailable.value = true;
     try {
       final location = await locationUtils.getCurrentLocation();
       Map<String, dynamic> model = {
@@ -337,7 +368,7 @@ class OrderListController extends GetxController {
       print("❌ StackTrace: $stackTrace");
       availableOrders.value = [];
     } finally {
-      isLoading.value = false;
+      isLoadingAvailable.value = false;
       _resolveFocusedOrder();
     }
   }
@@ -357,7 +388,7 @@ class OrderListController extends GetxController {
       Get.toNamed(
         Routes.orderDetailScreen,
         arguments: match,
-      )?.then((_) => refreshCurrentTab());
+      )?.then((_) => refreshAllTabs());
     } else {
       utils.errorSnackBar("Order unavailable", "Order no longer available");
     }
@@ -395,7 +426,12 @@ class OrderListController extends GetxController {
             "This order no longer belongs to you",
           );
         }
-        await fetchAvailable();
+        // Tabs are cached, so pull the accepted order into Assigned now
+        // rather than relying on a refetch when that tab is opened.
+        await Future.wait([
+          fetchAvailable(),
+          if (type == acceptOrder) fetchAssigned(),
+        ]);
         return true;
       } else {
         utils.errorSnackBar("Error", result.message.toString());
@@ -408,9 +444,20 @@ class OrderListController extends GetxController {
     }
   }
 
-  List<OrdersData> get currentOrders {
+  RxBool loadingFor(String status) {
+    switch (status) {
+      case "available":
+        return isLoadingAvailable;
+      case "completed":
+        return isLoadingCompleted;
+      default:
+        return isLoadingAssigned;
+    }
+  }
+
+  List<OrdersData> ordersFor(String status) {
     List<OrdersData> source;
-    switch (statusTab.value) {
+    switch (status) {
       case "available":
         source = availableOrders;
         break;
@@ -429,7 +476,7 @@ class OrderListController extends GetxController {
         filtered = source.where(isCod).toList();
         break;
       case "risk":
-        filtered = source.where(isAtRisk).toList();
+        filtered = source.where((o) => isAtRisk(o, status)).toList();
         break;
       default:
         filtered = source;
@@ -454,8 +501,8 @@ class OrderListController extends GetxController {
   bool isCod(OrdersData order) =>
       (order.paymentType ?? "").toLowerCase() == "cod";
 
-  bool isAtRisk(OrdersData order) =>
-      statusTab.value != "completed" && remainingSecondsFor(order) < 1800;
+  bool isAtRisk(OrdersData order, String status) =>
+      status != "completed" && remainingSecondsFor(order) < 1800;
 
   int remainingSecondsFor(OrdersData order) {
     final slaHours = int.tryParse(order.sla_in_hours ?? "") ?? 0;

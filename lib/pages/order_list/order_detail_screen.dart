@@ -4,8 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:google_navigation_flutter/google_navigation_flutter.dart'
-    hide Marker;
+import 'package:google_navigation_flutter/google_navigation_flutter.dart' hide Marker;
 import 'package:signature/signature.dart';
 import '../../global/consts.dart';
 import '../../global/global.dart';
@@ -21,7 +20,8 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
   Widget build(BuildContext context) {
     final isTablet = !context.isPhone;
     final order = controller.order;
-    final cardBg = Get.isDarkMode ? AppColors.greyColor10 : Colors.white;
+    final cardBg =
+        Get.isDarkMode ? AppColors.backgroundColorLight : Colors.white;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light
@@ -87,7 +87,11 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
                             _pill(
                               "Available order",
                               AppColors.greenLight,
-                              dotColor: AppColors.greenLight,
+                              // Pill is solid green in dark mode, so the dot
+                              // switches to white to stay visible.
+                              dotColor: Get.isDarkMode
+                                  ? AppColors.white
+                                  : AppColors.greenLight,
                             )
                           else
                             _pill(
@@ -151,6 +155,12 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
                                     decoration: BoxDecoration(
                                       color: cardBg,
                                       borderRadius: BorderRadius.circular(8.r),
+                                      border: Get.isDarkMode
+                                          ? Border.all(
+                                              color: Colors.white
+                                                  .withOpacity(0.06),
+                                            )
+                                          : null,
                                       boxShadow: [
                                         BoxShadow(
                                           color: Colors.black.withOpacity(0.15),
@@ -163,7 +173,7 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
                                       children: [
                                         Icon(
                                           Icons.social_distance,
-                                          color: AppColors.greyColor5,
+                                          color:Get.isDarkMode ?AppColors.white : AppColors.greyColor5,
                                           size: 13.sp,
                                         ),
                                         SizedBox(width: 5.w),
@@ -298,7 +308,7 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
 
                       _simpleCard(
                         icon: Icons.inventory_2_outlined,
-                        iconColor: AppColors.greyColor5,
+                        iconColor: Get.isDarkMode ?AppColors.white :AppColors.greyColor5,
                         label: "Package",
                         value:
                             "${order.itemName ?? '-'} · ${order.quantity ?? 1} item${(order.quantity ?? 1) > 1 ? 's' : ''}${(order.weight ?? '').isNotEmpty ? ' · ${order.weight} kg' : ''}",
@@ -364,8 +374,10 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
   Widget _pill(String label, Color color, {Color? dotColor}) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+      // Dark mode: solid fill so tvCustom's forced-white text stays
+      // readable.
       decoration: BoxDecoration(
-        color: color.withOpacity(Get.isDarkMode ? 0.2 : 0.12),
+        color: Get.isDarkMode ? color : color.withOpacity(0.12),
         borderRadius: BorderRadius.circular(20.r),
       ),
       child: Row(
@@ -406,7 +418,7 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
       decoration: BoxDecoration(
-        color: color.withOpacity(Get.isDarkMode ? 0.2 : 0.12),
+        color: Get.isDarkMode ? color : color.withOpacity(0.12),
         borderRadius: BorderRadius.circular(20.r),
       ),
       child: utils.tvCustom(label, color, 11.5),
@@ -417,8 +429,10 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
     final iconColor = Get.isDarkMode ? AppColors.white : AppColors.black;
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+      // tvCustom's white text is unreadable on the bright yellow in dark
+      // mode, so the tag switches to the darker amber there.
       decoration: BoxDecoration(
-        color: AppColors.secondryThemeColor,
+        color: Get.isDarkMode ? _amberOFD : AppColors.secondryThemeColor,
         borderRadius: BorderRadius.circular(20.r),
       ),
       child: Row(
@@ -446,6 +460,9 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
       decoration: BoxDecoration(
         color: cardBg,
         borderRadius: BorderRadius.circular(16.r),
+        border: Get.isDarkMode
+            ? Border.all(color: Colors.white.withOpacity(0.06))
+            : null,
         boxShadow: Get.isDarkMode
             ? []
             : [
@@ -469,8 +486,10 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
                     child: Container(
                       width: 9.w,
                       height: 9.w,
-                      decoration: const BoxDecoration(
-                        color: AppColors.greenLight,
+                      decoration: BoxDecoration(
+                        color: Get.isDarkMode
+                            ? AppColors.green
+                            : AppColors.greenLight,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -480,7 +499,9 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
                       padding: EdgeInsets.symmetric(vertical: 4.h),
                       child: Container(
                         width: 1.5,
-                        color: const Color(0xFFE0E0E0),
+                        color: Get.isDarkMode
+                            ? Colors.white.withOpacity(0.18)
+                            : const Color(0xFFE0E0E0),
                       ),
                     ),
                   ),
@@ -571,11 +592,20 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
         width: 32.w,
         height: 32.w,
         decoration: BoxDecoration(
-          color: AppColors.blue.withOpacity(Get.isDarkMode ? 0.18 : 0.10),
+          color: Get.isDarkMode
+              ? AppColors.blueLight.withOpacity(0.15)
+              : AppColors.blue.withOpacity(0.10),
           borderRadius: BorderRadius.circular(9.r),
+          border: Get.isDarkMode
+              ? Border.all(color: AppColors.blueLight.withOpacity(0.28))
+              : null,
         ),
         alignment: Alignment.center,
-        child: Icon(Icons.call_outlined, color: AppColors.blue, size: 14.sp),
+        child: Icon(
+          Icons.call_outlined,
+          color: Get.isDarkMode ? AppColors.blueLight : AppColors.blue,
+          size: 14.sp,
+        ),
       ),
     );
   }
@@ -592,6 +622,9 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
       decoration: BoxDecoration(
         color: cardBg,
         borderRadius: BorderRadius.circular(14.r),
+        border: Get.isDarkMode
+            ? Border.all(color: Colors.white.withOpacity(0.06))
+            : null,
         boxShadow: Get.isDarkMode
             ? []
             : [
@@ -608,8 +641,11 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
             width: 42.w,
             height: 42.w,
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(Get.isDarkMode ? 0.18 : 0.08),
+              color: iconColor.withOpacity(0.08),
               shape: BoxShape.circle,
+              border: Get.isDarkMode
+                  ? Border.all(color: iconColor.withOpacity(0.12))
+                  : null,
             ),
             alignment: Alignment.center,
             child: Icon(icon, color: iconColor, size: 20.sp),
@@ -641,16 +677,38 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
   }
 
   Widget _paymentCard(dynamic order, Color cardBg) {
-    final isCod = (order.paymentType ?? "").toString().toLowerCase() == "cod";
-    final color = isCod ? _amberOFD : AppColors.greenLight;
-    final label = isCod
-        ? "COD · QAR ${order.orderAmount ?? '0'}"
-        : "${(order.paymentType ?? "").toString().isNotEmpty ? "${order.paymentType} · " : ""}Paid";
+    final paymentType = (order.paymentType ?? "").toString().toLowerCase();
+    final isCod = paymentType == "cod";
+    // Split payment: half is prepaid, the other half is collected as COD.
+    final isSplit = paymentType == "split_payment";
+    final color = (isCod || isSplit) ? _amberOFD : AppColors.greenLight;
+    // Brighter icon hue in dark mode - the badge keeps the original color
+    // as a solid fill.
+    final iconColor = !Get.isDarkMode
+        ? color
+        : ((isCod || isSplit) ? AppColors.secondryThemeColor : AppColors.green);
+    final String label;
+    if (isSplit) {
+      final half =
+          (double.tryParse((order.orderAmount ?? "").toString()) ?? 0) ;
+      final halfText = half == half.roundToDouble()
+          ? half.toStringAsFixed(0)
+          : half.toStringAsFixed(2);
+      label = "Split · COD QAR $halfText";
+    } else if (isCod) {
+      label = "COD · QAR ${order.orderAmount ?? '0'}";
+    } else {
+      label =
+          "${(order.paymentType ?? "").toString().isNotEmpty ? "${order.paymentType} · " : ""}Paid";
+    }
     return Container(
       padding: EdgeInsets.all(14.w),
       decoration: BoxDecoration(
         color: cardBg,
         borderRadius: BorderRadius.circular(14.r),
+        border: Get.isDarkMode
+            ? Border.all(color: Colors.white.withOpacity(0.06))
+            : null,
         boxShadow: Get.isDarkMode
             ? []
             : [
@@ -667,11 +725,14 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
             width: 42.w,
             height: 42.w,
             decoration: BoxDecoration(
-              color: color.withOpacity(Get.isDarkMode ? 0.18 : 0.10),
+              color: iconColor.withOpacity(Get.isDarkMode ? 0.15 : 0.10),
               shape: BoxShape.circle,
+              border: Get.isDarkMode
+                  ? Border.all(color: iconColor.withOpacity(0.28))
+                  : null,
             ),
             alignment: Alignment.center,
-            child: Icon(Icons.payments_outlined, color: color, size: 20.sp),
+            child: Icon(Icons.payments_outlined, color: iconColor, size: 20.sp),
           ),
           SizedBox(width: 12.w),
           Expanded(
@@ -685,7 +746,7 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
           Container(
             padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
             decoration: BoxDecoration(
-              color: color.withOpacity(Get.isDarkMode ? 0.22 : 0.14),
+              color: Get.isDarkMode ? color : color.withOpacity(0.14),
               borderRadius: BorderRadius.circular(8.r),
             ),
             child: utils.tvCustom(label, color, 10),
@@ -701,6 +762,9 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
       decoration: BoxDecoration(
         color: cardBg,
         borderRadius: BorderRadius.circular(14.r),
+        border: Get.isDarkMode
+            ? Border.all(color: Colors.white.withOpacity(0.06))
+            : null,
         boxShadow: Get.isDarkMode
             ? []
             : [
@@ -720,7 +784,13 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
               (order.distance ?? "-").toString(),
             ),
           ),
-          Container(width: 1, height: 30.h, color: const Color(0xFFF0F0F0)),
+          Container(
+            width: 1,
+            height: 30.h,
+            color: Get.isDarkMode
+                ? Colors.white.withOpacity(0.10)
+                : const Color(0xFFF0F0F0),
+          ),
           SizedBox(width: 12.w),
           Expanded(
             child: _statLine(
@@ -745,7 +815,7 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
       Container(
         padding: EdgeInsets.fromLTRB(18.w, 14.h, 18.w, 20.h),
         decoration: BoxDecoration(
-          color: Get.isDarkMode ? AppColors.greyColor10 : Colors.white,
+          color: Get.isDarkMode ? AppColors.backgroundColorLight : Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
         ),
         child: Column(
@@ -854,7 +924,7 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
       Container(
         padding: EdgeInsets.all(16.w),
         decoration: BoxDecoration(
-          color: Get.isDarkMode ? AppColors.greyColor10 : Colors.white,
+          color: Get.isDarkMode ? AppColors.backgroundColorLight : Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(18.r)),
         ),
         child: Column(
@@ -970,7 +1040,7 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
   Widget _statLine(IconData icon, String label, String value) {
     return Row(
       children: [
-        Icon(icon, color: AppColors.greyColor5, size: 16),
+        Icon(icon, color: Get.isDarkMode ?AppColors.white :AppColors.greyColor5, size: 16),
         SizedBox(width: 8.w),
         Expanded(
           child: Column(
