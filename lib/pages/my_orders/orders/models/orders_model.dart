@@ -37,6 +37,8 @@ class OrdersData {
   String? contact_person_name;
   String? contact_person_phoneno;
   String? sla_in_hours;
+  String? sla_time_left;
+
   String? reason;
   String? failed_delivery_proof;
   String? distance;
@@ -54,12 +56,26 @@ class OrdersData {
   String? serviceType;
   bool? isActivePriority;
   String? deliveryType;
+  String? requires_return;
+  bool? is_accepted_by_other;
+  bool? is_assigned_to_other;
+  bool? can_accept;
+  bool? can_reject;
+
+
+  // Online payment link the customer can pay a COD/split order through, and
+  // whether that payment has gone through (refreshed from the API).
+  String? paymentLink;
+  bool? paymentCompleted;
+  bool? is_at_risk;
 
   // The API actually flags a priority order via delivery_type == "PRIORITY",
   // not is_active_priority (kept above as its own field/key regardless).
   static const String _priorityDeliveryType = "PRIORITY";
   bool get isPriorityOrder =>
       isActivePriority == true || deliveryType == _priorityDeliveryType;
+
+  bool get isWhatsAppOrder => (serviceType ?? "").toLowerCase() == "whatsapp";
 
   OrdersData({
     this.id,
@@ -100,6 +116,7 @@ class OrdersData {
     this.contact_person_name,
     this.contact_person_phoneno,
     this.sla_in_hours,
+    this.sla_time_left,
     this.reason,
     this.failed_delivery_proof,
     this.distance,
@@ -117,7 +134,24 @@ class OrdersData {
     this.serviceType,
     this.isActivePriority,
     this.deliveryType,
+    this.paymentLink,
+    this.paymentCompleted,
+    this.is_accepted_by_other,
+    this.is_assigned_to_other,
+    this.can_accept,
+    this.can_reject,
+    this.is_at_risk,
+    this.requires_return,
   });
+
+  // payment_completed may arrive as a bool, 1/0 or "true"/"1".
+  static bool? _parseBool(dynamic value) {
+    if (value == null) return null;
+    if (value is bool) return value;
+    if (value is num) return value == 1;
+    final text = value.toString().toLowerCase();
+    return text == "true" || text == "1";
+  }
 
   OrdersData.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -158,6 +192,7 @@ class OrdersData {
     contact_person_name = json['contact_person_name'];
     contact_person_phoneno = json['contact_person_phoneno'];
     sla_in_hours = json['sla_in_hours'];
+    sla_time_left = json['sla_time_left'];
     reason = json['reason'];
     failed_delivery_proof = json['failed_delivery_proof'];
     distance = json['distance'];
@@ -181,8 +216,15 @@ class OrdersData {
     serviceType = json['service_type'];
     isActivePriority = json['is_active_priority'];
     deliveryType = json['delivery_type'];
+    paymentLink = json['payment_link']?.toString();
+    requires_return = json['requires_return']?.toString();
+    paymentCompleted = _parseBool(json['payment_completed']);
+    is_accepted_by_other = _parseBool(json['is_accepted_by_other']);
+    is_assigned_to_other = _parseBool(json['is_assigned_to_other']);
+    can_accept = _parseBool(json['can_accept']);
+    can_reject = _parseBool(json['can_reject']);
+    is_at_risk = _parseBool(json['is_at_risk']);
   }
-
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
     data['id'] = id;
@@ -222,6 +264,7 @@ class OrdersData {
     data['contact_person_name'] = contact_person_name;
     data['contact_person_phoneno'] = contact_person_phoneno;
     data['sla_in_hours'] = sla_in_hours;
+    data['sla_time_left'] = sla_time_left;
     data['reason'] = reason;
     data['failed_delivery_proof'] = failed_delivery_proof;
     data['distance'] = distance;
@@ -239,6 +282,15 @@ class OrdersData {
     data['service_type'] = serviceType;
     data['is_active_priority'] = isActivePriority;
     data['delivery_type'] = deliveryType;
+    data['payment_link'] = paymentLink;
+    data['requires_return'] = requires_return;
+    data['payment_completed'] = paymentCompleted;
+    data['is_accepted_by_other'] = is_accepted_by_other;
+    data['is_assigned_to_other'] = is_assigned_to_other;
+    data['can_accept'] = can_accept;
+    data['can_reject'] = can_reject;
+    data['is_at_risk'] = is_at_risk;
     return data;
   }
+
 }

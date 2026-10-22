@@ -19,7 +19,6 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
   @override
   Widget build(BuildContext context) {
     final isTablet = !context.isPhone;
-    final order = controller.order;
     final cardBg =
         Get.isDarkMode ? AppColors.backgroundColorLight : Colors.white;
 
@@ -59,7 +58,9 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
                     ),
                     Flexible(
                       child:utils.tvCustom(
-                        order.awbNo ?? order.orderRefNumber ?? '-',
+                        controller.awbNumber.isEmpty
+                            ? '-'
+                            : controller.awbNumber,
                         Colors.white,
                         maxLines: 2,
                         isTablet ? 22 : 19,
@@ -72,7 +73,13 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
               ),
 
               Expanded(
-                child: SingleChildScrollView(
+                child: Obx(() {
+                  if (controller.isLoading.value) return _loadingView();
+                  if (controller.errorMessage.value != null) {
+                    return _errorView(isTablet);
+                  }
+                  final order = controller.order;
+                  return SingleChildScrollView(
                   padding: EdgeInsets.all((isTablet ? 32 : 16).w),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -93,6 +100,14 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
                                   ? AppColors.white
                                   : AppColors.greenLight,
                             )
+                          else if (controller.isTakenByOtherRider)
+                            _pill(
+                              "Unavailable",
+                              AppColors.greyColor4,
+                              dotColor: Get.isDarkMode
+                                  ? AppColors.white
+                                  : AppColors.greyColor4,
+                            )
                           else
                             _pill(
                               order.status ?? "-",
@@ -100,7 +115,10 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
                             ),
                           if ((order.serviceType ?? "").isNotEmpty)
                             _typeBadge(order.serviceType!),
-                          if (order.isPriorityOrder) _priorityTag(),
+                          if (order.isPriorityOrder)
+                            _priorityTag()
+                          else if (order.isWhatsAppOrder)
+                            _valueTag(),
                           if ((order.sla_in_hours ?? "").isNotEmpty)
                             Row(
                               mainAxisSize: MainAxisSize.min,
@@ -265,6 +283,8 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
                           ],
                         ),
 
+                      ] else if (controller.isTakenByOtherRider) ...[
+                        _takenByOtherRiderNotice(),
                       ] else if (order.status == UNDELIVERED) ...[
                         SizedBox(
                           width: double.infinity,
@@ -325,7 +345,8 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
 
                     ],
                   ),
-                ),
+                );
+                }),
               ),
             ],
           ),
@@ -334,12 +355,86 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
     );
   }
 
+  Widget _loadingView() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 28.r,
+            height: 28.r,
+            child: CircularProgressIndicator(
+              strokeWidth: 3,
+              color: AppColors.primaryThemeColor,
+            ),
+          ),
+          SizedBox(height: 12.h),
+          utils.tvCustom("Loading order details…", AppColors.black, 13),
+        ],
+      ),
+    );
+  }
+
+  Widget _errorView(bool isTablet) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: (isTablet ? 64 : 32).w),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 46.r,
+              height: 46.r,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Get.isDarkMode
+                    ? AppColors.red
+                    : AppColors.red.withOpacity(0.12),
+              ),
+              child: Icon(
+                Icons.error_outline,
+                size: 22.sp,
+                color: Get.isDarkMode ? AppColors.white : AppColors.red,
+              ),
+            ),
+            SizedBox(height: 12.h),
+            utils.tvCustom("Couldn't load this order", AppColors.black, 14),
+            SizedBox(height: 6.h),
+            utils.tvCustom(
+              controller.errorMessage.value ?? "",
+              AppColors.greyColor5,
+              12,
+              maxLines: 3,
+            ),
+            SizedBox(height: 16.h),
+            ElevatedButton.icon(
+              onPressed: controller.fetchOrderDetails,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryThemeColor,
+                elevation: 0,
+                padding: EdgeInsets.symmetric(
+                  horizontal: 20.w,
+                  vertical: 10.h,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.r),
+                ),
+              ),
+              icon: Icon(Icons.refresh, color: AppColors.white, size: 16.sp),
+              label: utils.tvCustom("Try again", AppColors.white, 13),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _confirmAccept() {
     utils.simpleDialog(
       "Accept Order",
       "Do you want to accept this order?",
       () => controller.accept(),
-      () => Get.back(),
+      () {},
     );
   }
 
@@ -348,7 +443,7 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
       "Decline Order",
       "Do you want to decline this order?",
       () => controller.decline(),
-      () => Get.back(),
+      () {},
     );
   }
 
@@ -369,6 +464,50 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
       default:
         return AppColors.primaryThemeColor;
     }
+  }
+
+  // Placed order another rider accepted first - replaces Accept/Decline.
+  Widget _takenByOtherRiderNotice() {
+    final amber = Get.isDarkMode ? AppColors.amberBright : AppColors.amber;
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+      decoration: BoxDecoration(
+        color: amber.withOpacity(Get.isDarkMode ? 0.14 : 0.10),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(
+          color: amber.withOpacity(Get.isDarkMode ? 0.55 : 0.35),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline, color: amber, size: 18.sp),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                utils.tvCustom(
+                  "Already accepted by another rider",
+                  AppColors.amber,
+                  12.5,
+                  textAlignment: TextAlign.left,
+                ),
+                SizedBox(height: 3.h),
+                utils.tvCustom(
+                  "This order is no longer available to you. Check New Requests for other orders near you.",
+                  AppColors.greyColor5,
+                  11,
+                  textAlignment: TextAlign.left,
+                  maxLines: 3,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _pill(String label, Color color, {Color? dotColor}) {
@@ -443,6 +582,20 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
           utils.tvCustom("PRIORITY", AppColors.black, 11.5),
         ],
       ),
+    );
+  }
+
+  // WhatsApp orders that aren't priority are "value" deliveries.
+  Widget _valueTag() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+      decoration: BoxDecoration(
+        color: Get.isDarkMode
+            ? AppColors.greyColor5
+            : AppColors.greyColor5.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(20.r),
+      ),
+      child: utils.tvCustom("VALUE", AppColors.greyColor5, 11.5),
     );
   }
 

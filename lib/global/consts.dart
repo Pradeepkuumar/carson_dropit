@@ -49,6 +49,7 @@ const String PICKED = "PICKED";
 const String OFD = "OFD";
 const String DELIVERED = "DELIVERED";
 const String UNDELIVERED = "UNDELIVERED";
+const String CANCELED = "CANCELLED";
 const String NOT_PICKED = "NOTPICKED";
 const String DROPBACK_CLW = "DROPBACK_CLW";
 const String DROPBACK_ML = "DROPBACK_ML";

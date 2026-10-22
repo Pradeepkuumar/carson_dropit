@@ -54,9 +54,18 @@ class _RiderDashboardState extends State<RiderDashboard>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    controller.dashboardRouteName = ModalRoute.of(context)?.settings.name;
+  }
+
+  @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       controller.checkForUpdate();
+      // A cancel push received in the background never reaches the
+      // notification workers - re-sync and show any cancelled order.
+      controller.onAppResumed();
     }
     super.didChangeAppLifecycleState(state);
   }
@@ -126,17 +135,17 @@ class _RiderDashboardState extends State<RiderDashboard>
                               Transform.translate(
                                 offset: const Offset(0, -28),
                                 child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 10.w,
                                   ),
                                   child: Column(
                                     children: [
                                       _buildStatsCard(context),
                                      // const SizedBox(height: 18),
                                       //_buildQuickActions(context),
-                                      const SizedBox(height: 18),
+                                      const SizedBox(height: 10),
                                       _buildNewRequests(context),
-                                      const SizedBox(height: 18),
+                                      const SizedBox(height: 10),
                                       _buildUpcomingOrders(context),
                                     ],
                                   ),
@@ -196,9 +205,7 @@ class _RiderDashboardState extends State<RiderDashboard>
                                               Get.offAllNamed(Routes.auth);
                                             }
                                           },
-                                          () {
-                                            Get.back();
-                                          },
+                                          () {},
                                         );
                                       },
                                       child: Container(
@@ -249,69 +256,101 @@ class _RiderDashboardState extends State<RiderDashboard>
                                         SizedBox(
                                           height: isTablet ? 20.h : 14.h,
                                         ),
-                                        Container(
-                                          height: isTablet ? 150.h : 120.h,
-                                          width: isTablet ? 150.h : 120.h,
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            gradient: RadialGradient(
-                                              colors: [
-                                                AppColors.primaryThemeColor
-                                                    .withOpacity(0.22),
-                                                AppColors.primaryThemeColor
-                                                    .withOpacity(0),
-                                              ],
-                                              stops: const [0.0, 0.8],
-                                            ),
-                                          ),
-                                          alignment: Alignment.center,
-                                          child: Lottie.asset(
-                                            ANIM_RIDER,
-                                            height: isTablet ? 200.h : 150.h,
-                                          ),
-                                        ),
+                                        Obx(() {
+                                          final synced =
+                                              controller.isLocationSynced.value;
+                                          final syncing = controller
+                                              .isSyncingLocation
+                                              .value;
+                                          // Location not found: the notice
+                                          // replaces the rider animation.
+                                          if (!synced && !syncing) {
+                                            return _locationNotFoundNotice(
+                                              isTablet,
+                                            );
+                                          }
+                                          return Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              _signInRiderAnimation(isTablet),
+                                              SizedBox(
+                                                height: isTablet ? 18.h : 14.h,
+                                              ),
+                                              _locationStatusRow(
+                                                isTablet,
+                                                synced: synced,
+                                                syncing: syncing,
+                                              ),
+                                            ],
+                                          );
+                                        }),
                                         SizedBox(
-                                          height: isTablet ? 24.h : 18.h,
+                                          height: isTablet ? 18.h : 14.h,
                                         ),
-                                        InkWell(
-                                          borderRadius: BorderRadius.circular(
-                                            14.r,
-                                          ),
-                                          onTap: () async {
-                                            bool isSignIn = await controller.markAttendance(true);
-                                            if (isSignIn) {
-                                              controller.isAttendanceMarked.value = true;
-                                            }
-                                          },
-                                          child: Container(
-                                            width: double.infinity,
-                                            height: isTablet ? 56.h : 48.h,
-                                            decoration: BoxDecoration(
-                                              color:
-                                                  AppColors.primaryThemeColor,
-                                              borderRadius:
-                                                  BorderRadius.circular(14.r),
+                                        Obx(() {
+                                          final canSignIn =
+                                              controller
+                                                  .isLocationSynced
+                                                  .value &&
+                                              !controller
+                                                  .isSyncingLocation
+                                                  .value;
+                                          return InkWell(
+                                            borderRadius: BorderRadius.circular(
+                                              14.r,
                                             ),
-                                            alignment: Alignment.center,
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                utils.tvCustom(
-                                                  "Sign In",
-                                                  Colors.white,
-                                                  17,
+                                            onTap: !canSignIn
+                                                ? null
+                                                : () async {
+                                                    bool isSignIn =
+                                                        await controller
+                                                            .markAttendance(
+                                                              true,
+                                                            );
+                                                    if (isSignIn) {
+                                                      controller
+                                                              .isAttendanceMarked
+                                                              .value =
+                                                          true;
+                                                    }
+                                                  },
+                                            child: Container(
+                                              width: double.infinity,
+                                              height: isTablet ? 56.h : 48.h,
+                                              decoration: BoxDecoration(
+                                                color: canSignIn
+                                                    ? AppColors
+                                                          .primaryThemeColor
+                                                    : AppColors.white
+                                                          .withOpacity(0.12),
+                                                borderRadius:
+                                                    BorderRadius.circular(14.r),
+                                              ),
+                                              alignment: Alignment.center,
+                                              child: Opacity(
+                                                opacity: canSignIn ? 1 : 0.45,
+                                                child: Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  children: [
+                                                    utils.tvCustom(
+                                                      "Sign In",
+                                                      Colors.white,
+                                                      17,
+                                                    ),
+                                                    SizedBox(width: 8.w),
+                                                    Icon(
+                                                      Icons.arrow_forward,
+                                                      color: Colors.white,
+                                                      size: (isTablet ? 20 : 18)
+                                                          .sp,
+                                                    ),
+                                                  ],
                                                 ),
-                                                SizedBox(width: 8.w),
-                                                Icon(
-                                                  Icons.arrow_forward,
-                                                  color: Colors.white,
-                                                  size: (isTablet ? 20 : 18).sp,
-                                                ),
-                                              ],
+                                              ),
                                             ),
-                                          ),
-                                        ),
+                                          );
+                                        }),
                                       ],
                                     ),
                                   ),
@@ -525,9 +564,7 @@ class _RiderDashboardState extends State<RiderDashboard>
                                                 Get.offAllNamed(Routes.auth);
                                               }
                                             },
-                                            () {
-                                              Get.back();
-                                            },
+                                            () {},
                                           );
                                         }
                                       },
@@ -566,6 +603,193 @@ class _RiderDashboardState extends State<RiderDashboard>
   // profile photo loads instantly after the first fetch instead of being
   // re-downloaded at full resolution on every rebuild.
   // ---------------------------------------------------------------------
+  Widget _signInRiderAnimation(bool isTablet) {
+    return Container(
+      height: isTablet ? 150.h : 120.h,
+      width: isTablet ? 150.h : 120.h,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [
+            AppColors.primaryThemeColor.withOpacity(0.22),
+            AppColors.primaryThemeColor.withOpacity(0),
+          ],
+          stops: const [0.0, 0.8],
+        ),
+      ),
+      alignment: Alignment.center,
+      child: Lottie.asset(ANIM_RIDER, height: isTablet ? 200.h : 150.h),
+    );
+  }
+
+  // Sign In card - shown in place of the rider animation when no lat/lng
+  // fix could be taken (GPS off / permission refused / timed out).
+  Widget _locationNotFoundNotice(bool isTablet) {
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.only(top: isTablet ? 6.h : 4.h),
+      padding: EdgeInsets.fromLTRB(
+        isTablet ? 20.w : 16.w,
+        isTablet ? 22.h : 18.h,
+        isTablet ? 20.w : 16.w,
+        isTablet ? 20.h : 16.h,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.amberBright.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(14.r),
+        border: Border.all(color: AppColors.amberBright.withOpacity(0.35)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: isTablet ? 58.w : 48.w,
+            height: isTablet ? 58.w : 48.w,
+            decoration: BoxDecoration(
+              color: AppColors.amberBright.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: Icon(
+              Icons.location_off_outlined,
+              color: AppColors.amberBright,
+              size: (isTablet ? 28 : 24).sp,
+            ),
+          ),
+          SizedBox(height: isTablet ? 12.h : 10.h),
+          utils.tvCustom("Location not found", Colors.white, 15),
+          SizedBox(height: isTablet ? 6.h : 4.h),
+          utils.tvCustom(
+            "Turn on GPS so we can mark your attendance at your current spot.",
+            Colors.white.withOpacity(0.65),
+            12.5,
+          ),
+          SizedBox(height: isTablet ? 16.h : 12.h),
+          InkWell(
+            borderRadius: BorderRadius.circular(11.r),
+            onTap: controller.syncLocation,
+            child: Container(
+              width: double.infinity,
+              height: isTablet ? 48.h : 40.h,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(11.r),
+                border: Border.all(color: AppColors.amberBright, width: 1.5),
+              ),
+              alignment: Alignment.center,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.refresh,
+                    color: AppColors.amberBright,
+                    size: (isTablet ? 20 : 17).sp,
+                  ),
+                  SizedBox(width: 6.w),
+                  utils.tvCustom("Sync location", AppColors.amberBright, 14),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Sign In card - "Finding your location..." while syncing, "Location
+  // synced" (with a re-sync button) once a fix is in hand.
+  Widget _locationStatusRow(
+    bool isTablet, {
+    required bool synced,
+    required bool syncing,
+  }) {
+    final accent = syncing ? AppColors.amberBright : AppColors.green;
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(
+        horizontal: isTablet ? 14.w : 12.w,
+        vertical: isTablet ? 12.h : 10.h,
+      ),
+      decoration: BoxDecoration(
+        color: accent.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: accent.withOpacity(0.45)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: isTablet ? 34.w : 28.w,
+            height: isTablet ? 34.w : 28.w,
+            decoration: BoxDecoration(
+              color: accent.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: Icon(
+              syncing ? Icons.my_location : Icons.check,
+              color: accent,
+              size: (isTablet ? 18 : 15).sp,
+            ),
+          ),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                utils.tvCustom(
+                  syncing ? "Finding your location..." : "Location synced",
+                  Colors.white,
+                  12.5,
+                  textAlignment: TextAlign.left,
+                  maxLines: 1,
+                ),
+                SizedBox(height: 2.h),
+                Obx(() {
+                  // Read unconditionally so this Obx always has an
+                  // observable, even while syncing.
+                  final latLng = controller.syncedLatLng.value;
+                  return utils.tvCustom(
+                    syncing ? "This can take up to 10 seconds" : latLng,
+                    Colors.white.withOpacity(0.6),
+                    11,
+                    textAlignment: TextAlign.left,
+                    maxLines: 1,
+                  );
+                }),
+              ],
+            ),
+          ),
+          if (syncing)
+            SizedBox(
+              width: (isTablet ? 18 : 14).sp,
+              height: (isTablet ? 18 : 14).sp,
+              child: const CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppColors.white,
+              ),
+            )
+          else
+            InkWell(
+              borderRadius: BorderRadius.circular(10.r),
+              onTap: controller.syncLocation,
+              child: Container(
+                padding: EdgeInsets.all(isTablet ? 8.w : 6.w),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10.r),
+                  border: Border.all(color: Colors.white.withOpacity(0.35)),
+                ),
+                child: Icon(
+                  Icons.refresh,
+                  color: Colors.white,
+                  size: (isTablet ? 18 : 15).sp,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildAvatar({
     required double radius,
     required Color backgroundColor,
@@ -672,9 +896,7 @@ class _RiderDashboardState extends State<RiderDashboard>
                             controller.isAttendanceMarked.value = false;
                           }
                         },
-                        () {
-                          Navigator.of(Get.context!).pop();
-                        },
+                        () {},
                       );
                     },
                     child: Container(
@@ -847,7 +1069,7 @@ class _RiderDashboardState extends State<RiderDashboard>
       final cardBg = isDark ? AppColors.backgroundColorLight : Colors.white;
 
       return Container(
-        padding: EdgeInsets.all(isTablet ? 22.w : 16.w),
+        padding: EdgeInsets.all(isTablet ? 22.w : 10.w),
         decoration: BoxDecoration(
           color: cardBg,
           borderRadius: BorderRadius.circular(isTablet ? 20.r : 16.r),
@@ -1181,15 +1403,16 @@ class _RiderDashboardState extends State<RiderDashboard>
                     available: true,
                     completed: false,
                     atRisk: controller.isAtRisk(order),
-                    dueInLabel: _newRequestDueInLabel(
-                      controller.remainingSecondsFor(order),
-                    ),
+                    dueInLabel: order.sla_time_left ?? "N/A",
+                    //_newRequestDueInLabel(
+                    //   controller.remainingSecondsFor(order),
+                    // ),
                     accentColor: AppColors.primaryThemeColor,
                     isCod: controller.isCod(order),
                     width: 300.w,
                     onTap: () => Get.toNamed(
                       Routes.orderDetailScreen,
-                      arguments: order,
+                      arguments: order.awbNo,
                     )?.then((_) => controller.fetchAvailableOrders()),
                     onAccept: () => _confirmAcceptNewRequest(order),
                     onDecline: () => _confirmDeclineNewRequest(order),
@@ -1304,14 +1527,15 @@ class _RiderDashboardState extends State<RiderDashboard>
       completed: false,
       compact: true,
       atRisk: controller.isAtRisk(order),
-      dueInLabel: _newRequestDueInLabel(
-        controller.remainingSecondsFor(order),
-      ),
+      dueInLabel: order.sla_time_left ?? "N/A",
+      // _newRequestDueInLabel(
+      //   controller.remainingSecondsFor(order),
+      // ),
       accentColor: AppColors.primaryThemeColor,
       isCod: controller.isCod(order),
       onTap: () => Get.toNamed(
         Routes.orderDetailScreen,
-        arguments: order,
+        arguments: order.awbNo,
       )?.then((_) => controller.fetchAvailableOrders()),
       onAccept: () => _confirmAcceptNewRequest(order),
       onDecline: () => _confirmDeclineNewRequest(order),
@@ -1369,19 +1593,19 @@ class _RiderDashboardState extends State<RiderDashboard>
     );
   }
 
-  String _newRequestDueInLabel(int remainingSeconds) {
-    if (remainingSeconds <= 0) return "Overdue";
-    final hours = remainingSeconds ~/ 3600;
-    final minutes = (remainingSeconds % 3600) ~/ 60;
-    return hours > 0 ? "${hours}h ${minutes}m left" : "${minutes}m left";
-  }
+  // String _newRequestDueInLabel(int remainingSeconds) {
+  //   if (remainingSeconds <= 0) return "Overdue";
+  //   final hours = remainingSeconds ~/ 3600;
+  //   final minutes = (remainingSeconds % 3600) ~/ 60;
+  //   return hours > 0 ? "${hours}h ${minutes}m left" : "${minutes}m left";
+  // }
 
   void _confirmAcceptNewRequest(OrdersData order) {
     utils.simpleDialog(
       "Accept Order",
       "Do you want to accept this order?",
       () => controller.acceptRejectOrder(acceptOrder, order.awbNo ?? ""),
-      () => Get.back(),
+      () {},
     );
   }
 
@@ -1390,7 +1614,7 @@ class _RiderDashboardState extends State<RiderDashboard>
       "Decline Order",
       "Do you want to decline this order?",
       () => controller.acceptRejectOrder(rejectOrder, order.awbNo ?? ""),
-      () => Get.back(),
+      () {},
     );
   }
 
@@ -1466,7 +1690,7 @@ class _RiderDashboardState extends State<RiderDashboard>
               child: Column(
                 children: [
                   for (int i = 0; i < orders.length; i++) ...[
-                    _upcomingOrderRow(context, orders[i]),
+                    _upcomingOrderRow(context, orders[i], isFirst: i == 0),
                     if (i != orders.length - 1)
                       Container(
                         height: 1,
@@ -1576,21 +1800,24 @@ class _RiderDashboardState extends State<RiderDashboard>
     }
   }
 
-  String _dueInLabel(int remainingSeconds) {
-    if (remainingSeconds <= 0) return "Overdue";
-    final hours = remainingSeconds ~/ 3600;
-    final minutes = (remainingSeconds % 3600) ~/ 60;
-    return hours > 0 ? "Due in ${hours}h ${minutes}m" : "Due in ${minutes}m";
-  }
+  // String _dueInLabel(int remainingSeconds) {
+  //   if (remainingSeconds <= 0) return "Overdue";
+  //   final hours = remainingSeconds ~/ 3600;
+  //   final minutes = (remainingSeconds % 3600) ~/ 60;
+  //   return hours > 0 ? "Due in ${hours}h ${minutes}m" : "Due in ${minutes}m";
+  // }
 
-  Widget _upcomingOrderRow(BuildContext context, OrdersData order) {
+  Widget _upcomingOrderRow(
+    BuildContext context,
+    OrdersData order, {
+    bool isFirst = false,
+  }) {
     final isTablet = !context.isPhone;
     final status = order.status ?? "";
     final isDark = controller.isDarkMode.value;
     final statusColor = _upcomingStatusColor(status);
     final iconColor = _upcomingStatusIconColor(status);
-    final remaining = controller.remainingSecondsFor(order);
-    final overdue = remaining <= 0;
+    final overdue =order.is_at_risk  ?? false;
 
     return InkWell(
       onTap: () => Get.toNamed(Routes.orderListScreen)?.then((_) {
@@ -1603,7 +1830,134 @@ class _RiderDashboardState extends State<RiderDashboard>
           vertical: isTablet ? 16.h : 13.h,
           horizontal: isTablet ? 20.w : 14.w,
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (isFirst) _upNextLabel(isTablet),
+            _upcomingOrderRowContent(
+              order,
+              isTablet: isTablet,
+              isDark: isDark,
+              status: status,
+              statusColor: statusColor,
+              iconColor: iconColor,
+              overdue: overdue,
+            ),
+            if (isFirst) _goToDeliveryFooter(order, isTablet, isDark),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // "UP NEXT" marker on the first upcoming order.
+  Widget _upNextLabel(bool isTablet) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: isTablet ? 10.h : 8.h),
+      child: Row(
+        children: [
+          Container(
+            width: isTablet ? 7.w : 6.w,
+            height: isTablet ? 7.w : 6.w,
+            decoration: const BoxDecoration(
+              color: AppColors.primaryThemeColor,
+              shape: BoxShape.circle,
+            ),
+          ),
+          SizedBox(width: 6.w),
+          utils.tvCustom(
+            "UP NEXT",
+            AppColors.primaryThemeColor,
+            9.5,
+            textAlignment: TextAlign.left,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Footer on the first upcoming order: pickup name + "Go to delivery",
+  // which opens the Active Order screen with this order.
+  Widget _goToDeliveryFooter(OrdersData order, bool isTablet, bool isDark) {
+    final pickup = (order.merchantName?.isNotEmpty ?? false)
+        ? order.merchantName!
+        : (order.pickupLocationName ?? "");
+    return Container(
+      margin: EdgeInsets.only(top: isTablet ? 14.h : 12.h),
+      padding: EdgeInsets.only(top: isTablet ? 12.h : 10.h),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(
+            color: isDark
+                ? Colors.white.withOpacity(0.08)
+                : Colors.black.withOpacity(0.06),
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: pickup.isEmpty
+                ? const SizedBox.shrink()
+                : utils.tvCustom(
+                    "Pickup : $pickup",
+                    AppColors.greyColor4,
+                    10.5,
+                    textAlignment: TextAlign.left,
+                    maxLines: 1,
+                  ),
+          ),
+          SizedBox(width: 10.w),
+          InkWell(
+            borderRadius: BorderRadius.circular(10.r),
+            onTap: () {
+              selectedNavIndex.value = 2;
+              Get.toNamed(
+                Routes.activeDeliveryScreen,
+                arguments: order,
+              )?.then((_) {
+                selectedNavIndex.value = 0;
+                controller.getNextDelivery();
+                controller.fetchAvailableOrders();
+              });
+            },
+            child: Container(
+              height: isTablet ? 40.h : 34.h,
+              padding: EdgeInsets.symmetric(horizontal: isTablet ? 18.w : 14.w),
+              decoration: BoxDecoration(
+                color: AppColors.greenLight,
+                borderRadius: BorderRadius.circular(10.r),
+              ),
+              alignment: Alignment.center,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  utils.tvCustom("Go to delivery", AppColors.white, 12.5),
+                  SizedBox(width: 6.w),
+                  Icon(
+                    Icons.arrow_forward,
+                    color: AppColors.white,
+                    size: (isTablet ? 18 : 15).sp,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _upcomingOrderRowContent(
+    OrdersData order, {
+    required bool isTablet,
+    required bool isDark,
+    required String status,
+    required Color statusColor,
+    required Color iconColor,
+    required bool overdue,
+  }) {
+    return Row(
           children: [
             Container(
               width: isTablet ? 48.w : 38.w,
@@ -1645,25 +1999,20 @@ class _RiderDashboardState extends State<RiderDashboard>
                     maxLines: 1,
                   ),
                   const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    // Dark mode: solid fill so tvCustom's forced-white
-                    // text stays readable.
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? statusColor
-                          : statusColor.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: utils.tvCustom(
-                      status,
-                      statusColor,
-                      9,
-                      textAlignment: TextAlign.left,
-                    ),
+                  // Status, then WhatsApp + PRIORITY/VALUE for WhatsApp
+                  // orders (PRIORITY alone for other priority orders).
+                  Wrap(
+                    spacing: 5,
+                    runSpacing: 4,
+                    children: [
+                      _upcomingPill(status, statusColor, isTablet),
+                      if (order.isWhatsAppOrder)
+                        _upcomingPill("WhatsApp", _whatsAppGreen, isTablet),
+                      if (order.isPriorityOrder)
+                        _upcomingPriorityPill(isTablet)
+                      else if (order.isWhatsAppOrder)
+                        _upcomingPill("VALUE", AppColors.greyColor5, isTablet),
+                    ],
                   ),
                 ],
               ),
@@ -1693,15 +2042,19 @@ class _RiderDashboardState extends State<RiderDashboard>
                           size: (isTablet ? 14 : 12).sp,
                         ),
                         const SizedBox(width: 4),
-                        utils.tvCustom(_dueInLabel(remaining), AppColors.white, 12),
+                        utils.tvCustom(
+                          order.sla_time_left ??"N/A" ,
+                          AppColors.white,
+                          10,
+                        ),
                       ],
                     ),
                   )
                 else
                   utils.tvCustom(
-                    _dueInLabel(remaining),
+                   order.sla_time_left ??"N/A",
                     overdue ? AppColors.red : AppColors.black,
-                    12,
+                    10,
                   ),
                 const SizedBox(height: 4),
                 _paymentBadge(order),
@@ -1709,13 +2062,58 @@ class _RiderDashboardState extends State<RiderDashboard>
             ),
             Icon(
               Icons.chevron_right,
-              color: isDark
-                  ? AppColors.greyColor2
-                  : const Color(0xFFC7C7C7),
+              color: isDark ? AppColors.greyColor2 : const Color(0xFFC7C7C7),
               size: 18,
             ),
           ],
-        ),
+    );
+  }
+
+  // Small tag in an upcoming-order row. Dark mode: solid fill so
+  // tvCustom's forced-white text stays readable.
+  Widget _upcomingPill(String label, Color color, bool isTablet) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: isTablet ? 8 : 6,
+        vertical: isTablet ? 3 : 2,
+      ),
+      decoration: BoxDecoration(
+        color: controller.isDarkMode.value ? color : color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: utils.tvCustom(label, color, 9, textAlignment: TextAlign.left),
+    );
+  }
+
+  // Same look as the PRIORITY tag in OrderCardWidget.
+  Widget _upcomingPriorityPill(bool isTablet) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: isTablet ? 8 : 6,
+        vertical: isTablet ? 3 : 2,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.secondryThemeColor,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.bolt,
+            color: controller.isDarkMode.value
+                ? AppColors.white
+                : AppColors.black,
+            size: 10.sp,
+          ),
+          const SizedBox(width: 2),
+          utils.tvCustom(
+            "PRIORITY",
+            AppColors.black,
+            9,
+            textAlignment: TextAlign.left,
+          ),
+        ],
       ),
     );
   }
@@ -2332,9 +2730,7 @@ class _RiderDashboardState extends State<RiderDashboard>
                                   Get.offAllNamed(Routes.auth);
                                 }
                               },
-                              () {
-                                Get.back();
-                              },
+                              () {},
                             );
                           }
                         },

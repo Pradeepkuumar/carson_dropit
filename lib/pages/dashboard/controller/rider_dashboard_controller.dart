@@ -8,6 +8,7 @@ import 'package:carson_zyppy/pages/my_orders/orders/models/orders_model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:geolocator/geolocator.dart' as geo;
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:in_app_update/in_app_update.dart';
@@ -16,8 +17,10 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../../apis/base_api_response.dart';
 import '../../../app_pages/app_pages.dart';
 import '../../../global/consts.dart';
+import '../../../global/cancelled_orders.dart';
 import '../../../global/global.dart';
 import '../../../global/location_service.dart';
+import '../../../global/order_delivered_dialog.dart';
 import '../../../utils/calculate_sla.dart';
 import '../models/driver_data.dart';
 
@@ -34,6 +37,11 @@ class RiderDashboardController extends GetxController {
   // listener (~every 10s) - other API calls (fetchAvailableOrders, etc.)
   // read this instead of doing their own one-shot GPS fetch each time.
   LocationData? currentLocation;
+  // Sign In stays disabled until a lat/lng fix is in hand - see
+  // syncLocation() and the guard at the top of markAttendance().
+  var isLocationSynced = false.obs;
+  var isSyncingLocation = false.obs;
+  var syncedLatLng = "".obs;
   var workingHours = "".obs;
   var walletAmount = "".obs;
   var isInternetOn = false.obs;
@@ -55,14 +63,24 @@ class RiderDashboardController extends GetxController {
   // "New Requests" section - same data OrderListController's "available"
   // tab fetches.
   var availableOrders = <OrdersData>[].obs;
-  // A "NearByOrders" notification can fire before this controller is
-  // registered (cold start) - the ref is stashed here so fetchAvailableOrders
-  // picks it up once it runs, instead of the notification tap being dropped.
+  // A notification tap can arrive before this controller is registered or
+  // before its first data load finishes (cold start) - the awb is stashed
+  // here and opened by consumePendingNotificationOrder() once getUser()'s
+  // initial load is done, instead of the notification tap being dropped.
   static String? pendingFocusOrderRef;
+  bool _initialLoadDone = false;
   var checkBoxValue = false.obs;
   RxBool isConsentGiven = RxBool(false);
   late FirebaseMessagingController firebaseMessagingController;
   Worker? _notificationWorker;
+  Worker? _cancelWorker;
+  // Name of the route RiderDashboard sits on, set by the view - it isn't
+  // always Routes.riderDashBord (see AppBottomNav), and it's compared with
+  // Get.currentRoute to tell whether the dashboard is the screen on top.
+  String? dashboardRouteName;
+  // Every assigned order from the last getNextDelivery (upcomingOrders only
+  // keeps 5) - compared on resume to spot orders cancelled meanwhile.
+  List<OrdersData> _assignedOrders = [];
   var isNewAppUpdateAvailable = false.obs;
 
   // Profile fields for update
@@ -123,6 +141,11 @@ class RiderDashboardController extends GetxController {
 
         firebaseMessagingController.onNewNotification.value = false;
       }
+    });
+    _cancelWorker = ever(firebaseMessagingController.onOrderCancelled, (
+      Map<String, dynamic>? data,
+    ) {
+      if (data != null) _onOrderCancelledPush(data);
     });
     checkForUpdate();
     super.onReady();
@@ -281,7 +304,7 @@ class RiderDashboardController extends GetxController {
     // One-shot fix only (needed for the check-in lat/lng) - the continuous
     // background stream starts once attendance is marked, see
     // startLocationTracking().
-    await getCurrentLocation();
+    await syncLocation();
     if (isAttendanceMarked.value) {
       await startLocationTracking();
     }
@@ -338,13 +361,18 @@ class RiderDashboardController extends GetxController {
         WidgetsBinding.instance.addPostFrameCallback((_) async {
           // await getC2CCDashBoardData();
           // await getWhatsAppDashBoardData();
-          await Future.wait([
-            driverCheckAttendance(),
-            fetchWalletAmount(),
-            getDashBoardData(),
-            getNextDelivery(),
-            fetchAvailableOrders(),
-          ]);
+          try {
+            await Future.wait([
+              driverCheckAttendance(),
+              fetchWalletAmount(),
+              getDashBoardData(),
+              getNextDelivery(),
+              fetchAvailableOrders(),
+            ]);
+          } finally {
+            _initialLoadDone = true;
+            consumePendingNotificationOrder();
+          }
         });
       }
     } catch (e) {
@@ -527,6 +555,7 @@ class RiderDashboardController extends GetxController {
         //     remainingSecondsFor(a).compareTo(remainingSecondsFor(b)));
         nextDelivery.value = orders.isNotEmpty ? orders.first : null;
         upcomingOrders.value = orders.take(5).toList();
+        _assignedOrders = orders;
         return true;
       } else {
         nextDelivery.value = null;
@@ -541,17 +570,17 @@ class RiderDashboardController extends GetxController {
   // Seconds left in an order's SLA window (createdAt + sla_in_hours), used
   // to sort upcoming orders soonest-due-first and to show a "Due in" label.
   // Negative once the SLA has elapsed.
-  int remainingSecondsFor(OrdersData order) {
-    final slaHours = int.tryParse(order.sla_in_hours ?? "") ?? 0;
-    final createdAt = order.createdAt;
-    if (createdAt == null || createdAt.isEmpty) return slaHours * 3600;
-    try {
-      final elapsed = getSecondsDifference(parseUtcTime(createdAt));
-      return (slaHours * 3600) - elapsed;
-    } catch (_) {
-      return slaHours * 3600;
-    }
-  }
+  // int remainingSecondsFor(OrdersData order) {
+  //   final slaHours = int.tryParse(order.sla_in_hours ?? "") ?? 0;
+  //   final createdAt = order.createdAt;
+  //   if (createdAt == null || createdAt.isEmpty) return slaHours * 3600;
+  //   try {
+  //     final elapsed = getSecondsDifference(parseUtcTime(createdAt));
+  //     return (slaHours * 3600) - elapsed;
+  //   } catch (_) {
+  //     return slaHours * 3600;
+  //   }
+  // }
 
   Future<bool> getWhatsAppDashBoardData() async {
     try {
@@ -628,6 +657,14 @@ class RiderDashboardController extends GetxController {
   }
 
   Future<bool> markAttendance(bool status) async {
+    if (status &&
+        (startLocation?.latitude == null || startLocation?.longitude == null)) {
+      utils.errorSnackBar(
+        "Location not found",
+        "Sync your location before signing in.",
+      );
+      return false;
+    }
     utils.showLoadingDialog("loading ...");
     try {
       Map<String, dynamic> model = {
@@ -658,6 +695,7 @@ class RiderDashboardController extends GetxController {
         return false;
       }
     } catch (e) {
+      utils.closeLoadingDialog();
       return false;
     }
   }
@@ -709,11 +747,30 @@ class RiderDashboardController extends GetxController {
     }
   }
 
+  // One-shot fix that drives the Sign In card's "Finding your location..."
+  // / "Location synced" / "Location not found" states.
+  Future<void> syncLocation() async {
+    if (isSyncingLocation.value) return;
+    isSyncingLocation.value = true;
+    try {
+      await getCurrentLocation();
+    } finally {
+      isSyncingLocation.value = false;
+    }
+  }
+
   getCurrentLocation() async {
     final location = await locationUtils.getCurrentLocation();
-    if (location == null) return;
+    if (location == null ||
+        location.latitude == null ||
+        location.longitude == null) {
+      return;
+    }
     startLocation = location;
     currentLocation = location;
+    isLocationSynced.value = true;
+    syncedLatLng.value =
+        "${location.latitude!.toStringAsFixed(4)}, ${location.longitude!.toStringAsFixed(4)}";
     // Only report the rider's position to the server while on duty.
     if (isAttendanceMarked.value) {
       await sendDriverLocation(location);
@@ -761,11 +818,26 @@ class RiderDashboardController extends GetxController {
   // ---------------------------------------------------------------------
   Future<void> fetchAvailableOrders() async {
     try {
-      final location = currentLocation ?? await locationUtils.getCurrentLocation();
+      final location =
+          currentLocation ?? await locationUtils.getCurrentLocation();
+      double? latitude = location?.latitude;
+      double? longitude = location?.longitude;
+      if (latitude == null || longitude == null) {
+        try {
+          final last = await geo.Geolocator.getLastKnownPosition();
+          latitude = last?.latitude;
+          longitude = last?.longitude;
+        } catch (_) {}
+      }
+      // The API rejects a request without latitude/longitude.
+      if (latitude == null || longitude == null) {
+        availableOrders.value = [];
+        return;
+      }
       Map<String, dynamic> model = {
         apiKeys.feCode: userData.code,
-        apiKeys.latitude: location?.latitude,
-        apiKeys.longitude: location?.longitude,
+        apiKeys.latitude: latitude,
+        apiKeys.longitude: longitude,
       };
       var response = await apiProvider.postRequest(
         apiEndPoints.fetchPlacedOrders,
@@ -782,18 +854,12 @@ class RiderDashboardController extends GetxController {
     } catch (_) {
       availableOrders.value = [];
     }
-
-    final ref = pendingFocusOrderRef;
-    if (ref != null) {
-      pendingFocusOrderRef = null;
-      openAvailableOrderDetail(ref);
-    }
   }
 
   bool isCod(OrdersData order) =>
       (order.paymentType ?? "").toLowerCase() == "cod";
 
-  bool isAtRisk(OrdersData order) => remainingSecondsFor(order) < 1800;
+  bool isAtRisk(OrdersData order) => order.is_at_risk ?? false;
 
   Future<bool> acceptRejectOrder(String type, String awbNo) async {
     utils.showLoadingDialog(
@@ -857,11 +923,78 @@ class RiderDashboardController extends GetxController {
     if (match != null) {
       Get.toNamed(
         Routes.orderDetailScreen,
-        arguments: match,
+        arguments: match.awbNo,
       )?.then((_) => fetchAvailableOrders());
     } else {
       utils.errorSnackBar("Order unavailable", "Order no longer available");
     }
+  }
+
+  // Opens the order stashed in pendingFocusOrderRef by a notification tap -
+  // no-op until the initial dashboard load has finished (getUser()), which
+  // calls this again itself once it has.
+  void consumePendingNotificationOrder() {
+    if (!_initialLoadDone) return;
+    final ref = pendingFocusOrderRef;
+    if (ref == null || ref.isEmpty) return;
+    pendingFocusOrderRef = null;
+    openOrderFromNotification(ref);
+  }
+
+  // Notification tap (any type) -> order detail by its awb_number; the
+  // detail screen fetches the order itself (driver/order-details).
+  void openOrderFromNotification(String orderRef) {
+    if (orderRef.isEmpty) return;
+    // Land on the dashboard first, whatever was open on top of it.
+    Get.until((route) => route.isFirst);
+    Get.toNamed(Routes.orderDetailScreen, arguments: orderRef)?.then((_) {
+      fetchAvailableOrders();
+      getDashBoardData();
+      getNextDelivery();
+    });
+  }
+
+  // The _notificationWorker above already re-fetches the dashboard for this
+  // push - this drops the order from the upcoming list right away and tells
+  // the rider, but only while the dashboard is the screen on top (the order
+  // list / active delivery screens show their own dialog).
+  void _onOrderCancelledPush(Map<String, dynamic> data) {
+    final ref = (data['awb_number'] ?? data['awb_no'] ?? '').toString();
+    if (ref.isEmpty) return;
+    final reason = (data['reason'] ?? data['cancel_reason'])?.toString();
+    final current = nextDelivery.value;
+    final match =
+        upcomingOrders.firstWhereOrNull((o) => o.awbNo == ref) ??
+        (current?.awbNo == ref ? current : null);
+    upcomingOrders.removeWhere((o) => o.awbNo == ref);
+    _assignedOrders = _assignedOrders.where((o) => o.awbNo != ref).toList();
+    if (!_isOnTop) return;
+    if (!markCancellationNotified(ref)) return;
+    showOrderCancelledDialog(
+      order: match ?? OrdersData(awbNo: ref),
+      reason: reason,
+      buttonLabel: "Got it",
+      onContinue: () {},
+    );
+  }
+
+  bool get _isOnTop =>
+      dashboardRouteName != null && Get.currentRoute == dashboardRouteName;
+
+  // App back in the foreground - cancel pushes received in the background
+  // never reached the workers, so re-sync and announce any assigned order
+  // that disappeared because it was cancelled.
+  Future<void> onAppResumed() async {
+    getDashBoardData();
+    final before = _assignedOrders;
+    if (!await getNextDelivery()) return;
+    final nowKeys = _assignedOrders.map((o) => o.awbNo).toSet();
+    final gone = before.where((o) => !nowKeys.contains(o.awbNo)).toList();
+    await showCancelledOrdersAmong(
+      gone,
+      userData.code ?? "",
+      isStillOnTop: () => _isOnTop,
+    );
   }
 
   // Clear profile fields
@@ -875,6 +1008,7 @@ class RiderDashboardController extends GetxController {
   @override
   void onClose() {
     _notificationWorker?.dispose();
+    _cancelWorker?.dispose();
     stopLocationTracking();
     address.dispose();
     phone.dispose();

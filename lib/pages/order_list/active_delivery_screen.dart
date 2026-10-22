@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:circular_countdown_timer/circular_countdown_timer.dart';
 import 'package:flutter/foundation.dart' show Factory;
@@ -7,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:google_navigation_flutter/google_navigation_flutter.dart'
     hide Marker;
 import 'package:signature/signature.dart';
@@ -62,6 +64,10 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Back from the browser / share target after sending the payment link.
+    if (state == AppLifecycleState.resumed) {
+      controller.onAppResumed();
+    }
     if (state == AppLifecycleState.detached && _isCallInitiated) {
       _handleAppTermination();
     }
@@ -506,13 +512,34 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
   Widget _orderTags() {
     final order = controller.order;
     final hasType = (order.serviceType ?? "").isNotEmpty;
+    // PRIORITY for priority orders; VALUE for any other WhatsApp order.
+    final hasDeliveryTag = order.isPriorityOrder || order.isWhatsAppOrder;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         if (hasType) _typeBadge(order.serviceType!),
-        if (hasType && order.isPriorityOrder) SizedBox(width: 8.w),
-        if (order.isPriorityOrder) _priorityTag(),
+        if (hasType && hasDeliveryTag) SizedBox(width: 8.w),
+        if (order.isPriorityOrder)
+          _priorityTag()
+        else if (order.isWhatsAppOrder)
+          _valueTag(),
       ],
+    );
+  }
+
+  Widget _valueTag() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+      decoration: BoxDecoration(
+        color: AppColors.greyColor5.withOpacity(Get.isDarkMode ? 0.5 : 0.14),
+        borderRadius: BorderRadius.circular(6.r),
+      ),
+      child: utils.tvCustom(
+        "VALUE",
+        AppColors.greyColor5,
+        9,
+        textAlignment: TextAlign.left,
+      ),
     );
   }
 
@@ -683,11 +710,20 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
   // ---------------------------------------------------------------------
   Widget _paymentStrip() {
     final isCod = controller.isCod;
-    final color = isCod ? _amberOFD : AppColors.greenLight;
+    final paidOnline = isCod && controller.isPaymentCompleted;
+    final color = isCod && !paidOnline ? _amberOFD : AppColors.greenLight;
     final String label;
     final String value;
     final String status;
-    if (isCod) {
+    if (paidOnline) {
+      label = "Paid via payment link";
+      value = "QAR ${controller.codAmountToCollect}";
+      status = "Paid";
+    } else if (isCod && controller.paymentLinkSent) {
+      label = "Payment link sent";
+      value = "QAR ${controller.codAmountToCollect}";
+      status = controller.isCheckingPayment ? "Checking..." : "Pending";
+    } else if (isCod) {
       label = controller.isSplitPayment
           ? "Split · COD · collect from customer"
           : "COD · collect from customer";
@@ -700,7 +736,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
       value = "Paid online";
       status = "Paid";
     }
-    return Container(
+    final strip = Container(
       padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
       decoration: BoxDecoration(
         color: color.withOpacity(Get.isDarkMode ? 0.16 : 0.10),
@@ -718,7 +754,9 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
             ),
             alignment: Alignment.center,
             child: Icon(
-              isCod ? Icons.payments_outlined : Icons.check_circle_outline,
+              isCod && !paidOnline
+                  ? Icons.payments_outlined
+                  : Icons.check_circle_outline,
               color: color,
               size: 18.sp,
             ),
@@ -756,6 +794,72 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
             child: utils.tvCustom(status, color, 10),
           ),
         ],
+      ),
+    );
+    if (controller.currentStep != 4 || !controller.hasPaymentLink) {
+      return strip;
+    }
+    return Column(
+      children: [
+        strip,
+        SizedBox(height: 10.h),
+        Row(
+          children: [
+            Expanded(
+              child: _paymentLinkActionButton(
+                icon: Icons.link,
+                label: "Payment link",
+                onPressed: _showCodPaymentSheet,
+              ),
+            ),
+            if (controller.paymentLinkSent) ...[
+              SizedBox(width: 10.w),
+              Expanded(
+                child: _paymentLinkActionButton(
+                  icon: Icons.refresh,
+                  label: "Refresh status",
+                  loading: controller.isCheckingPayment,
+                  onPressed: controller.refreshPaymentStatus,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+
+  // Outlined primary-colour button under the payment strip.
+  Widget _paymentLinkActionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+    bool loading = false,
+  }) {
+    return OutlinedButton.icon(
+      onPressed: loading ? null : onPressed,
+      style: OutlinedButton.styleFrom(
+        padding: EdgeInsets.symmetric(vertical: 11.h),
+        side: const BorderSide(color: AppColors.primaryThemeColor, width: 1.4),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(28.r),
+        ),
+      ),
+      icon: loading
+          ? SizedBox(
+              width: 14.sp,
+              height: 14.sp,
+              child: const CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppColors.primaryThemeColor,
+              ),
+            )
+          : Icon(icon, color: AppColors.primaryThemeColor, size: 16.sp),
+      label: utils.tvCustom(
+        loading ? "Checking..." : label,
+        AppColors.primaryThemeColor,
+        12.5,
+        maxLines: 1,
       ),
     );
   }
@@ -827,12 +931,20 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
               : const Color(0xFFECECEC));
     return InkWell(
       onTap: isCurrent ? null : () => controller.switchToOrder(o),
-      borderRadius: BorderRadius.circular(11.r),
+      borderRadius: BorderRadius.circular(12.r),
       child: Container(
-        width: 110.w,
-        padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 8.h),
+        // Sized to its content (the full AWB) within these bounds, instead
+        // of a fixed width that cut the AWB off.
+        constraints: BoxConstraints(
+          minWidth: context.isPhone ? 138.w : 168.0.sp,
+          maxWidth: context.isPhone ? 190.w : 220.0.sp,
+        ),
+        padding: EdgeInsets.symmetric(
+          horizontal: context.isPhone ? 10.w : 12.0.sp,
+          vertical: context.isPhone ? 9.h : 11.0.sp,
+        ),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(11.r),
+          borderRadius: BorderRadius.circular(12.r),
           border: Border.all(color: borderColor, width: 1.6),
           color: isCurrent
               ? AppColors.primaryThemeColor.withOpacity(
@@ -847,23 +959,23 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
             utils.tvCustom(
               o.awbNo ?? o.orderRefNumber ?? "-",
               AppColors.black,
-              10,
+              11,
               textAlignment: TextAlign.left,
               maxLines: 1,
             ),
-            SizedBox(height: 2.h),
+            SizedBox(height: 3.h),
             utils.tvCustom(
               (o.consigneeName?.isNotEmpty ?? false)
                   ? o.consigneeName!
                   : (o.merchantName ?? "-"),
               AppColors.greyColor4,
-              9,
+              9.5,
               textAlignment: TextAlign.left,
               maxLines: 1,
             ),
             SizedBox(height: 6.h),
             Container(
-              padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+              padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 3.h),
               decoration: BoxDecoration(
                 color: isCurrent
                     ? AppColors.primaryThemeColor
@@ -872,12 +984,27 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
                           : const Color(0xFFEFEFEF)),
                 borderRadius: BorderRadius.circular(6.r),
               ),
-              child: utils.tvCustom(
-                controller.pickupSuggestionTag(o),
-                isCurrent ? Colors.white : AppColors.greyColor5,
-                8.5,
-                textAlignment: TextAlign.left,
-                maxLines: 1,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isCurrent) ...[
+                    Icon(
+                      Icons.check_rounded,
+                      color: Colors.white,
+                      size: context.isPhone ? 11.sp : 13.0.sp,
+                    ),
+                    SizedBox(width: 3.w),
+                  ],
+                  Flexible(
+                    child: utils.tvCustom(
+                      controller.pickupSuggestionTag(o),
+                      isCurrent ? Colors.white : AppColors.greyColor5,
+                      8.5,
+                      textAlignment: TextAlign.left,
+                      maxLines: 1,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -1250,6 +1377,13 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
   // always reachable without scrolling.
   // ---------------------------------------------------------------------
   Widget _primaryActionBar(bool isTablet, Color cardBg) {
+    // Locked until the payment link is paid (or while it's being checked);
+    // green once the customer has paid through the link.
+    final locked =
+        controller.isDeliveryLockedForPayment || controller.isCheckingPayment;
+    final paidOnline = controller.currentStep == 4 &&
+        controller.isCod &&
+        controller.isPaymentCompleted;
     return Container(
       width: double.infinity,
       padding: EdgeInsets.fromLTRB(
@@ -1273,9 +1407,14 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: _onPrimaryActionPressed,
+              onPressed: locked ? null : _onPrimaryActionPressed,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryThemeColor,
+                backgroundColor: paidOnline
+                    ? AppColors.greenLight
+                    : AppColors.primaryThemeColor,
+                disabledBackgroundColor: Get.isDarkMode
+                    ? AppColors.greyColor5
+                    : AppColors.greyColor2,
                 padding: EdgeInsets.symmetric(vertical: 14.h),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(28.r),
@@ -1378,7 +1517,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
                     size: 16.sp,
                   ),
                   label: utils.tvCustom(
-                    "Report a delivery issue",
+                    controller.currentStep == 2 ?"Report a pickup issue" : "Report a delivery issue",
                     AppColors.red,
                     12.5,
                   ),
@@ -1460,7 +1599,11 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
   // straight through, same as every earlier step).
   // ---------------------------------------------------------------------
   void _onPrimaryActionPressed() {
-    if (controller.currentStep == 4 && controller.isCod) {
+    if (controller.currentStep == 4 &&
+        controller.isCod &&
+        !controller.isPaymentCompleted) {
+      // Delivery proof (package photo, delivery photo, signature) comes
+      // before collecting payment - with or without a payment link.
       if (!controller.evidenceComplete) {
         utils.errorSnackBar(
           "Evidence required",
@@ -1502,7 +1645,9 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
                 Icon(Icons.payments_outlined, color: _amberOFD, size: 20.sp),
                 SizedBox(width: 8.w),
                 utils.tvCustom(
-                  "Confirm payment",
+                  controller.hasPaymentLink
+                      ? "Collect QAR ${controller.codAmountToCollect}"
+                      : "Confirm payment",
                   AppColors.black,
                   16,
                   textAlignment: TextAlign.left,
@@ -1511,19 +1656,47 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
             ),
             SizedBox(height: 8.h),
             utils.tvCustom(
-              "Collect QAR ${controller.codAmountToCollect} from the customer before completing this delivery.",
+              controller.hasPaymentLink
+                  ? "Ask the customer to scan to pay, or send them the link. Delivery unlocks once they've paid."
+                  : "Collect QAR ${controller.codAmountToCollect} from the customer before completing this delivery.",
               AppColors.greyColor5,
               13,
               textAlignment: TextAlign.left,
               maxLines: 3,
             ),
+            if (controller.hasPaymentLink) ...[
+              SizedBox(height: 14.h),
+              _paymentLinkQr(),
+              SizedBox(height: 14.h),
+              _paymentSheetOption(
+                icon: Icons.open_in_new,
+                color: AppColors.primaryThemeColor,
+                title: "Open payment link",
+                subtitle: "Customer pays on your phone",
+                onTap: () {
+                  Get.back();
+                  controller.openPaymentLink();
+                },
+              ),
+              SizedBox(height: 10.h),
+              _paymentSheetOption(
+                icon: Icons.share_outlined,
+                color: Get.isDarkMode ? AppColors.blueLight : AppColors.blue,
+                title: "Share payment link",
+                subtitle: "WhatsApp, SMS or any app",
+                onTap: () {
+                  Get.back();
+                  controller.sharePaymentLink();
+                },
+              ),
+            ] else ...[
             SizedBox(height: 16.h),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () {
                   Get.back();
-                  controller.confirmPrimaryAction();
+                  controller.confirmPrimaryAction(cashCollected: true);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.greenLight,
@@ -1561,10 +1734,137 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
                 child: utils.tvCustom("Not Collected", AppColors.red, 15),
               ),
             ),
+            ],
           ],
         ),
       ),
       isScrollControlled: true,
+    ).then((_) {
+      // The customer may have paid by scanning the QR - same pending /
+      // refresh-status state as after opening or sharing the link.
+      if (controller.hasPaymentLink) controller.markPaymentLinkShown();
+    });
+  }
+
+  // Scan-to-pay QR of the payment link. Always black on a white card (dark
+  // mode too) so phone cameras can read it - which is also why the caption
+  // uses AppTextStyle directly: tvCustom would force it white in dark mode.
+  Widget _paymentLinkQr() {
+    final qrSize = Get.context!.isPhone ? 160.r : 220.r;
+    return Center(
+      child: Container(
+        padding: EdgeInsets.fromLTRB(14.r, 14.r, 14.r, 10.r),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(color: AppColors.greyColor2.withOpacity(0.6)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            QrImageView(
+              data: (controller.order.paymentLink ?? "").trim(),
+              size: qrSize,
+              padding: EdgeInsets.zero,
+              backgroundColor: AppColors.white,
+              eyeStyle: const QrEyeStyle(
+                eyeShape: QrEyeShape.square,
+                color: AppColors.black,
+              ),
+              dataModuleStyle: const QrDataModuleStyle(
+                dataModuleShape: QrDataModuleShape.square,
+                color: AppColors.black,
+              ),
+            ),
+            SizedBox(height: 8.h),
+            Text.rich(
+              TextSpan(
+                text: "Scan to pay ",
+                children: [
+                  TextSpan(
+                    text: "QAR ${controller.codAmountToCollect}",
+                    style: AppTextStyle.tsCustom(
+                      AppColors.primaryThemeColor,
+                      utils.responsiveFontSize(11.sp),
+                    ),
+                  ),
+                ],
+              ),
+              style: AppTextStyle.tsCustom(
+                AppColors.black,
+                utils.responsiveFontSize(11.sp),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // One tappable row in the payment sheet (open / share link).
+  Widget _paymentSheetOption({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12.r),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12.r),
+          border: Border.all(
+            color: Get.isDarkMode
+                ? Colors.white.withOpacity(0.12)
+                : AppColors.greyColor2.withOpacity(0.6),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 34.w,
+              height: 34.w,
+              decoration: BoxDecoration(
+                color: color.withOpacity(Get.isDarkMode ? 0.24 : 0.12),
+                borderRadius: BorderRadius.circular(10.r),
+              ),
+              alignment: Alignment.center,
+              child: Icon(icon, color: color, size: 18.sp),
+            ),
+            SizedBox(width: 12.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  utils.tvCustom(
+                    title,
+                    AppColors.black,
+                    13.5,
+                    textAlignment: TextAlign.left,
+                    maxLines: 1,
+                  ),
+                  SizedBox(height: 2.h),
+                  utils.tvCustom(
+                    subtitle,
+                    AppColors.greyColor5,
+                    11,
+                    textAlignment: TextAlign.left,
+                    maxLines: 2,
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              color: AppColors.greyColor4,
+              size: 18.sp,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1647,8 +1947,8 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
                   child: _evidenceTile(
                     icon: Icons.camera_alt_outlined,
                     label: "Attempt photo",
-                    captured: controller.undeliveredPhoto != null,
-                    onTap: controller.captureUndeliveredPhoto,
+                    file: controller.undeliveredPhoto,
+                    onCapture: controller.captureUndeliveredPhoto,
                   ),
                 ),
               ),
@@ -1979,76 +2279,273 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
                 child: _evidenceTile(
                   icon: Icons.camera_alt_outlined,
                   label: "Package photo",
-                  captured: controller.packagePhoto != null,
-                  onTap: controller.capturePackagePhoto,
+                  file: controller.packagePhoto,
+                  onCapture: controller.capturePackagePhoto,
                 ),
               ),
-              SizedBox(width: 10.w),
+              SizedBox(width: (context.isPhone ? 10 : 16).w),
               Expanded(
                 child: _evidenceTile(
                   icon: Icons.camera_alt_outlined,
                   label: "Delivery photo",
-                  captured: controller.deliveryPhoto != null,
-                  onTap: controller.captureDeliveryPhoto,
+                  file: controller.deliveryPhoto,
+                  onCapture: controller.captureDeliveryPhoto,
                 ),
               ),
-              SizedBox(width: 10.w),
+              SizedBox(width: (context.isPhone ? 10 : 16).w),
               Expanded(
                 child: _evidenceTile(
                   icon: Icons.edit_outlined,
                   label: "Customer signature",
-                  captured: controller.signatureFile != null,
-                  onTap: () => _openSignatureSheet(context),
+                  file: controller.signatureFile,
+                  onCapture: () => _openSignatureSheet(context),
                 ),
               ),
             ],
           ),
+          if (controller.packagePhoto != null ||
+              controller.deliveryPhoto != null ||
+              controller.signatureFile != null) ...[
+            SizedBox(height: 8.h),
+            Center(
+              child: utils.tvCustom(
+                "Tap a photo to view or retake it",
+                AppColors.greyColor4,
+                10,
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 
+  // Empty: icon + label, tap captures. Captured: the image fills the tile
+  // with a tick badge and a retake button; tapping it opens a preview.
   Widget _evidenceTile({
     required IconData icon,
     required String label,
-    required bool captured,
-    required VoidCallback onTap,
+    required File? file,
+    required VoidCallback onCapture,
   }) {
-    final color = captured ? AppColors.greenLight : AppColors.greyColor4;
+    if (file != null) {
+      return _capturedEvidenceTile(
+        label: label,
+        file: file,
+        onRetake: onCapture,
+      );
+    }
     return InkWell(
-      onTap: onTap,
+      onTap: onCapture,
       borderRadius: BorderRadius.circular(12.r),
-      child: Container(
-        padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 4.w),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12.r),
-          border: Border.all(
-            color: captured
-                ? AppColors.greenLight.withOpacity(0.5)
-                : (Get.isDarkMode
-                      ? Colors.white.withOpacity(0.25)
-                      : AppColors.greyColor2),
-            width: 1.4,
-            strokeAlign: BorderSide.strokeAlignInside,
+      child: AspectRatio(
+        aspectRatio: 1 / 1.05,
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 4.w),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(
+              color: Get.isDarkMode
+                  ? Colors.white.withOpacity(0.25)
+                  : AppColors.greyColor2,
+              width: 1.4,
+              strokeAlign: BorderSide.strokeAlignInside,
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: AppColors.greyColor4, size: 20.sp),
+              SizedBox(height: 8.h),
+              utils.tvCustom(
+                label,
+                AppColors.greyColor5,
+                10.5,
+                textAlignment: TextAlign.center,
+                maxLines: 2,
+              ),
+            ],
           ),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              captured ? Icons.check_circle : icon,
-              color: color,
-              size: 20.sp,
+      ),
+    );
+  }
+
+  Widget _capturedEvidenceTile({
+    required String label,
+    required File file,
+    required VoidCallback onRetake,
+  }) {
+    return GestureDetector(
+      onTap: () => _showEvidencePreview(
+        label: label,
+        file: file,
+        onRetake: onRetake,
+      ),
+      child: AspectRatio(
+        aspectRatio: 1 / 1.05,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(color: AppColors.greenLight, width: 1.6),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(10.r),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // The signature PNG has a white background of its own.
+                Image.file(file, fit: BoxFit.cover),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    padding: EdgeInsets.fromLTRB(4.w, 14.h, 4.w, 5.h),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          AppColors.black.withOpacity(0),
+                          AppColors.black.withOpacity(0.65),
+                        ],
+                      ),
+                    ),
+                    child: utils.tvCustom(
+                      label,
+                      AppColors.white,
+                      9.5,
+                      maxLines: 1,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 5.r,
+                  right: 5.r,
+                  child: Container(
+                    width: 18.r,
+                    height: 18.r,
+                    decoration: BoxDecoration(
+                      color: AppColors.greenLight,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.white, width: 1.5),
+                    ),
+                    child: Icon(Icons.check, color: AppColors.white, size: 11.r),
+                  ),
+                ),
+                Positioned(
+                  top: 2.r,
+                  left: 2.r,
+                  // Larger hit area than the visible dot.
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: onRetake,
+                    child: Padding(
+                      padding: EdgeInsets.all(3.r),
+                      child: Container(
+                        width: 20.r,
+                        height: 20.r,
+                        decoration: BoxDecoration(
+                          color: AppColors.black.withOpacity(0.55),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.refresh,
+                          color: AppColors.white,
+                          size: 13.r,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            SizedBox(height: 8.h),
-            utils.tvCustom(
-              label,
-              AppColors.greyColor5,
-              10.5,
-              textAlignment: TextAlign.center,
-              maxLines: 2,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Full-screen view of a captured evidence image with Retake / Done.
+  void _showEvidencePreview({
+    required String label,
+    required File file,
+    required VoidCallback onRetake,
+  }) {
+    Get.dialog(
+      Dialog.fullscreen(
+        backgroundColor: AppColors.black.withOpacity(0.92),
+        child: SafeArea(
+          child: Padding(
+            padding: EdgeInsets.all((context.isPhone ? 14 : 28).w),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: utils.tvCustom(
+                        label,
+                        AppColors.white,
+                        15,
+                        textAlignment: TextAlign.left,
+                        maxLines: 1,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Get.back(),
+                      icon: Icon(Icons.close, color: AppColors.white, size: 22.sp),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12.h),
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12.r),
+                    child: InteractiveViewer(
+                      child: Image.file(file, fit: BoxFit.contain),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 14.h),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Get.back();
+                          onRetake();
+                        },
+                        style: OutlinedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(vertical: 13.h),
+                          side: const BorderSide(color: AppColors.white, width: 1.4),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(28.r),
+                          ),
+                        ),
+                        icon: Icon(Icons.refresh, color: AppColors.white, size: 18.sp),
+                        label: utils.tvCustom("Retake", AppColors.white, 14),
+                      ),
+                    ),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => Get.back(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryThemeColor,
+                          padding: EdgeInsets.symmetric(vertical: 14.h),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(28.r),
+                          ),
+                        ),
+                        child: utils.tvCustom("Done", AppColors.white, 14),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

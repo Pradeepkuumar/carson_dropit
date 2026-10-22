@@ -14,7 +14,6 @@ class BaseApiResponse {
     method = json["method"];
     status = json["status"];
     final jsonData = json["data"];
-
     if (jsonData != null) {
       if (jsonData is Map<String, dynamic>) {
         data = jsonData;

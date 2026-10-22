@@ -15,15 +15,48 @@ class FirebaseMessagingController extends GetxController {
   bool isInitialized = false;
   var onNewNotification = false.obs;
   var onNewAssignedOrder = 0.obs;
+  // Data of the latest foreground OrderCancelled push - the active delivery
+  // screen watches it to tell the rider when the order they're on is gone.
+  var onOrderCancelled = Rxn<Map<String, dynamic>>();
 
   @override
   void onInit() {
     super.onInit();
     if (!isInitialized) {
       isInitialized = true;
+      // Tap handlers first, before the (awaited) permission prompt, so a tap
+      // that launched/resumed the app is never missed.
+      _registerTapHandlers();
       _initializeFirebaseMessaging();
       initializeLocalNotifications();
     }
+  }
+
+  void _registerTapHandlers() {
+    // Background -> tapped (app was alive, not on screen).
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      print('App opened from notification: ${message.messageId}');
+      // Fires the instant Android resumes the activity, sometimes before
+      // Flutter's engine has reattached its surface - navigating right away
+      // can render into a frame that isn't on screen yet, showing as a
+      // blank/white screen. Deferring to the next frame avoids that.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _navigateFromNotificationData(message.data);
+      });
+      // Make sure that next frame actually comes, so the callback isn't
+      // left waiting on an idle engine.
+      WidgetsBinding.instance.scheduleFrame();
+    });
+
+    // Killed -> launched by tapping an FCM (system tray) notification.
+    FirebaseMessaging.instance.getInitialMessage().then((
+      RemoteMessage? message,
+    ) {
+      if (message != null) {
+        print('Initial message received: ${message.messageId}');
+        _navigateFromNotificationData(message.data);
+      }
+    });
   }
 
   Future<void> _initializeFirebaseMessaging() async {
@@ -49,16 +82,29 @@ class FirebaseMessagingController extends GetxController {
         final type = message.data['type'] ?? '';
 
         onNewNotification.value = true;
-        if (type != 'NearByOrders') {
+        // A cancellation isn't a new assigned order - only refresh.
+        if (type != 'NearByOrders' && type != 'OrderCancelled') {
           onNewAssignedOrder.value++;
         }
+        if (type == 'OrderCancelled') {
+          onOrderCancelled.value = Map<String, dynamic>.from(message.data);
+        }
 
-        final sound =
-            message.data['sound'] ??
-            (type == 'NearByOrders' ? 'nearby_order' : 'new_order');
-        final channelId = type == 'NearByOrders'
-            ? 'nearby_orders_channel'
-            : 'assigned_new_order_channel';
+        final String sound;
+        final String channelId;
+        switch (type) {
+          case 'NearByOrders':
+            sound = message.data['sound'] ?? 'nearby_order';
+            channelId = 'nearby_orders_channel';
+            break;
+          case 'OrderCancelled':
+            sound = message.data['sound'] ?? 'order_cancelled';
+            channelId = 'order_cancellation_channel';
+            break;
+          default:
+            sound = message.data['sound'] ?? 'new_order';
+            channelId = 'assigned_new_order_channel';
+        }
 
         _showNotification(
           title: title,
@@ -69,34 +115,12 @@ class FirebaseMessagingController extends GetxController {
         );
       });
 
-      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-        print('App opened from notification: ${message.messageId}');
-        // Fires the instant Android resumes the activity, sometimes before
-        // Flutter's engine has reattached its surface - navigating right away
-        // can render into a frame that isn't on screen yet, showing as a
-        // blank/white screen. Deferring to the next frame avoids that.
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _navigateFromNotificationData(message.data);
-        });
-      });
-
-      FirebaseMessaging.instance.getInitialMessage().then((
-        RemoteMessage? message,
-      ) {
-        if (message != null) {
-          print('Initial message received: ${message.messageId}');
-          // App was launched (from terminated) by tapping the notification -
-          // defer until the first frame so GetMaterialApp's navigator exists.
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _navigateFromNotificationData(message.data);
-          });
-        }
-      });
-
+      // Foreground messages are shown by _showNotification (custom sounds) -
+      // letting iOS also present the FCM banner showed every message twice.
       await _firebaseMessaging.setForegroundNotificationPresentationOptions(
-        alert: true,
+        alert: false,
         badge: true,
-        sound: true,
+        sound: false,
       );
 
       await getFCMTokenWithRetry();
@@ -161,6 +185,16 @@ class FirebaseMessagingController extends GetxController {
       );
       // Create multiple notification channels with different sounds
       await _createNotificationChannels();
+
+      // Killed -> launched by tapping one of our own local notifications
+      // (shown while in foreground, app killed afterwards) -
+      // onDidReceiveNotificationResponse doesn't fire for that case.
+      final launchDetails = await _notificationsPlugin
+          .getNotificationAppLaunchDetails();
+      if (launchDetails?.didNotificationLaunchApp ?? false) {
+        final response = launchDetails!.notificationResponse;
+        if (response != null) _handleNotificationTap(response);
+      }
     } catch (e) {
       print('Error initializing local notifications: $e');
     }
@@ -199,6 +233,19 @@ class FirebaseMessagingController extends GetxController {
               enableVibration: true,
             );
 
+        // Channel for cancelled orders ("Order cancelled! Please check your
+        // order list.") - max importance, the rider must stop the delivery.
+        const AndroidNotificationChannel orderCancelledChannel =
+            AndroidNotificationChannel(
+              'order_cancellation_channel',
+              'Order Cancelled',
+              description: 'Notifications for cancelled orders',
+              importance: Importance.max,
+              playSound: true,
+              sound: RawResourceAndroidNotificationSound('order_cancelled'),
+              enableVibration: true,
+            );
+
         // Default channel
         const AndroidNotificationChannel defaultChannel =
             AndroidNotificationChannel(
@@ -215,6 +262,13 @@ class FirebaseMessagingController extends GetxController {
           nearbyOrdersChannel,
         );
         await androidImplementation.createNotificationChannel(newOrdersChannel);
+        await androidImplementation.createNotificationChannel(
+          orderCancelledChannel,
+        );
+        // Replaced by order_cancellation_channel (the id the backend sends).
+        await androidImplementation.deleteNotificationChannel(
+          channelId: 'order_cancelled_channel',
+        );
         await androidImplementation.createNotificationChannel(defaultChannel);
 
         print('✅ Notification channels created successfully');
@@ -291,6 +345,8 @@ class FirebaseMessagingController extends GetxController {
         return 'Nearby Orders';
       case 'assigned_new_order_channel':
         return 'New Orders';
+      case 'order_cancellation_channel':
+        return 'Order Cancelled';
       default:
         return 'Default Notifications';
     }
@@ -308,29 +364,35 @@ class FirebaseMessagingController extends GetxController {
     }
   }
 
-  // Shared by all three tap paths (foreground local-notification tap,
-  // background onMessageOpenedApp, terminated getInitialMessage) so tapping
-  // a notification behaves the same regardless of app state or platform.
+  String? _lastTappedRef;
+  DateTime? _lastTappedAt;
+
+  // Shared by all four tap paths (foreground local-notification tap,
+  // background onMessageOpenedApp, killed getInitialMessage, killed
+  // local-notification launch) so tapping any notification type opens its
+  // order detail regardless of app state or platform.
   void _navigateFromNotificationData(Map<String, dynamic> data) {
-    final type = data['type'] ?? '';
-    if (type == 'NearByOrders') {
-      final orderRef = data['awb_number'] ?? '';
-      // Same pattern AppBottomNav's Order tab uses: pop everything pushed on
-      // top of the dashboard first, so this always lands on it regardless of
-      // whatever else was open when the notification was tapped.
-      Get.until((route) => route.isFirst);
-      if (orderRef.isEmpty) return;
-      // Land on the dashboard and open the order detail directly, instead of
-      // routing through order_list_screen first. Resolves against
-      // RiderDashboardController's own availableOrders (same data its
-      // "New Requests" section shows) so both share one fetch; if the
-      // controller isn't registered yet (a cold-start race), stash the ref
-      // so fetchAvailableOrders picks it up once it runs.
-      if (Get.isRegistered<RiderDashboardController>()) {
-        Get.find<RiderDashboardController>().openAvailableOrderDetail(orderRef);
-      } else {
-        RiderDashboardController.pendingFocusOrderRef = orderRef;
-      }
+    final orderRef = (data['awb_number'] ?? '').toString();
+    if (orderRef.isEmpty) return;
+
+    // Two paths can report the same tap (e.g. getInitialMessage and the
+    // local-notification launch details) - open it only once.
+    final now = DateTime.now();
+    if (_lastTappedRef == orderRef &&
+        _lastTappedAt != null &&
+        now.difference(_lastTappedAt!) < const Duration(seconds: 5)) {
+      return;
+    }
+    _lastTappedRef = orderRef;
+    _lastTappedAt = now;
+
+    // Always stash first; RiderDashboardController opens it once its
+    // initial load is done (consumePendingNotificationOrder is a no-op
+    // before that). On a cold start the splash screen's Get.offAllNamed
+    // would otherwise wipe out a detail screen opened too early.
+    RiderDashboardController.pendingFocusOrderRef = orderRef;
+    if (Get.isRegistered<RiderDashboardController>()) {
+      Get.find<RiderDashboardController>().consumePendingNotificationOrder();
     }
   }
 

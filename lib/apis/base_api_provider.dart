@@ -20,7 +20,7 @@ class ApiProvider extends GetConnect {
   File? file;
   final String devBaseUrl = "https://dev.zyppy.qa/api/v1/";
  // final String liveBaseUrl = "https://dev.zyppy.qa/api/v1/";
-  final String liveBaseUrl = "https://zyppy.qa/api/v1/";
+  //final String liveBaseUrl = "https://zyppy.qa/api/v1/";
   
 
   ApiProvider() {
@@ -28,10 +28,10 @@ class ApiProvider extends GetConnect {
     maxAuthRetries = 3;
 
     if (kDebugMode) {
-     baseUrl = liveBaseUrl;
+     baseUrl = devBaseUrl;
     } else if (kReleaseMode) {
       //baseUrl = devBaseUrl;
-      baseUrl = liveBaseUrl;
+      baseUrl = devBaseUrl;
     }
 
     httpClient.addAuthenticator((Request<dynamic> request) async {
@@ -285,13 +285,11 @@ Future<dynamic> postRequestWithImagesDio(
     }
     
     final dio = Dio();
-   
     if (kDebugMode) {
-      baseUrl = liveBaseUrl;
+      baseUrl = devBaseUrl;
     } else if (kReleaseMode) {
-      baseUrl = liveBaseUrl;
+      baseUrl = devBaseUrl;
     }
-
 
     (dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
       final HttpClient client = HttpClient();
