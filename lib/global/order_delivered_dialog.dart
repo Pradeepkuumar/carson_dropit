@@ -48,6 +48,212 @@ void showOrderFailedDialog({
   );
 }
 
+// Shown on the active delivery screen when the order the rider is working
+// on gets cancelled (push notification, or found cancelled on app resume).
+// Also shown on the dashboard / order list, where there's no "next order"
+// to continue to - those pass their own buttonLabel.
+void showOrderCancelledDialog({
+  required OrdersData order,
+  String? reason,
+  String buttonLabel = "Continue to next order",
+  required VoidCallback onContinue,
+}) {
+  Get.dialog(
+    _OrderCancelledDialog(
+      order: order,
+      reason: reason,
+      buttonLabel: buttonLabel,
+      onContinue: onContinue,
+    ),
+    barrierDismissible: false,
+    barrierColor: Colors.black.withOpacity(0.55),
+  );
+}
+
+class _OrderCancelledDialog extends StatelessWidget {
+  final OrdersData order;
+  final String? reason;
+  final String buttonLabel;
+  final VoidCallback onContinue;
+
+  const _OrderCancelledDialog({
+    required this.order,
+    required this.reason,
+    required this.buttonLabel,
+    required this.onContinue,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Get.isDarkMode;
+    final isTablet = !context.isPhone;
+    final cardBg = isDark ? AppColors.greyColor10 : Colors.white;
+    final textColor = isDark ? Colors.white : AppColors.black;
+    final subtextColor = isDark
+        ? Colors.white.withOpacity(0.62)
+        : AppColors.greyColor4;
+    final infoBg = isDark ? Colors.white.withOpacity(0.06) : AppColors.greyColor1;
+    final divider = isDark
+        ? Colors.white.withOpacity(0.08)
+        : AppColors.greyColor2.withOpacity(0.4);
+    final hasReason = (reason ?? "").trim().isNotEmpty;
+
+    // Hardware back must not skip the dialog - the screen still shows the
+    // cancelled order until Continue loads the next one.
+    return PopScope(
+      canPop: false,
+      child: Material(
+        type: MaterialType.transparency,
+        child: Center(
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: 1),
+            duration: const Duration(milliseconds: 450),
+            curve: Curves.easeOutBack,
+            builder: (context, t, child) => Opacity(
+              opacity: t.clamp(0.0, 1.0),
+              child: Transform.translate(
+                offset: Offset(0, (1 - t) * 24),
+                child: child,
+              ),
+            ),
+            child: Container(
+              width: isTablet ? 380.0.sp : 320.0.sp,
+              padding: EdgeInsets.fromLTRB(22.sp, 28.sp, 22.sp, 22.sp),
+              decoration: BoxDecoration(
+                color: cardBg,
+                borderRadius: BorderRadius.circular(20.r),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.35),
+                    blurRadius: 48,
+                    offset: const Offset(0, 20),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 88.sp,
+                    height: 88.sp,
+                    decoration: BoxDecoration(
+                      color: AppColors.red.withOpacity(isDark ? 0.3 : 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: Container(
+                      width: 72.sp,
+                      height: 72.sp,
+                      decoration: const BoxDecoration(
+                        color: AppColors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.block_rounded,
+                        color: Colors.white,
+                        size: 38.sp,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 18.h),
+                  utils.tvCustom("Order cancelled", textColor, 19),
+                  SizedBox(height: 6.h),
+                  utils.tvCustom(
+                    "This order was cancelled. You don't need to complete it.",
+                    subtextColor,
+                    13.5,
+                    maxLines: 2,
+                  ),
+                  SizedBox(height: 20.h),
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 16.sp,
+                      vertical: 14.sp,
+                    ),
+                    decoration: BoxDecoration(
+                      color: infoBg,
+                      borderRadius: BorderRadius.circular(14.r),
+                    ),
+                    child: Column(
+                      children: [
+                        _cancelledInfoRow(
+                          "AWB Number",
+                          order.awbNo ?? "-",
+                          textColor,
+                          subtextColor,
+                        ),
+                        Divider(height: 20.h, thickness: 1, color: divider),
+                        _cancelledInfoRow(
+                          "Customer",
+                          order.consigneeName ?? "-",
+                          textColor,
+                          subtextColor,
+                        ),
+                        if (hasReason) ...[
+                          Divider(height: 20.h, thickness: 1, color: divider),
+                          _cancelledInfoRow(
+                            "Reason",
+                            reason!.trim(),
+                            textColor,
+                            subtextColor,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 20.h),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Get.back();
+                        onContinue();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryThemeColor,
+                        padding: EdgeInsets.symmetric(vertical: 14.sp),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
+                      ),
+                      child: utils.tvCustom(buttonLabel, Colors.white, 15),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _cancelledInfoRow(
+    String label,
+    String value,
+    Color valueColor,
+    Color labelColor,
+  ) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        utils.tvCustom(label, labelColor, 12.5, textAlignment: TextAlign.left),
+        SizedBox(width: 12.w),
+        Expanded(
+          child: utils.tvCustom(
+            value,
+            valueColor,
+            13.5,
+            textAlignment: TextAlign.right,
+            maxLines: 2,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _OrderFailedDialog extends StatelessWidget {
   final OrdersData order;
   final bool notPicked;

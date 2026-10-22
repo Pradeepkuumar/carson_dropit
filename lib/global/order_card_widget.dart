@@ -23,6 +23,9 @@ class OrderCardWidget extends StatelessWidget {
   final VoidCallback? onAccept;
   final VoidCallback? onDecline;
   final VoidCallback? onDropback;
+  // Set only for the first card in the order list's Assigned tab - shows
+  // the "UP NEXT" label and a footer with a "Go to delivery" button.
+  final VoidCallback? onGoToDelivery;
   // Condensed layout for the dashboard's "New Requests" carousel: header
   // row (icon/AWB/status/customer/distance + payment badge), no address
   // block, no accent border - see the "Option A" design mockup.
@@ -42,6 +45,7 @@ class OrderCardWidget extends StatelessWidget {
     this.onAccept,
     this.onDecline,
     this.onDropback,
+    this.onGoToDelivery,
     this.compact = false,
   });
 
@@ -73,10 +77,31 @@ class OrderCardWidget extends StatelessWidget {
       case UNDELIVERED:
       case NOT_PICKED:
         return AppColors.red;
+      case CANCELED:
+        return AppColors.greyColor4;
       default:
         return AppColors.primaryThemeColor;
     }
   }
+
+  // Footer label/color on a finished (completed or undelivered) order.
+  String get _finishedLabel {
+    switch (order.status) {
+      case UNDELIVERED:
+        return "Undelivered";
+      case NOT_PICKED:
+        return "Not picked";
+      case CANCELED:
+        return "Cancelled";
+      default:
+        return "Delivered";
+    }
+  }
+
+  Color get _finishedColor =>
+      order.status == UNDELIVERED || order.status == NOT_PICKED
+          ? AppColors.red
+          : AppColors.greyColor4;
 
   Widget _statusBadge(String status) {
     final color = _statusColor(status);
@@ -131,6 +156,29 @@ class OrderCardWidget extends StatelessWidget {
     );
   }
 
+  // WhatsApp orders that aren't priority are "value" deliveries.
+  Widget _valueTag() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+      decoration: BoxDecoration(
+        color: AppColors.greyColor5.withOpacity(Get.isDarkMode ? 0.5 : 0.14),
+        borderRadius: BorderRadius.circular(6.r),
+      ),
+      child: utils.tvCustom(
+        "VALUE",
+        AppColors.greyColor5,
+        9,
+        textAlignment: TextAlign.left,
+      ),
+    );
+  }
+
+  // PRIORITY for priority orders; VALUE for any other WhatsApp order.
+  bool get _hasDeliveryTag => order.isPriorityOrder || order.isWhatsAppOrder;
+
+  Widget _deliveryTag() =>
+      order.isPriorityOrder ? _priorityTag() : _valueTag();
+
   Widget _paymentBadge() {
     final color = isCod ? _amberOFD : AppColors.greenLight;
     final label = isCod
@@ -179,6 +227,7 @@ class OrderCardWidget extends StatelessWidget {
             : Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (onGoToDelivery != null) _upNextLabel(isTablet),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -237,18 +286,16 @@ class OrderCardWidget extends StatelessWidget {
                 ),
               ],
             ),
-            if ((order.serviceType ?? "").isNotEmpty ||
-                order.isPriorityOrder) ...[
+            if ((order.serviceType ?? "").isNotEmpty || _hasDeliveryTag) ...[
               SizedBox(height: 8.h),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if ((order.serviceType ?? "").isNotEmpty)
                     _typeBadge(order.serviceType!),
-                  if ((order.serviceType ?? "").isNotEmpty &&
-                      order.isPriorityOrder)
+                  if ((order.serviceType ?? "").isNotEmpty && _hasDeliveryTag)
                     SizedBox(width: 6.w),
-                  if (order.isPriorityOrder) _priorityTag(),
+                  if (_hasDeliveryTag) _deliveryTag(),
                 ],
               ),
             ],
@@ -350,15 +397,15 @@ class OrderCardWidget extends StatelessWidget {
                     Icon(
                       Icons.access_time,
                       color: completed
-                          ? AppColors.greyColor4
+                          ? _finishedColor
                           : (atRisk ? AppColors.red : AppColors.greyColor10),
                       size: 13.sp,
                     ),
                     SizedBox(width: 4.w),
                     utils.tvCustom(
-                      completed ? "Delivered" : dueInLabel,
+                      completed ? _finishedLabel : dueInLabel,
                       completed
-                          ? AppColors.greyColor4
+                          ? _finishedColor
                           : (atRisk ? AppColors.red : AppColors.greyColor10),
                       11,
                     ),
@@ -418,7 +465,7 @@ class OrderCardWidget extends StatelessWidget {
                 ],
               ),
             ],
-            if (completed && order.status == UNDELIVERED && onDropback != null) ...[
+            if (completed && order.requires_return == "1" && onDropback != null) ...[
               SizedBox(height: 14.h),
               SizedBox(
                 width: double.infinity,
@@ -430,7 +477,7 @@ class OrderCardWidget extends StatelessWidget {
                     color: AppColors.primaryThemeColor,
                   ),
                   label: utils.tvCustom(
-                    "Back to warehouse",
+                    "Drop Back",
                     AppColors.primaryThemeColor,
                     12.5,
                   ),
@@ -446,12 +493,101 @@ class OrderCardWidget extends StatelessWidget {
                 ),
               ),
             ],
+            if (onGoToDelivery != null) _goToDeliveryFooter(isTablet),
           ],
         ),
       ),
     );
 
     return width != null ? SizedBox(width: width, child: card) : card;
+  }
+
+  // "UP NEXT" marker - same as the dashboard's first upcoming order.
+  Widget _upNextLabel(bool isTablet) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: isTablet ? 12.h : 10.h),
+      child: Row(
+        children: [
+          Container(
+            width: isTablet ? 7.w : 6.w,
+            height: isTablet ? 7.w : 6.w,
+            decoration: const BoxDecoration(
+              color: AppColors.primaryThemeColor,
+              shape: BoxShape.circle,
+            ),
+          ),
+          SizedBox(width: 6.w),
+          utils.tvCustom(
+            "UP NEXT",
+            AppColors.primaryThemeColor,
+            9.5,
+            textAlignment: TextAlign.left,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Pickup name + "Go to delivery" (opens the Active Order screen) - same
+  // as the dashboard's first upcoming order.
+  Widget _goToDeliveryFooter(bool isTablet) {
+    final pickup = (order.merchantName?.isNotEmpty ?? false)
+        ? order.merchantName!
+        : (order.pickupLocationName ?? "");
+    return Container(
+      margin: EdgeInsets.only(top: isTablet ? 14.h : 12.h),
+      padding: EdgeInsets.only(top: isTablet ? 12.h : 10.h),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(
+            color: Get.isDarkMode
+                ? Colors.white.withOpacity(0.08)
+                : Colors.black.withOpacity(0.06),
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: pickup.isEmpty
+                ? const SizedBox.shrink()
+                : utils.tvCustom(
+                    "Pickup · $pickup",
+                    AppColors.greyColor4,
+                    10.5,
+                    textAlignment: TextAlign.left,
+                    maxLines: 1,
+                  ),
+          ),
+          SizedBox(width: 10.w),
+          InkWell(
+            borderRadius: BorderRadius.circular(10.r),
+            onTap: onGoToDelivery,
+            child: Container(
+              height: isTablet ? 40.h : 34.h,
+              padding: EdgeInsets.symmetric(horizontal: isTablet ? 18.w : 14.w),
+              decoration: BoxDecoration(
+                color: AppColors.greenLight,
+                borderRadius: BorderRadius.circular(10.r),
+              ),
+              alignment: Alignment.center,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  utils.tvCustom("Go to delivery", AppColors.white, 12.5),
+                  SizedBox(width: 6.w),
+                  Icon(
+                    Icons.arrow_forward,
+                    color: AppColors.white,
+                    size: (isTablet ? 18 : 15).sp,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // "Option A" condensed layout: header row (icon/AWB/status/customer/
@@ -494,10 +630,13 @@ class OrderCardWidget extends StatelessWidget {
                           maxLines: 1,
                         ),
                       ),
-
-                      if (order.isPriorityOrder) ...[
+                      if ((order.serviceType ?? "").isNotEmpty) ...[
                         SizedBox(width: 6.w),
-                        _priorityTag(),
+                        _typeBadge(order.serviceType!),
+                      ],
+                      if (_hasDeliveryTag) ...[
+                        SizedBox(width: 6.w),
+                        _deliveryTag(),
                       ],
                     ],
                   ),
@@ -538,7 +677,7 @@ class OrderCardWidget extends StatelessWidget {
                   _paymentBadge(),
                   SizedBox(height: 4.h),
                   utils.tvCustom(
-                    completed ? "Delivered" : dueInLabel,
+                    completed ? _finishedLabel : dueInLabel,
                     atRisk ? AppColors.red : AppColors.greyColor4,
                     10.5,
                     textAlignment: TextAlign.left,

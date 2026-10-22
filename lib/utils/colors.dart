@@ -35,4 +35,7 @@ class AppColors {
   // Warning amber (COD / OFD / not-picked) - same value as the screen-local
   // _amberOFD constants.
   static const Color amber = Color(0xFFA67C00);
+  // Brighter amber for warnings on the dark Sign In card (location not
+  // found), where `amber` above is too dim to read.
+  static const Color amberBright = Color(0xFFF7A102);
 }

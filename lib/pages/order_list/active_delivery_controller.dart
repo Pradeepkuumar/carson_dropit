@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -6,9 +7,13 @@ import 'package:google_navigation_flutter/google_navigation_flutter.dart'
     hide Marker;
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:signature/signature.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../apis/base_api_response.dart';
 import '../../app_pages/app_pages.dart';
+import '../../firebase_notifications/firebase_notifiction_controller.dart';
+import '../../global/cancelled_orders.dart';
 import '../../global/consts.dart';
 import '../../global/global.dart';
 import '../../global/order_delivered_dialog.dart';
@@ -27,6 +32,7 @@ class ActiveDeliveryController extends GetxController {
   late OrdersData order;
   var user = UserData();
   GoogleMapViewController? mapViewController;
+  StreamSubscription<Position>? _riderSubscription;
 
   // All of the rider's other currently-assigned orders (same statuses the
   // dashboard/order-list already fetch), as returned by the API - kept in
@@ -80,6 +86,24 @@ class ActiveDeliveryController extends GetxController {
   // enforces via the server-given pickup_buffer_time_in_minutes.
   bool bufferWaitActive = false;
 
+  // Payment link flow - set once the rider opens or shares the link, so the
+  // order is re-checked when the app comes back to the foreground.
+  bool paymentLinkSent = false;
+  bool isCheckingPayment = false;
+  bool _awaitingPaymentReturn = false;
+
+  // Order-cancelled handling - a foreground OrderCancelled push for the
+  // order on screen, or the order found cancelled when the app resumes.
+  Worker? _cancelWorker;
+  // Key of the order the cancelled dialog was already shown for, so the
+  // push and the resume check never show it twice.
+  String? _cancelHandledKey;
+  // A cancel that arrived mid status update - handled once it finishes, so
+  // the update's loading-dialog close can't pop the cancelled dialog.
+  String? _pendingCancelReason;
+  bool _hasPendingCancel = false;
+  bool _isCheckingCancelled = false;
+
   @override
   void onInit() {
     final passedOrder = Get.arguments is OrdersData
@@ -97,11 +121,21 @@ class ActiveDeliveryController extends GetxController {
       if (value != null) user = value;
       _fetchAssignedOrders(autoSelectFirst: passedOrder == null);
     });
+    if (Get.isRegistered<FirebaseMessagingController>()) {
+      _cancelWorker = ever(
+        Get.find<FirebaseMessagingController>().onOrderCancelled,
+        (Map<String, dynamic>? data) {
+          if (data != null) _onOrderCancelledPush(data);
+        },
+      );
+    }
     super.onInit();
   }
 
   @override
   void onClose() {
+    _cancelWorker?.dispose();
+    _riderSubscription?.cancel();
     signatureController.dispose();
     super.onClose();
   }
@@ -120,6 +154,115 @@ class ActiveDeliveryController extends GetxController {
     return amount == amount.roundToDouble()
         ? amount.toStringAsFixed(0)
         : amount.toStringAsFixed(2);
+  }
+
+  // The customer paid this COD/split order online through the payment link.
+  bool get isPaymentCompleted => order.paymentCompleted == true;
+
+  // Payment link options are offered on a COD/split order that has a link
+  // and hasn't been paid yet.
+  bool get hasPaymentLink =>
+      isCod &&
+      !isTerminal &&
+      !isPaymentCompleted &&
+      (order.paymentLink ?? "").trim().isNotEmpty;
+
+  // Step 4 primary button is locked after the link was sent until the
+  // payment is confirmed (cash is still reachable from the payment sheet).
+  bool get isDeliveryLockedForPayment =>
+      currentStep == 4 && hasPaymentLink && paymentLinkSent;
+
+  Future<void> openPaymentLink() async {
+    final uri = Uri.tryParse((order.paymentLink ?? "").trim());
+    if (uri == null) return;
+    try {
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!opened) throw Exception();
+      _markPaymentLinkSent();
+    } catch (_) {
+      utils.errorSnackBar("Link error", "Could not open the payment link.");
+    }
+  }
+
+  Future<void> sharePaymentLink() async {
+    final link = (order.paymentLink ?? "").trim();
+    if (link.isEmpty) return;
+    try {
+      await SharePlus.instance.share(
+        ShareParams(
+          text:
+              "Your Zyppy order ${order.awbNo ?? ""} is out for delivery. "
+              "Pay QAR $codAmountToCollect here: $link",
+        ),
+      );
+      _markPaymentLinkSent();
+    } catch (_) {
+      utils.errorSnackBar("Share error", "Could not share the payment link.");
+    }
+  }
+
+  // Payment sheet closed after showing the scan-to-pay QR. The rider never
+  // left the app, so there's no foreground-return re-check to arm.
+  void markPaymentLinkShown() {
+    if (paymentLinkSent) return;
+    paymentLinkSent = true;
+    update();
+  }
+
+  void _markPaymentLinkSent() {
+    paymentLinkSent = true;
+    _awaitingPaymentReturn = true;
+    update();
+  }
+
+  // Called by the screen when the app returns to the foreground.
+  void onAppResumed() {
+    _checkOrderCancelledOnResume();
+    if (!_awaitingPaymentReturn) return;
+    _awaitingPaymentReturn = false;
+    refreshPaymentStatus();
+  }
+
+  // Re-fetches the assigned orders and copies this order's payment fields
+  // across, keeping the captured evidence on screen.
+  Future<void> refreshPaymentStatus() async {
+    if (isCheckingPayment) return;
+    isCheckingPayment = true;
+    update();
+    try {
+      final orders = await _requestAssignedOrders();
+      final key = _orderKey(order);
+      final match = orders?.where((o) => _orderKey(o) == key);
+      if (match == null || match.isEmpty) {
+        utils.errorSnackBar(
+          "Payment status",
+          "Could not check the payment status. Try again.",
+        );
+        return;
+      }
+      final fresh = match.first;
+      order.paymentLink = fresh.paymentLink;
+      order.paymentCompleted = fresh.paymentCompleted;
+      if (isPaymentCompleted) {
+        utils.successSnackBar(
+          "Payment received",
+          "You can deliver the order.",
+        );
+      } else {
+        utils.errorSnackBar(
+          "Payment pending",
+          "Payment not received yet. Ask the customer to finish paying, then refresh.",
+        );
+      }
+    } catch (_) {
+      utils.errorSnackBar(
+        "Payment status",
+        "Could not check the payment status. Try again.",
+      );
+    } finally {
+      isCheckingPayment = false;
+      update();
+    }
   }
 
   // 1 = confirm arrival at pickup, 2 = confirm pickup collected,
@@ -225,53 +368,22 @@ class ActiveDeliveryController extends GetxController {
       await utils.drawMapRoute(controller, pickup, dropoff);
     }
 
-    await _enableMyLocation(controller);
+    // Rider's live position as the bike marker (replaces the blue dot).
+    await _riderSubscription?.cancel();
+    final rider = await utils.showRiderBikeOnMap(controller);
+    _riderSubscription = rider.subscription;
 
     if (pickup != null && dropoff != null) {
-      final bounds = LatLngBounds(
-        southwest: LatLng(
-          latitude: pickup.latitude < dropoff.latitude
-              ? pickup.latitude
-              : dropoff.latitude,
-          longitude: pickup.longitude < dropoff.longitude
-              ? pickup.longitude
-              : dropoff.longitude,
-        ),
-        northeast: LatLng(
-          latitude: pickup.latitude > dropoff.latitude
-              ? pickup.latitude
-              : dropoff.latitude,
-          longitude: pickup.longitude > dropoff.longitude
-              ? pickup.longitude
-              : dropoff.longitude,
-        ),
-      );
       await controller.animateCamera(
-        CameraUpdate.newLatLngBounds(bounds, padding: 60),
+        CameraUpdate.newLatLngBounds(
+          utils.mapBoundsFor([pickup, dropoff, ?rider.position]),
+          padding: 60,
+        ),
       );
     } else if (destLatLng != null) {
       await controller.animateCamera(
         CameraUpdate.newLatLngZoom(destLatLng!, 15),
       );
-    }
-  }
-
-  // Shows the rider's live position as the map's native blue dot - needs
-  // location permission granted (already requested elsewhere for the
-  // proximity gate below), so this is a no-op if it's denied.
-  Future<void> _enableMyLocation(GoogleMapViewController controller) async {
-    try {
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        return;
-      }
-      await controller.setMyLocationEnabled(true);
-    } catch (_) {
-      // leave the map without a live location dot if this fails
     }
   }
 
@@ -355,6 +467,9 @@ class ActiveDeliveryController extends GetxController {
     final directory = await getTemporaryDirectory();
     final file = File('${directory.path}/signature_${order.awbNo}.png');
     await file.writeAsBytes(bytes);
+    // Same path on every save - drop the cached image so a re-signed
+    // signature shows instead of the old one.
+    await FileImage(file).evict();
     signatureFile = file;
     update();
   }
@@ -377,7 +492,9 @@ class ActiveDeliveryController extends GetxController {
       case 3:
         return "Start delivery";
       case 4:
-        return "Confirm delivery";
+        return hasPaymentLink && !paymentLinkSent
+            ? "Collect payment"
+            : "Confirm delivery";
       default:
         return "";
     }
@@ -391,12 +508,24 @@ class ActiveDeliveryController extends GetxController {
         return Icons.inventory_2_outlined;
       case 3:
         return Icons.local_shipping_outlined;
+      case 4:
+        if (isDeliveryLockedForPayment) return Icons.lock_outline;
+        return hasPaymentLink ? Icons.payments_outlined : Icons.check_circle_outline;
       default:
         return Icons.check_circle_outline;
     }
   }
 
-  Future<void> confirmPrimaryAction() async {
+  // cashCollected: the rider confirmed cash from the payment sheet, which
+  // bypasses the payment-link lock.
+  Future<void> confirmPrimaryAction({bool cashCollected = false}) async {
+    if (isDeliveryLockedForPayment && !cashCollected) {
+      utils.errorSnackBar(
+        "Payment pending",
+        "Refresh the payment status once the customer has paid.",
+      );
+      return;
+    }
     switch (currentStep) {
       case 1:
         if (!await _isWithinUpdateRange()) return;
@@ -619,6 +748,9 @@ class ActiveDeliveryController extends GetxController {
     selectedReasonId.value = null;
     hasOngoingCall = false;
     callType = null;
+    paymentLinkSent = false;
+    isCheckingPayment = false;
+    _awaitingPaymentReturn = false;
     bufferWaitActive = order.status == REACHED && pickupBufferSeconds > 0;
   }
 
@@ -689,6 +821,88 @@ class ActiveDeliveryController extends GetxController {
       _resetPerOrderState();
       update();
     }
+  }
+
+  // ---------------------------------------------------------------------
+  // Order cancelled while the rider is on it
+  // ---------------------------------------------------------------------
+  // The order on screen is one the rider is still working through - not
+  // loading, not the empty state, and not already finished.
+  bool get _hasLiveOrder =>
+      !isLoadingOrder &&
+      !isLoadingNextOrder &&
+      !noOrdersAvailable &&
+      !isTerminal &&
+      _orderKey(order).isNotEmpty;
+
+  void _onOrderCancelledPush(Map<String, dynamic> data) {
+    final ref = (data['awb_number'] ?? data['awb_no'] ?? '').toString();
+    if (ref.isEmpty) return;
+    final reason = (data['reason'] ?? data['cancel_reason'])?.toString();
+
+    if (_hasLiveOrder && ref == (order.awbNo ?? _orderKey(order))) {
+      _handleCurrentOrderCancelled(reason);
+      return;
+    }
+
+    // One of the rider's other assigned orders - just drop it from the
+    // switcher, no popup.
+    final before = _allAssignedOrders.length;
+    _allAssignedOrders = _allAssignedOrders
+        .where((o) => (o.awbNo ?? _orderKey(o)) != ref)
+        .toList();
+    if (_allAssignedOrders.length != before) {
+      _recomputePickupSuggestions();
+      update();
+    }
+  }
+
+  // App back in the foreground - a cancel push that arrived while it was in
+  // the background never reached _onOrderCancelledPush, so ask the API.
+  Future<void> _checkOrderCancelledOnResume() async {
+    if (_isCheckingCancelled || !_hasLiveOrder) return;
+    final awb = order.awbNo ?? '';
+    if (awb.isEmpty || _cancelHandledKey == _orderKey(order)) return;
+    _isCheckingCancelled = true;
+    try {
+      final fresh = await fetchDriverOrder(awb, user.code ?? "");
+      // The rider may have moved on to another order while this ran.
+      if (fresh?.status == CANCELED && _hasLiveOrder && order.awbNo == awb) {
+        _handleCurrentOrderCancelled(fresh!.reason);
+      }
+    } finally {
+      _isCheckingCancelled = false;
+    }
+  }
+
+  void _handleCurrentOrderCancelled(String? reason) {
+    final key = _orderKey(order);
+    if (_cancelHandledKey == key) return;
+    if (isSubmitting.value) {
+      _hasPendingCancel = true;
+      _pendingCancelReason = reason;
+      return;
+    }
+    _cancelHandledKey = key;
+    markCancellationNotified(order.awbNo ?? key);
+    order.status = CANCELED;
+    if ((reason ?? '').trim().isNotEmpty) order.reason = reason;
+    hasOngoingCall = false;
+    callType = null;
+    _awaitingPaymentReturn = false;
+
+    // Close whatever is on top of this screen - bottom sheets, dialogs and
+    // the turn-by-turn navigation route - so the dialog lands here.
+    Get.until(
+      (route) =>
+          route.settings.name == Routes.activeDeliveryScreen || route.isFirst,
+    );
+    update();
+    showOrderCancelledDialog(
+      order: order,
+      reason: reason,
+      onContinue: loadNextOrder,
+    );
   }
 
   // ---------------------------------------------------------------------
@@ -857,7 +1071,8 @@ class ActiveDeliveryController extends GetxController {
         if (status == DELIVERED) {
           showOrderDeliveredDialog(
             order: order,
-            isCod: isCod,
+            // Paid through the link - no cash was collected.
+            isCod: isCod && !isPaymentCompleted,
             cashCollected: codAmountToCollect,
             onContinue: loadNextOrder,
           );
@@ -881,6 +1096,13 @@ class ActiveDeliveryController extends GetxController {
       return false;
     } finally {
       isSubmitting.value = false;
+      if (_hasPendingCancel) {
+        _hasPendingCancel = false;
+        // Skipped if the update finished the order first - its result
+        // dialog is already showing.
+        if (_hasLiveOrder) _handleCurrentOrderCancelled(_pendingCancelReason);
+        _pendingCancelReason = null;
+      }
     }
   }
 }

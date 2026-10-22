@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui';
@@ -7,6 +8,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:google_navigation_flutter/google_navigation_flutter.dart' hide Marker;
 import 'package:image_picker/image_picker.dart';
@@ -835,6 +837,195 @@ class Utils extends GetxController {
       imagePixelRatio: 2,
       width: 26,
       height: 26,
+    );
+  }
+
+  // The rider's own position: brand-orange disc, white ring, white bike -
+  // same drawn-at-runtime style as mapDotMarker so it stays sharp.
+  Future<ImageDescriptor> mapBikeMarker() async {
+    const double size = 96;
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    const center = Offset(size / 2, size / 2);
+    canvas.drawCircle(
+      center.translate(0, 2),
+      size / 2 - 4,
+      Paint()
+        ..color = Colors.black26
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
+    );
+    canvas.drawCircle(center, size / 2 - 5, Paint()..color = Colors.white);
+    canvas.drawCircle(
+        center, size / 2 - 12, Paint()..color = AppColors.primaryThemeColor);
+    const icon = Icons.two_wheeler;
+    final painter = TextPainter(
+      text: TextSpan(
+        text: String.fromCharCode(icon.codePoint),
+        style: TextStyle(
+          fontFamily: icon.fontFamily,
+          package: icon.fontPackage,
+          fontSize: 46,
+          color: Colors.white,
+        ),
+      ),
+      textDirection: ui.TextDirection.ltr,
+    )..layout();
+    painter.paint(
+      canvas,
+      center - Offset(painter.width / 2, painter.height / 2),
+    );
+    final picture = recorder.endRecording();
+    final image = await picture.toImage(size.toInt(), size.toInt());
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    return registerBitmapImage(
+      bitmap: byteData!,
+      imagePixelRatio: 2,
+      width: 36,
+      height: 36,
+    );
+  }
+
+  // Orange arrow just outside the bike pin's white ring, pointing up (north)
+  // - the marker is rotated to the rider's heading. Transparent centre so
+  // the pin shows through.
+  Future<ImageDescriptor> mapHeadingArrowMarker() async {
+    const double size = 128; // 64dp at ratio 2: 36dp pin + arrow room
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    final arrow = Path()
+      ..moveTo(size / 2, 2)
+      ..lineTo(size / 2 + 16, 26)
+      ..lineTo(size / 2 - 16, 26)
+      ..close();
+    canvas.drawPath(
+      arrow,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 5
+        ..strokeJoin = StrokeJoin.round,
+    );
+    canvas.drawPath(arrow, Paint()..color = AppColors.primaryThemeColor);
+    final picture = recorder.endRecording();
+    final image = await picture.toImage(size.toInt(), size.toInt());
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    return registerBitmapImage(
+      bitmap: byteData!,
+      imagePixelRatio: 2,
+      width: 64,
+      height: 64,
+    );
+  }
+
+  // Shows the rider as the bike marker at their current GPS position and
+  // keeps it moving (every ~10 m) until the returned subscription is
+  // cancelled. Returns a null position/subscription if location permission
+  // is denied or no fix is available - the map then just has no bike.
+  Future<({LatLng? position, StreamSubscription<Position>? subscription})>
+      showRiderBikeOnMap(GoogleMapViewController controller) async {
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        return (position: null, subscription: null);
+      }
+      final fix = await Geolocator.getLastKnownPosition() ??
+          await Geolocator.getCurrentPosition(
+            locationSettings:
+                const LocationSettings(timeLimit: Duration(seconds: 8)),
+          );
+      final start = LatLng(latitude: fix.latitude, longitude: fix.longitude);
+      final added = await controller.addMarkers([
+        MarkerOptions(
+          position: start,
+          icon: await mapBikeMarker(),
+          anchor: const MarkerAnchor(u: 0.5, v: 0.5),
+          zIndex: 2,
+        ),
+        // Direction arrow around the pin - flat so its rotation is relative
+        // to map north; hidden until the rider has moved once.
+        MarkerOptions(
+          position: start,
+          icon: await mapHeadingArrowMarker(),
+          anchor: const MarkerAnchor(u: 0.5, v: 0.5),
+          flat: true,
+          visible: false,
+          zIndex: 1,
+        ),
+      ]);
+      var bike = added.isEmpty ? null : added.first;
+      var arrow = added.length > 1 ? added[1] : null;
+      if (bike == null) return (position: start, subscription: null);
+      var last = fix;
+      final subscription = Geolocator.getPositionStream(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          distanceFilter: 10,
+        ),
+      ).listen((p) async {
+        final currentBike = bike;
+        if (currentBike == null) return;
+        final position = LatLng(latitude: p.latitude, longitude: p.longitude);
+        // GPS heading is only reliable while moving; below ~1 m/s use the
+        // bearing between the last two fixes instead.
+        double? heading;
+        if (p.speed > 1 && p.heading >= 0) {
+          heading = p.heading;
+        } else if (Geolocator.distanceBetween(
+                last.latitude, last.longitude, p.latitude, p.longitude) >=
+            5) {
+          heading = (Geolocator.bearingBetween(
+                      last.latitude, last.longitude, p.latitude, p.longitude) +
+                  360) %
+              360;
+        }
+        last = p;
+        try {
+          final currentArrow = arrow;
+          final updated = await controller.updateMarkers([
+            currentBike.copyWith(
+              options: currentBike.options.copyWith(position: position),
+            ),
+            if (currentArrow != null)
+              currentArrow.copyWith(
+                options: currentArrow.options.copyWith(
+                  position: position,
+                  rotation: heading ?? currentArrow.options.rotation,
+                  visible: heading != null || currentArrow.options.visible,
+                ),
+              ),
+          ]);
+          if (updated.isNotEmpty && updated.first != null) {
+            bike = updated.first;
+          }
+          if (updated.length > 1 && updated[1] != null) arrow = updated[1];
+        } catch (_) {
+          // map view gone (screen closed / order switched) - stop updating
+          bike = null;
+        }
+      });
+      return (position: start, subscription: subscription);
+    } catch (_) {
+      return (position: null, subscription: null);
+    }
+  }
+
+  // Camera bounds that fit every point given (pickup, drop, rider).
+  LatLngBounds mapBoundsFor(List<LatLng> points) {
+    double minLat = points.first.latitude, maxLat = minLat;
+    double minLng = points.first.longitude, maxLng = minLng;
+    for (final p in points) {
+      minLat = math.min(minLat, p.latitude);
+      maxLat = math.max(maxLat, p.latitude);
+      minLng = math.min(minLng, p.longitude);
+      maxLng = math.max(maxLng, p.longitude);
+    }
+    return LatLngBounds(
+      southwest: LatLng(latitude: minLat, longitude: minLng),
+      northeast: LatLng(latitude: maxLat, longitude: maxLng),
     );
   }
 
@@ -1791,7 +1982,7 @@ class _SimpleConfirmDialog extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12.r),
                         ),
                       ),
-                      child: utils.tvCustom("Ok", Colors.white, 14.5),
+                      child: utils.tvCustom("OK", Colors.white, 14.5),
                     ),
                   ),
                 ],

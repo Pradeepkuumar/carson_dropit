@@ -38,6 +38,12 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Pushes sent with click_action "FLUTTER_NOTIFICATION_CLICK" need an
+                 activity handling that action, or tapping them does nothing. -->
+            <intent-filter>
+                <action android:name="FLUTTER_NOTIFICATION_CLICK"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
         </activity>
          <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
@@ -54,7 +60,9 @@
             android:name="firebase_messaging_auto_init_enabled"
             android:value="true" />
         <meta-data android:name="flutterEmbedding" android:value="2"/>
-        <receiver android:name="com.dexterous.flutterlocalnotifications.receivers.NotificationBroadcastReceiver"/>
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.receivers.NotificationBroadcastReceiver"
+            android:exported="false"/>
         <meta-data android:name="com.google.android.geo.API_KEY" android:value="AIzaSyDj97zou5FNM7tc9pPuCmRH9vdnHVIKOow"/>
 
 

@@ -52,8 +52,7 @@ class OrderListScreen extends GetView<OrderListController> {
                   ),
                 ],
               ),
-              Obx(
-                () => controller.filterMenuOpen.value
+              Obx(() => controller.filterMenuOpen.value
                     ? _filterMenu(context)
                     : const SizedBox.shrink(),
               ),
@@ -85,15 +84,23 @@ class OrderListScreen extends GetView<OrderListController> {
           return const Center(child: CircularProgressIndicator());
         }
         if (orders.isEmpty) {
-          return _emptyState("No orders here right now.");
+          return _emptyState(
+            status == "available" && controller.availableNeedsLocation.value
+                ? "Turn on location to see available orders."
+                : "No orders here right now.",
+          );
         }
         return ListView.separated(
           padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 20.h),
           physics: const AlwaysScrollableScrollPhysics(),
           itemCount: orders.length,
           separatorBuilder: (_, __) => SizedBox(height: 12.h),
-          itemBuilder: (context, index) =>
-              _orderCard(context, orders[index], status),
+          itemBuilder: (context, index) => _orderCard(
+            context,
+            orders[index],
+            status,
+            isUpNext: status == "assigned" && index == 0,
+          ),
         );
       }),
     );
@@ -292,48 +299,65 @@ class OrderListScreen extends GetView<OrderListController> {
   }
 
   // ---------------------------------------------------------------------
-  // Assigned / Available / Completed status pills, with counts
+  // Assigned / Available / Completed / Undelivered status chips, with counts
   // ---------------------------------------------------------------------
   Widget _buildStatusPills(BuildContext context) {
     final isTablet = !context.isPhone;
     final accent = _typeAccent;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        (isTablet ? 32 : 16).w,
-        14.h,
-        (isTablet ? 32 : 16).w,
-        0,
-      ),
-      // TabBar is driven by controller.tabController, which is shared with
-      // the TabBarView below - so tapping a label and swiping the list stay
-      // in sync, and the indicator follows the swipe.
-      child: TabBar(
-        controller: controller.tabController,
-        dividerColor: Colors.transparent,
-        indicatorSize: TabBarIndicatorSize.tab,
-        labelPadding: EdgeInsets.symmetric(horizontal: 4.w),
-        indicator: UnderlineTabIndicator(
-          borderSide: BorderSide(color: accent, width: (isTablet ? 3 : 2.5).h),
-          borderRadius: BorderRadius.circular(2.r),
+    // TabBar is driven by controller.tabController, which is shared with
+    // the TabBarView below - so tapping a chip and swiping the list stay
+    // in sync. Scrollable so the four chips can be swiped sideways on a
+    // phone; each chip draws its own selected state, so no indicator.
+    final tabBar = TabBar(
+      controller: controller.tabController,
+      isScrollable: true,
+      tabAlignment: TabAlignment.start,
+      dividerColor: Colors.transparent,
+      indicator: const BoxDecoration(),
+      padding: EdgeInsets.symmetric(horizontal: (isTablet ? 32 : 16).w),
+      labelPadding: EdgeInsets.only(right: (isTablet ? 10 : 8).w),
+      splashBorderRadius: BorderRadius.circular(100.r),
+      tabs: [
+        _statusPill(
+          context,
+          "Assigned",
+          "assigned",
+          controller.assignedOrders.length,
+          accent,
         ),
-        tabs: [
-          _statusPill(
-            context,
-            "Assigned",
-            "assigned",
-            controller.assignedOrders.length,
-            accent,
-          ),
-          _statusPill(
-            context,
-            "Available",
-            "available",
-            controller.availableOrders.length,
-            accent,
-          ),
-          _statusPill(context, "Completed", "completed", null, accent),
-        ],
-      ),
+        _statusPill(
+          context,
+          "Available",
+          "available",
+          controller.availableOrders.length,
+          accent,
+        ),
+        _statusPill(context, "Completed", "completed", null, accent),
+        _statusPill(
+          context,
+          "Undelivered",
+          "undelivered",
+          controller.undeliveredOrders.length,
+          accent,
+        ),
+      ],
+    );
+    return Padding(
+      padding: EdgeInsets.only(top: 14.h, bottom: 4.h),
+      // On phone the last chip runs off the edge - fade the right side so
+      // it reads as a row that scrolls.
+      child: isTablet
+          ? tabBar
+          : ShaderMask(
+              blendMode: BlendMode.dstIn,
+              shaderCallback: (rect) => const LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [Colors.black, Colors.black, Colors.transparent],
+                stops: [0, 0.92, 1],
+              ).createShader(rect),
+              child: tabBar,
+            ),
     );
   }
 
@@ -349,30 +373,46 @@ class OrderListScreen extends GetView<OrderListController> {
     final inactiveColor = Get.isDarkMode
         ? AppColors.greyColor3
         : AppColors.greyColor4;
-    final color = selected ? accent : inactiveColor;
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: (isTablet ? 14 : 11).h),
+    final color = selected ? AppColors.white : inactiveColor;
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: (isTablet ? 18 : 14).w,
+        vertical: (isTablet ? 10 : 8).h,
+      ),
+      decoration: BoxDecoration(
+        color: selected
+            ? accent
+            : (Get.isDarkMode
+                ? Colors.white.withOpacity(0.08)
+                : AppColors.white),
+        borderRadius: BorderRadius.circular(100.r),
+        border: Border.all(
+          color: selected
+              ? accent
+              : (Get.isDarkMode
+                  ? Colors.white.withOpacity(0.12)
+                  : Colors.black.withOpacity(0.08)),
+        ),
+      ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Flexible(
-            child: utils.tvCustom(
-              label,
-              color,
-              isTablet ? 15 : 13,
-              maxLines: 1,
-            ),
-          ),
+          utils.tvCustom(label, color, isTablet ? 15 : 13, maxLines: 1),
           if (count != null) ...[
             SizedBox(width: 6.w),
             Container(
               padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 1.h),
               decoration: BoxDecoration(
-                color: accent.withOpacity(Get.isDarkMode ? 0.22 : 0.14),
+                color: selected
+                    ? AppColors.white.withOpacity(0.25)
+                    : accent.withOpacity(Get.isDarkMode ? 0.22 : 0.14),
                 borderRadius: BorderRadius.circular(8.r),
               ),
-              child: utils.tvCustom(count.toString(), accent, 10.5),
+              child: utils.tvCustom(
+                count.toString(),
+                selected ? AppColors.white : accent,
+                10.5,
+              ),
             ),
           ],
         ],
@@ -590,38 +630,50 @@ class OrderListScreen extends GetView<OrderListController> {
   // ---------------------------------------------------------------------
   // Order card
   // ---------------------------------------------------------------------
-  Widget _orderCard(BuildContext context, OrdersData order, String status) {
+  Widget _orderCard(
+    BuildContext context,
+    OrdersData order,
+    String status, {
+    bool isUpNext = false,
+  }) {
     final available = status == "available";
-    final completed = status == "completed";
+    final completed = status == "completed" || status == "undelivered";
     final atRisk = controller.isAtRisk(order, status);
     return OrderCardWidget(
       order: order,
       available: available,
       completed: completed,
       atRisk: atRisk,
-      dueInLabel: _dueInLabel(controller.remainingSecondsFor(order)),
+      dueInLabel: order.sla_time_left ??"",
       accentColor: _typeAccent,
       isCod: controller.isCod(order),
       onTap: () => Get.toNamed(
         Routes.orderDetailScreen,
-        arguments: order,
+        arguments: order.awbNo,
       // Order status can change in detail (e.g. delivered), moving it to
       // another tab - refresh all cached lists, not just this one.
       )?.then((_) => controller.refreshAllTabs()),
       onAccept: available ? () => _confirmAccept(order) : null,
       onDecline: available ? () => _confirmDecline(order) : null,
-      onDropback: (completed && order.status == UNDELIVERED)
+      onDropback: (status == "undelivered" &&
+              (order.status == UNDELIVERED || order.status == CANCELED))
           ? () => _openDropbackSheet(context, order)
+          : null,
+      onGoToDelivery: isUpNext
+          ? () => Get.toNamed(
+              Routes.activeDeliveryScreen,
+              arguments: order,
+            )?.then((_) => controller.refreshAllTabs())
           : null,
     );
   }
 
-  String _dueInLabel(int remainingSeconds) {
-    if (remainingSeconds <= 0) return "Overdue";
-    final hours = remainingSeconds ~/ 3600;
-    final minutes = (remainingSeconds % 3600) ~/ 60;
-    return hours > 0 ? "${hours}h ${minutes}m left" : "${minutes}m left";
-  }
+  // String _dueInLabel(int remainingSeconds) {
+  //   if (remainingSeconds <= 0) return "Overdue";
+  //   final hours = remainingSeconds ~/ 3600;
+  //   final minutes = (remainingSeconds % 3600) ~/ 60;
+  //   return hours > 0 ? "${hours}h ${minutes}m left" : "${minutes}m left";
+  // }
 
   void _confirmAccept(OrdersData order) {
     utils.simpleDialog(
@@ -630,9 +682,7 @@ class OrderListScreen extends GetView<OrderListController> {
       () {
         controller.acceptRejectOrder(acceptOrder, order.awbNo ?? "");
       },
-      () {
-        Get.back();
-      },
+      () {},
     );
   }
 
@@ -643,14 +693,12 @@ class OrderListScreen extends GetView<OrderListController> {
       () {
         controller.acceptRejectOrder(rejectOrder, order.awbNo ?? "");
       },
-      () {
-        Get.back();
-      },
+      () {},
     );
   }
 
   // ---------------------------------------------------------------------
-  // Return (dropback) sheet - undelivered orders in Completed tab, returned
+  // Return (dropback) sheet - undelivered orders in Undelivered tab, returned
   // either to the merchant (DROPBACK_ML) or the warehouse (DROPBACK_CLW)
   // ---------------------------------------------------------------------
 

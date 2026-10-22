@@ -94,9 +94,7 @@ class AccountScreen extends GetView<RiderDashboardController> {
                                   userRepository.deleteUser();
                                   Get.offAllNamed(Routes.auth);
                                 }
-                              }, () {
-                                Get.back();
-                              });
+                              }, () {});
                             }
                           },
                         ),

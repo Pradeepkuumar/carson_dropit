@@ -129,9 +129,7 @@ class OrdersListViewState extends State<C2COrdersListView> {
                                              (){
                                                   controller.updateOrder(PICKED,"C2C");
                                                   Get.back();
-                                             }, (){
-                                              Get.back();
-                                             });
+                                             }, () {});
                                           // var res = await Get.to(
                                           //   SimpleBarcodeScannerPage(
                                           //     appBarTitle: clickedOrder.awbNo,

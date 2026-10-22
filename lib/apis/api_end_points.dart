@@ -24,5 +24,6 @@ final String upcomingOrders = "driver/upcoming-orders";
   final String whatsAppDashBoardDetails = "driver/whatsapp/dashboard-details";
   final String driverCallLog = "driver/call-log";
   final String driverConfig = "driver/config";
+  final String driverOrderDetails = "driver/order-details";
 
 }
