@@ -68,6 +68,10 @@ class OrdersData {
   String? paymentLink;
   bool? paymentCompleted;
   bool? is_at_risk;
+  bool? is_within_window;
+  String? next_window_start;
+  String? next_window_minutes_left;
+  String? next_window_label;
 
   // The API actually flags a priority order via delivery_type == "PRIORITY",
   // not is_active_priority (kept above as its own field/key regardless).
@@ -76,6 +80,16 @@ class OrdersData {
       isActivePriority == true || deliveryType == _priorityDeliveryType;
 
   bool get isWhatsAppOrder => (serviceType ?? "").toLowerCase() == "whatsapp";
+
+  // WhatsApp orders that aren't priority are "value" deliveries. Only these
+  // are limited to the API's accept/pickup time windows; when the API sends
+  // no is_within_window the order isn't limited.
+  bool get isValueOrder => isWhatsAppOrder && !isPriorityOrder;
+  bool get hasValueWindow => isValueOrder && is_within_window != null;
+  bool get isOutsideValueWindow =>
+      hasValueWindow && is_within_window == false;
+  int get nextWindowMinutesLeft =>
+      double.tryParse(next_window_minutes_left ?? "")?.round() ?? 0;
 
   OrdersData({
     this.id,
@@ -142,6 +156,10 @@ class OrdersData {
     this.can_reject,
     this.is_at_risk,
     this.requires_return,
+    this.is_within_window,
+    this.next_window_start,
+    this.next_window_minutes_left,
+    this.next_window_label,
   });
 
   // payment_completed may arrive as a bool, 1/0 or "true"/"1".
@@ -224,6 +242,10 @@ class OrdersData {
     can_accept = _parseBool(json['can_accept']);
     can_reject = _parseBool(json['can_reject']);
     is_at_risk = _parseBool(json['is_at_risk']);
+    is_within_window = _parseBool(json['is_within_window']);
+    next_window_start = json['next_window_start']?.toString();
+    next_window_minutes_left = json['next_window_minutes_left']?.toString();
+    next_window_label = json['next_window_label']?.toString();
   }
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
@@ -290,6 +312,10 @@ class OrdersData {
     data['can_accept'] = can_accept;
     data['can_reject'] = can_reject;
     data['is_at_risk'] = is_at_risk;
+    data['is_within_window'] = is_within_window;
+    data['next_window_start'] = next_window_start;
+    data['next_window_minutes_left'] = next_window_minutes_left;
+    data['next_window_label'] = next_window_label;
     return data;
   }
 

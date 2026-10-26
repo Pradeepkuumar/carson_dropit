@@ -56,9 +56,13 @@ class OrderDetailController extends GetxController {
   }
 
   // GET driver/order-details/{awb}?fe_code= - also used by "Try again".
-  Future<void> fetchOrderDetails() async {
-    isLoading.value = true;
-    errorMessage.value = null;
+  // silent: re-fetch in place (window countdown reached 0) without the
+  // loader, keeping the map and the current order if the request fails.
+  Future<void> fetchOrderDetails({bool silent = false}) async {
+    if (!silent) {
+      isLoading.value = true;
+      errorMessage.value = null;
+    }
     String? message;
     OrdersData? fetched;
     try {
@@ -81,15 +85,27 @@ class OrderDetailController extends GetxController {
     }
     if (fetched != null) {
       order = fetched;
-    } else {
+    } else if (!silent) {
       errorMessage.value = (message == null || message.isEmpty)
           ? "Check your connection and try again."
           : message;
     }
-    isLoading.value = false;
+    if (silent) {
+      // order isn't observable - nudge the screen's Obx to rebuild.
+      isLoading.refresh();
+    } else {
+      isLoading.value = false;
+    }
   }
+
+  // Value-order window strip reached 0 - re-fetch in place.
+  Future<void> refreshWindow() => fetchOrderDetails(silent: true);
   //bool get isAvailable => order.status == PLACED || order.status == DRIVER_ASSIGNMENT_PENDING ;
   bool get isAvailable => order.can_accept ?? false;
+  // Not yet assigned to any rider (whether or not this rider can accept it
+  // right now).
+  bool get isAwaitingRider =>
+      order.status == PLACED || order.status == DRIVER_ASSIGNMENT_PENDING;
   // Still PLACED but not acceptable - another rider accepted it first.
   bool get isTakenByOtherRider => !isAvailable && (order.is_accepted_by_other ??false);
   LatLng? get pickupLatLng =>

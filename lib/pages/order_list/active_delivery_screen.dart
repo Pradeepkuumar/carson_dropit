@@ -14,6 +14,7 @@ import 'package:google_navigation_flutter/google_navigation_flutter.dart'
 import 'package:signature/signature.dart';
 import '../../global/app_bottom_nav.dart';
 import '../../global/global.dart';
+import '../../global/value_window_strip.dart';
 import '../../utils/colors.dart';
 import '../../utils/text_style_util.dart';
 import '../my_orders/orders/models/orders_model.dart';
@@ -1379,8 +1380,10 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
   Widget _primaryActionBar(bool isTablet, Color cardBg) {
     // Locked until the payment link is paid (or while it's being checked);
     // green once the customer has paid through the link.
-    final locked =
-        controller.isDeliveryLockedForPayment || controller.isCheckingPayment;
+    // Also locked at Confirm pickup on a value order outside its window.
+    final locked = controller.isDeliveryLockedForPayment ||
+        controller.isCheckingPayment ||
+        controller.isPickupLockedForWindow;
     final paidOnline = controller.currentStep == 4 &&
         controller.isCod &&
         controller.isPaymentCompleted;
@@ -1489,6 +1492,16 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
             SizedBox(height: 6.h),
             if (controller.showPickupBuffer) ...[
               _bufferTimerCard(),
+              SizedBox(height: 10.h),
+            ],
+            // Value orders: pickup only inside the API's time window.
+            if (controller.isPickupPhase &&
+                controller.order.hasValueWindow) ...[
+              ValueWindowStrip(
+                order: controller.order,
+                action: "Pickup",
+                onWindowOpen: controller.refreshValueWindow,
+              ),
               SizedBox(height: 10.h),
             ],
 
