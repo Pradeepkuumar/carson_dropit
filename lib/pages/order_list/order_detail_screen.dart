@@ -8,6 +8,7 @@ import 'package:google_navigation_flutter/google_navigation_flutter.dart' hide M
 import 'package:signature/signature.dart';
 import '../../global/consts.dart';
 import '../../global/global.dart';
+import '../../global/value_window_strip.dart';
 import '../../utils/colors.dart';
 import 'order_detail_controller.dart';
 
@@ -209,6 +210,26 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
                         ),
                       ),
                       SizedBox(height: 12.h),
+                      // Unassigned value orders get the strip even when
+                      // can_accept is false - outside the window the API
+                      // blocks accepting, and the strip says when it opens.
+                      if (order.hasValueWindow &&
+                          !controller.isTakenByOtherRider &&
+                          (controller.isAvailable ||
+                              controller.isAwaitingRider ||
+                              ValueWindowStrip.isBeforePickup(
+                                order.status,
+                              ))) ...[
+                        ValueWindowStrip(
+                          order: order,
+                          action: controller.isAvailable ||
+                                  controller.isAwaitingRider
+                              ? "Accept"
+                              : "Pickup",
+                          onWindowOpen: controller.refreshWindow,
+                        ),
+                        SizedBox(height: 12.h),
+                      ],
                       if (controller.isAvailable) ...[
                         // Container(
                         //   padding: EdgeInsets.symmetric(
@@ -264,19 +285,38 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
                             ),
                             SizedBox(width: 10.w),
                             Expanded(
+                              // Locked on a value order outside its window.
                               child: ElevatedButton(
-                                onPressed: _confirmAccept,
+                                onPressed: order.isOutsideValueWindow
+                                    ? null
+                                    : _confirmAccept,
                                 style: ElevatedButton.styleFrom(
                                   padding: EdgeInsets.symmetric(vertical: 8.h),
                                   backgroundColor: AppColors.primaryThemeColor,
+                                  disabledBackgroundColor: Get.isDarkMode
+                                      ? AppColors.greyColor5
+                                      : AppColors.greyColor2,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(10.r),
                                   ),
                                 ),
-                                child: utils.tvCustom(
-                                  "Accept order",
-                                  Colors.white,
-                                  12.5,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (order.isOutsideValueWindow) ...[
+                                      Icon(
+                                        Icons.lock_outline,
+                                        color: Colors.white,
+                                        size: 14.sp,
+                                      ),
+                                      SizedBox(width: 4.w),
+                                    ],
+                                    utils.tvCustom(
+                                      "Accept order",
+                                      Colors.white,
+                                      12.5,
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),

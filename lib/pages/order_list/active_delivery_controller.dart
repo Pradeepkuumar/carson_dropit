@@ -17,6 +17,7 @@ import '../../global/cancelled_orders.dart';
 import '../../global/consts.dart';
 import '../../global/global.dart';
 import '../../global/order_delivered_dialog.dart';
+import '../../global/value_window_strip.dart';
 import '../../local_db/entity/UserData.dart';
 import '../../utils/colors.dart';
 import '../dashboard/controller/rider_dashboard_controller.dart';
@@ -171,6 +172,30 @@ class ActiveDeliveryController extends GetxController {
   // payment is confirmed (cash is still reachable from the payment sheet).
   bool get isDeliveryLockedForPayment =>
       currentStep == 4 && hasPaymentLink && paymentLinkSent;
+
+  // Step 2 (Confirm pickup) on a value order is locked outside the API's
+  // pickup window. Delivery after pickup isn't limited.
+  bool get isPickupLockedForWindow =>
+      currentStep == 2 && order.isOutsideValueWindow;
+
+  // Called when the pickup countdown reaches 0 - re-fetches the assigned
+  // orders and copies this order's window fields across, so Confirm pickup
+  // unlocks without leaving the screen.
+  Future<void> refreshValueWindow() async {
+    try {
+      final orders = await _requestAssignedOrders();
+      final key = _orderKey(order);
+      final fresh = orders?.firstWhereOrNull((o) => _orderKey(o) == key);
+      if (fresh == null) return;
+      order.is_within_window = fresh.is_within_window;
+      order.next_window_start = fresh.next_window_start;
+      order.next_window_minutes_left = fresh.next_window_minutes_left;
+      order.next_window_label = fresh.next_window_label;
+      update();
+    } catch (e) {
+      debugPrint('Error refreshing pickup window: $e');
+    }
+  }
 
   Future<void> openPaymentLink() async {
     final uri = Uri.tryParse((order.paymentLink ?? "").trim());
@@ -488,6 +513,11 @@ class ActiveDeliveryController extends GetxController {
       case 1:
         return "Confirm arrival at pickup";
       case 2:
+        if (isPickupLockedForWindow) {
+          return ValueWindowStrip.hasNextWindow(order)
+              ? "Pickup ${ValueWindowStrip.opensPhrase(order)}"
+              : "Pickup closed for today";
+        }
         return "Confirm pickup";
       case 3:
         return "Start delivery";
@@ -505,6 +535,7 @@ class ActiveDeliveryController extends GetxController {
       case 1:
         return Icons.location_on_outlined;
       case 2:
+        if (isPickupLockedForWindow) return Icons.lock_outline;
         return Icons.inventory_2_outlined;
       case 3:
         return Icons.local_shipping_outlined;
@@ -523,6 +554,15 @@ class ActiveDeliveryController extends GetxController {
       utils.errorSnackBar(
         "Payment pending",
         "Refresh the payment status once the customer has paid.",
+      );
+      return;
+    }
+    if (isPickupLockedForWindow) {
+      utils.errorSnackBar(
+        "Pickup window closed",
+        ValueWindowStrip.hasNextWindow(order)
+            ? "Next: ${order.next_window_label!.trim()}"
+            : "No more pickup windows today.",
       );
       return;
     }

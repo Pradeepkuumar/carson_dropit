@@ -13,6 +13,7 @@ import '../../../global/app_bar.dart';
 import '../../../global/consts.dart';
 import '../../../global/order_card_widget.dart';
 import '../../../global/update_profile_dialog.dart';
+import '../../../global/value_window_strip.dart';
 
 const Color _amberOFD = Color(0xFFA67C00);
 const Color _whatsAppGreen = Color(0xFF0BA30B);
@@ -1415,6 +1416,7 @@ class _RiderDashboardState extends State<RiderDashboard>
                       arguments: order.awbNo,
                     )?.then((_) => controller.fetchAvailableOrders()),
                     onAccept: () => _confirmAcceptNewRequest(order),
+                    onWindowOpen: controller.fetchAvailableOrders,
                     onDecline: () => _confirmDeclineNewRequest(order),
                   );
                 },
@@ -1539,6 +1541,7 @@ class _RiderDashboardState extends State<RiderDashboard>
       )?.then((_) => controller.fetchAvailableOrders()),
       onAccept: () => _confirmAcceptNewRequest(order),
       onDecline: () => _confirmDeclineNewRequest(order),
+      onWindowOpen: controller.fetchAvailableOrders,
     );
   }
 
@@ -1843,6 +1846,17 @@ class _RiderDashboardState extends State<RiderDashboard>
               iconColor: iconColor,
               overdue: overdue,
             ),
+            // Value orders not yet picked: pickup is limited to the API's
+            // time window ("Go to delivery" stays enabled).
+            if (order.hasValueWindow &&
+                ValueWindowStrip.isBeforePickup(status)) ...[
+              SizedBox(height: isTablet ? 10.h : 8.h),
+              ValueWindowStrip(
+                order: order,
+                action: "Pickup",
+                onWindowOpen: controller.getNextDelivery,
+              ),
+            ],
             if (isFirst) _goToDeliveryFooter(order, isTablet, isDark),
           ],
         ),

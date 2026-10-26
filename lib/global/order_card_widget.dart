@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'consts.dart';
 import 'global.dart';
+import 'value_window_strip.dart';
 import '../pages/my_orders/orders/models/orders_model.dart';
 import '../utils/colors.dart';
 
@@ -26,6 +27,9 @@ class OrderCardWidget extends StatelessWidget {
   // Set only for the first card in the order list's Assigned tab - shows
   // the "UP NEXT" label and a footer with a "Go to delivery" button.
   final VoidCallback? onGoToDelivery;
+  // Re-fetches the list when a value order's time window opens - pass a
+  // method tear-off (see ValueWindowStrip.onWindowOpen).
+  final void Function()? onWindowOpen;
   // Condensed layout for the dashboard's "New Requests" carousel: header
   // row (icon/AWB/status/customer/distance + payment badge), no address
   // block, no accent border - see the "Option A" design mockup.
@@ -46,6 +50,7 @@ class OrderCardWidget extends StatelessWidget {
     this.onDecline,
     this.onDropback,
     this.onGoToDelivery,
+    this.onWindowOpen,
     this.compact = false,
   });
 
@@ -179,6 +184,48 @@ class OrderCardWidget extends StatelessWidget {
   Widget _deliveryTag() =>
       order.isPriorityOrder ? _priorityTag() : _valueTag();
 
+  // Value-order window strip: Accept on available orders, Pickup before the
+  // parcel is collected, and a "deliver any time" note once it's picked.
+  Widget? _valueWindowStrip() {
+    if (!order.hasValueWindow || completed) return null;
+    if (available) {
+      return ValueWindowStrip(
+        order: order,
+        action: "Accept",
+        onWindowOpen: onWindowOpen,
+      );
+    }
+    if (ValueWindowStrip.isBeforePickup(order.status)) {
+      return ValueWindowStrip(
+        order: order,
+        action: "Pickup",
+        onWindowOpen: onWindowOpen,
+      );
+    }
+    if (order.status == PICKED || order.status == OFD) {
+      return ValueWindowStrip(order: order, action: "Pickup", picked: true);
+    }
+    return null;
+  }
+
+  // Accept is locked on a value order outside its time window.
+  bool get _acceptLocked => available && order.isOutsideValueWindow;
+
+  Color get _lockedButtonColor =>
+      Get.isDarkMode ? AppColors.greyColor5 : AppColors.greyColor2;
+
+  Widget _acceptLabel(String text, double fontSize) {
+    if (!_acceptLocked) return utils.tvCustom(text, Colors.white, fontSize);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.lock_outline, color: Colors.white, size: 13.sp),
+        SizedBox(width: 4.w),
+        utils.tvCustom(text, Colors.white, fontSize),
+      ],
+    );
+  }
+
   Widget _paymentBadge() {
     final color = isCod ? _amberOFD : AppColors.greenLight;
     final label = isCod
@@ -198,6 +245,7 @@ class OrderCardWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final isTablet = !context.isPhone;
     final cardBg = Get.isDarkMode ? AppColors.greyColor10 : Colors.white;
+    final windowStrip = _valueWindowStrip();
 
     final card = InkWell(
       borderRadius: BorderRadius.circular(16.r),
@@ -223,7 +271,7 @@ class OrderCardWidget extends StatelessWidget {
                 ],
         ),
         child: compact
-            ? _buildCompactContent(context, isTablet)
+            ? _buildCompactContent(context, isTablet, windowStrip)
             : Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -431,6 +479,10 @@ class OrderCardWidget extends StatelessWidget {
                 ),
               ],
             ),
+            if (windowStrip != null) ...[
+              SizedBox(height: 10.h),
+              windowStrip,
+            ],
             if (available) ...[
               SizedBox(height: 14.h),
               Row(
@@ -451,15 +503,16 @@ class OrderCardWidget extends StatelessWidget {
                   SizedBox(width: 10.w),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: onAccept,
+                      onPressed: _acceptLocked ? null : onAccept,
                       style: ElevatedButton.styleFrom(
                         padding: EdgeInsets.symmetric(vertical: 11.h),
                         backgroundColor: AppColors.primaryThemeColor,
+                        disabledBackgroundColor: _lockedButtonColor,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10.r),
                         ),
                       ),
-                      child: utils.tvCustom("Accept order", Colors.white, 13),
+                      child: _acceptLabel("Accept order", 13),
                     ),
                   ),
                 ],
@@ -593,7 +646,11 @@ class OrderCardWidget extends StatelessWidget {
   // "Option A" condensed layout: header row (icon/AWB/status/customer/
   // distance + payment badge), no address block, small Decline/Accept
   // buttons alongside the countdown instead of a full-width row.
-  Widget _buildCompactContent(BuildContext context, bool isTablet) {
+  Widget _buildCompactContent(
+    BuildContext context,
+    bool isTablet,
+    Widget? windowStrip,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -666,6 +723,10 @@ class OrderCardWidget extends StatelessWidget {
                 : const Color(0xFFEFEFEF),
           ),
           SizedBox(height: 10.h),
+          if (windowStrip != null) ...[
+            windowStrip,
+            SizedBox(height: 10.h),
+          ],
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -708,7 +769,7 @@ class OrderCardWidget extends StatelessWidget {
                   ),
                   SizedBox(width: 8.w),
                   ElevatedButton(
-                    onPressed: onAccept,
+                    onPressed: _acceptLocked ? null : onAccept,
                     style: ElevatedButton.styleFrom(
                       padding: EdgeInsets.symmetric(
                         horizontal: 16.w,
@@ -716,11 +777,12 @@ class OrderCardWidget extends StatelessWidget {
                       ),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       backgroundColor: AppColors.primaryThemeColor,
+                      disabledBackgroundColor: _lockedButtonColor,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8.r),
                       ),
                     ),
-                    child: utils.tvCustom("Accept", Colors.white, 11.5),
+                    child: _acceptLabel("Accept", 11.5),
                   ),
                 ],
               ),

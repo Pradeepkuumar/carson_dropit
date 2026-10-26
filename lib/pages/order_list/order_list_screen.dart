@@ -655,6 +655,8 @@ class OrderListScreen extends GetView<OrderListController> {
       )?.then((_) => controller.refreshAllTabs()),
       onAccept: available ? () => _confirmAccept(order) : null,
       onDecline: available ? () => _confirmDecline(order) : null,
+      onWindowOpen:
+          available ? controller.fetchAvailable : controller.fetchAssigned,
       onDropback: (status == "undelivered" &&
               (order.status == UNDELIVERED || order.status == CANCELED))
           ? () => _openDropbackSheet(context, order)
