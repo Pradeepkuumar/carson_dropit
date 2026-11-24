@@ -33,10 +33,10 @@ class OrderListController extends GetxController
 
   // "b2c" | "c2c" | "whatsapp"
   var typeTab = "b2c".obs;
-  // "assigned" | "available" | "completed" | "undelivered" - kept in sync
-  // with tabController.
-  static const statuses = ["assigned", "available", "completed", "undelivered"];
-  var statusTab = "assigned".obs;
+  // "available" | "assigned" | "completed" | "undelivered" - kept in sync
+  // with tabController. Available is first and the default tab.
+  static const statuses = ["available", "assigned", "completed", "undelivered"];
+  var statusTab = "available".obs;
   late final TabController tabController;
   // "all" | "ppd" | "cod" | "risk"
   var paymentFilter = "all".obs;

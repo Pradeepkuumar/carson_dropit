@@ -192,6 +192,7 @@ class OrderCardWidget extends StatelessWidget {
       return ValueWindowStrip(
         order: order,
         action: "Accept",
+        compact: true,
         onWindowOpen: onWindowOpen,
       );
     }
@@ -199,11 +200,17 @@ class OrderCardWidget extends StatelessWidget {
       return ValueWindowStrip(
         order: order,
         action: "Pickup",
+        compact: true,
         onWindowOpen: onWindowOpen,
       );
     }
     if (order.status == PICKED || order.status == OFD) {
-      return ValueWindowStrip(order: order, action: "Pickup", picked: true);
+      return ValueWindowStrip(
+        order: order,
+        action: "Pickup",
+        picked: true,
+        compact: true,
+      );
     }
     return null;
   }
@@ -348,69 +355,89 @@ class OrderCardWidget extends StatelessWidget {
               ),
             ],
             SizedBox(height: 10.h),
-            IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  SizedBox(
-                    width: 16.w,
-                    child: Column(
-                      children: [
-                        Padding(
-                          padding: EdgeInsets.only(top: 3.h),
-                          child: Container(
-                            width: 8.w,
-                            height: 8.w,
-                            decoration: const BoxDecoration(
-                              color: AppColors.greenLight,
-                              shape: BoxShape.circle,
+            // Pickup -> drop-off rail. Each row sizes itself to its own text
+            // (no IntrinsicHeight, which under-measured the text before the
+            // Inter font loaded and overflowed 2-line addresses). The grey
+            // line is drawn behind the pickup row + gap, from the dot down to
+            // the drop-off pin.
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Stack(
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.only(bottom: 10.h),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            width: 16.w,
+                            child: Padding(
+                              padding: EdgeInsets.only(top: 3.h),
+                              child: Center(
+                                child: Container(
+                                  width: 8.w,
+                                  height: 8.w,
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.greenLight,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                        Expanded(
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(vertical: 2.h),
-                            child: Container(
-                              width: 1.5,
-                              color: const Color(0xFFE0E0E0),
+                          SizedBox(width: 8.w),
+                          Expanded(
+                            child: utils.tvCustomRegular(
+                              order.pickupLocationName ??
+                                  order.pickupAddress ??
+                                  "-",
+                              AppColors.greyColor10,
+                              10,
+                              textAlignment: TextAlign.left,
+                              maxLines: 2,
                             ),
                           ),
-                        ),
-                        Icon(
+                        ],
+                      ),
+                    ),
+                    Positioned(
+                      left: 8.w - 0.75,
+                      top: 3.h + 8.w + 2.h,
+                      bottom: 2.h,
+                      child: Container(
+                        width: 1.5,
+                        color: const Color(0xFFE0E0E0),
+                      ),
+                    ),
+                  ],
+                ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 16.w,
+                      child: Center(
+                        child: Icon(
                           Icons.location_on,
                           color: AppColors.primaryThemeColor,
                           size: 14.sp,
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                  SizedBox(width: 8.w),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        utils.tvCustomRegular(
-                          order.pickupLocationName ??
-                              order.pickupAddress ??
-                              "-",
-                          AppColors.greyColor10,
-                          10,
-                          textAlignment: TextAlign.left,
-                          maxLines: 2,
-                        ),
-                        SizedBox(height: 10.h),
-                        utils.tvCustomRegular(
-                          order.consigneeAddress ?? "-",
-                          AppColors.greyColor10,
-                          10,
-                          textAlignment: TextAlign.left,
-                          maxLines: 2,
-                        ),
-                      ],
+                    SizedBox(width: 8.w),
+                    Expanded(
+                      child: utils.tvCustomRegular(
+                        order.consigneeAddress ?? "-",
+                        AppColors.greyColor10,
+                        10,
+                        textAlignment: TextAlign.left,
+                        maxLines: 2,
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+              ],
             ),
             SizedBox(height: 10.h),
             Row(

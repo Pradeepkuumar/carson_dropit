@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -105,6 +106,51 @@ class ActiveDeliveryController extends GetxController {
   bool _hasPendingCancel = false;
   bool _isCheckingCancelled = false;
 
+  // Delivery OTP - step 4's "Confirm delivery" opens the OTP sheet (set by
+  // the screen) instead of delivering straight away. The sheet's GetBuilder
+  // listens on [deliveryOtpUpdateId] so the resend countdown doesn't rebuild
+  // the whole screen every second.
+  static const int deliveryOtpLength = 6;
+  static const String deliveryOtpUpdateId = 'delivery_otp';
+  static const int _otpResendSeconds = 30;
+  VoidCallback? onOpenDeliveryOtpSheet;
+  bool isSendingOtp = false;
+  bool isVerifyingOtp = false;
+  String? otpError;
+  int otpResendSecondsLeft = 0;
+  Timer? _otpResendTimer;
+  // From the regenerate-otp response: the WhatsApp number the code went to
+  // (already masked by the server) and how long the code stays valid.
+  String? otpSentToMasked;
+  int? otpExpiresInMinutes;
+  // Set once the OTP checks out. Step 4's photos and signature stay locked
+  // until then (the backend expects OTP before proof of delivery). Kept for
+  // this order while the screen is open, so a failed DELIVERED update can be
+  // retried without a new code.
+  bool isDeliveryOtpVerified = false;
+
+  // Only orders the API flags with requires_otp go through the OTP step.
+  bool get requiresDeliveryOtp => order.requiresOtp == true;
+
+  // OTP step done (or not needed): verified in this session, or already
+  // verified on the server (is_otp_verified) from an earlier visit.
+  bool get isOtpCleared =>
+      !requiresDeliveryOtp ||
+      isDeliveryOtpVerified ||
+      order.isOtpVerified == true;
+
+  // Step 4 evidence capture is locked until the delivery OTP is verified.
+  bool get isEvidenceLocked => currentStep == 4 && !isOtpCleared;
+
+  bool _blockIfEvidenceLocked() {
+    if (!isEvidenceLocked) return false;
+    utils.errorSnackBar(
+      "Verify OTP first",
+      "Verify the customer's OTP to unlock photos and signature.",
+    );
+    return true;
+  }
+
   @override
   void onInit() {
     final passedOrder = Get.arguments is OrdersData
@@ -137,21 +183,31 @@ class ActiveDeliveryController extends GetxController {
   void onClose() {
     _cancelWorker?.dispose();
     _riderSubscription?.cancel();
+    _otpResendTimer?.cancel();
     signatureController.dispose();
     super.onClose();
   }
 
-  bool get isCod => (order.paymentType ?? "").toLowerCase() == "cod" || (order.paymentType ?? "").toLowerCase() == "split_payment";
+  bool get isCod => isCodOrder(order);
 
   // Split payment: half is prepaid, the other half is collected as COD.
-  bool get isSplitPayment =>
-      (order.paymentType ?? "").toLowerCase() == "split_payment";
+  bool get isSplitPayment => isSplitPaymentOrder(order);
 
   // Amount the rider collects from the customer - the full order amount for
   // COD, half of it for split payment. Whole numbers render without decimals.
-  String get codAmountToCollect {
-    final total = double.tryParse(order.orderAmount ?? "") ?? 0;
-    final amount = isSplitPayment ? total  : total;
+  String get codAmountToCollect => codAmountFor(order);
+
+  // Per-order versions of the payment getters above, for the assigned-orders
+  // sheet where each card describes its own order, not the one on screen.
+  bool isCodOrder(OrdersData o) =>
+      (o.paymentType ?? "").toLowerCase() == "cod" || isSplitPaymentOrder(o);
+
+  bool isSplitPaymentOrder(OrdersData o) =>
+      (o.paymentType ?? "").toLowerCase() == "split_payment";
+
+  String codAmountFor(OrdersData o) {
+    final total = double.tryParse(o.orderAmount ?? "") ?? 0;
+    final amount = isSplitPaymentOrder(o) ? total  : total;
     return amount == amount.roundToDouble()
         ? amount.toStringAsFixed(0)
         : amount.toStringAsFixed(2);
@@ -171,26 +227,34 @@ class ActiveDeliveryController extends GetxController {
   // Step 4 primary button is locked after the link was sent until the
   // payment is confirmed (cash is still reachable from the payment sheet).
   bool get isDeliveryLockedForPayment =>
-      currentStep == 4 && hasPaymentLink && paymentLinkSent;
+      currentStep == 4 &&
+      isOtpCleared &&
+      hasPaymentLink &&
+      paymentLinkSent;
 
   // Step 2 (Confirm pickup) on a value order is locked outside the API's
   // pickup window. Delivery after pickup isn't limited.
   bool get isPickupLockedForWindow =>
       currentStep == 2 && order.isOutsideValueWindow;
 
-  // Called when the pickup countdown reaches 0 - re-fetches the assigned
-  // orders and copies this order's window fields across, so Confirm pickup
-  // unlocks without leaving the screen.
+  // Called when a pickup countdown reaches 0 - re-fetches the assigned
+  // orders and copies their window fields onto the cached ones (this order
+  // and the sheet's list), so Confirm pickup unlocks and the pills update
+  // without leaving the screen.
   Future<void> refreshValueWindow() async {
     try {
       final orders = await _requestAssignedOrders();
-      final key = _orderKey(order);
-      final fresh = orders?.firstWhereOrNull((o) => _orderKey(o) == key);
-      if (fresh == null) return;
-      order.is_within_window = fresh.is_within_window;
-      order.next_window_start = fresh.next_window_start;
-      order.next_window_minutes_left = fresh.next_window_minutes_left;
-      order.next_window_label = fresh.next_window_label;
+      if (orders == null) return;
+      for (final fresh in orders) {
+        final key = _orderKey(fresh);
+        for (final cached in [order, ..._allAssignedOrders]) {
+          if (_orderKey(cached) != key) continue;
+          cached.is_within_window = fresh.is_within_window;
+          cached.next_window_start = fresh.next_window_start;
+          cached.next_window_minutes_left = fresh.next_window_minutes_left;
+          cached.next_window_label = fresh.next_window_label;
+        }
+      }
       update();
     } catch (e) {
       debugPrint('Error refreshing pickup window: $e');
@@ -326,16 +390,24 @@ class ActiveDeliveryController extends GetxController {
       ? (order.pickupLocationName ?? order.pickupAddress ?? "-")
       : (order.consigneeAddress ?? "-");
 
-  String get nextStopDistance =>
-      (isPickupPhase
-          ? (order.current_pickup_distance ?? order.distance)
-          : (order.current_dropoff_distance ?? order.distance)) ??
+  String get nextStopDistance => stopDistanceFor(order);
+
+  String get nextStopEta => stopEtaFor(order);
+
+  // Same phase split as currentStep <= 2, for any assigned order.
+  bool isPickupStatus(String? status) =>
+      status == ASSIGNED || status == RE_ASSIGNED || status == REACHED;
+
+  String stopDistanceFor(OrdersData o) =>
+      (isPickupStatus(o.status)
+          ? (o.current_pickup_distance ?? o.distance)
+          : (o.current_dropoff_distance ?? o.distance)) ??
       "-";
 
-  String get nextStopEta =>
-      (isPickupPhase
-          ? (order.current_pickup_duration ?? order.duration)
-          : (order.current_dropoff_duration ?? order.duration)) ??
+  String stopEtaFor(OrdersData o) =>
+      (isPickupStatus(o.status)
+          ? (o.current_pickup_duration ?? o.duration)
+          : (o.current_dropoff_duration ?? o.duration)) ??
       "-";
 
   int get pickupBufferSeconds =>
@@ -368,47 +440,63 @@ class ActiveDeliveryController extends GetxController {
   LatLng? get dropoffLatLng =>
       utils.parseLatLng(order.dropoffLatitude, order.dropoffLongitude);
 
+  // True while [controller] is still the live map on screen. The setup below
+  // awaits markers, the route and a GPS fix; if the map view is disposed in
+  // the meantime (screen closed, order switched) the native plugin throws
+  // "No valid view found" on the Android side, which Dart can't catch and
+  // which kills the app - so check before every map call.
+  bool _isMapAlive(GoogleMapViewController controller) =>
+      !isClosed && identical(mapViewController, controller);
+
   Future<void> onMapViewCreated(GoogleMapViewController controller) async {
     mapViewController = controller;
     final pickup = pickupLatLng;
     final dropoff = dropoffLatLng;
 
-    final markerOptions = <MarkerOptions>[
-      if (pickup != null)
-        MarkerOptions(
-          position: pickup,
-          icon: await utils.mapDotMarker(AppColors.red),
-        ),
-      if (dropoff != null)
-        MarkerOptions(
-          position: dropoff,
-          icon: await utils.mapDotMarker(AppColors.greenLight),
-        ),
-    ];
-    if (markerOptions.isNotEmpty) {
-      await controller.addMarkers(markerOptions);
-    }
+    try {
+      final markerOptions = <MarkerOptions>[
+        if (pickup != null)
+          MarkerOptions(
+            position: pickup,
+            icon: await utils.mapDotMarker(AppColors.red),
+          ),
+        if (dropoff != null)
+          MarkerOptions(
+            position: dropoff,
+            icon: await utils.mapDotMarker(AppColors.greenLight),
+          ),
+      ];
+      if (markerOptions.isNotEmpty) {
+        if (!_isMapAlive(controller)) return;
+        await controller.addMarkers(markerOptions);
+      }
 
-    if (pickup != null && dropoff != null) {
-      await utils.drawMapRoute(controller, pickup, dropoff);
-    }
+      if (pickup != null && dropoff != null) {
+        if (!_isMapAlive(controller)) return;
+        await utils.drawMapRoute(controller, pickup, dropoff);
+      }
 
-    // Rider's live position as the bike marker (replaces the blue dot).
-    await _riderSubscription?.cancel();
-    final rider = await utils.showRiderBikeOnMap(controller);
-    _riderSubscription = rider.subscription;
+      // Rider's live position as the bike marker (replaces the blue dot).
+      await _riderSubscription?.cancel();
+      if (!_isMapAlive(controller)) return;
+      final rider = await utils.showRiderBikeOnMap(controller);
+      _riderSubscription = rider.subscription;
 
-    if (pickup != null && dropoff != null) {
-      await controller.animateCamera(
-        CameraUpdate.newLatLngBounds(
-          utils.mapBoundsFor([pickup, dropoff, ?rider.position]),
-          padding: 60,
-        ),
-      );
-    } else if (destLatLng != null) {
-      await controller.animateCamera(
-        CameraUpdate.newLatLngZoom(destLatLng!, 15),
-      );
+      if (!_isMapAlive(controller)) return;
+      if (pickup != null && dropoff != null) {
+        await controller.animateCamera(
+          CameraUpdate.newLatLngBounds(
+            utils.mapBoundsFor([pickup, dropoff, ?rider.position]),
+            padding: 60,
+          ),
+        );
+      } else if (destLatLng != null) {
+        await controller.animateCamera(
+          CameraUpdate.newLatLngZoom(destLatLng!, 15),
+        );
+      }
+    } catch (e) {
+      debugPrint('Active delivery map setup skipped: $e');
     }
   }
 
@@ -468,12 +556,14 @@ class ActiveDeliveryController extends GetxController {
   }
 
   Future<void> capturePackagePhoto() async {
+    if (_blockIfEvidenceLocked()) return;
     final file = await utils.pickImage(ImageSource.camera);
     if (file != null) packagePhoto = file;
     update();
   }
 
   Future<void> captureDeliveryPhoto() async {
+    if (_blockIfEvidenceLocked()) return;
     final file = await utils.pickImage(ImageSource.camera);
     if (file != null) deliveryPhoto = file;
     update();
@@ -486,6 +576,7 @@ class ActiveDeliveryController extends GetxController {
   }
 
   Future<void> captureSignature() async {
+    if (_blockIfEvidenceLocked()) return;
     if (signatureController.isEmpty) return;
     final bytes = await signatureController.toPngBytes(width: 500, height: 500);
     if (bytes == null) return;
@@ -522,6 +613,7 @@ class ActiveDeliveryController extends GetxController {
       case 3:
         return "Start delivery";
       case 4:
+        if (!isOtpCleared) return "Verify delivery OTP";
         return hasPaymentLink && !paymentLinkSent
             ? "Collect payment"
             : "Confirm delivery";
@@ -540,6 +632,7 @@ class ActiveDeliveryController extends GetxController {
       case 3:
         return Icons.local_shipping_outlined;
       case 4:
+        if (!isOtpCleared) return Icons.verified_user_outlined;
         if (isDeliveryLockedForPayment) return Icons.lock_outline;
         return hasPaymentLink ? Icons.payments_outlined : Icons.check_circle_outline;
       default:
@@ -584,6 +677,11 @@ class ActiveDeliveryController extends GetxController {
         break;
       case 4:
         if (!await _isWithinUpdateRange()) return;
+        // OTP first - verifying it unlocks the photos and signature.
+        if (!isOtpCleared) {
+          onOpenDeliveryOtpSheet?.call();
+          return;
+        }
         if (!evidenceComplete) {
           utils.errorSnackBar(
             "Evidence required",
@@ -594,6 +692,185 @@ class ActiveDeliveryController extends GetxController {
         await _updateStatus(DELIVERED);
         break;
     }
+  }
+
+  // ---------------------------------------------------------------------
+  // Delivery OTP
+  // ---------------------------------------------------------------------
+
+  // Number for the sheet's "code sent to" line - the server's masked
+  // WhatsApp number once the OTP is sent, else the consignee number with
+  // all but the last two digits hidden. Empty when neither is known.
+  String get maskedConsigneePhone {
+    final fromServer = (otpSentToMasked ?? "").trim();
+    if (fromServer.isNotEmpty) return fromServer;
+    final digits = (order.consigneeMobileNo ?? "").replaceAll(
+      RegExp(r'\D'),
+      '',
+    );
+    if (digits.length < 4) return "";
+    return "•••• ••${digits.substring(digits.length - 2)}";
+  }
+
+  bool get canResendOtp =>
+      !isSendingOtp && !isVerifyingOtp && otpResendSecondsLeft == 0;
+
+  String get otpResendCountdown {
+    final m = otpResendSecondsLeft ~/ 60;
+    final s = (otpResendSecondsLeft % 60).toString().padLeft(2, '0');
+    return "$m:$s";
+  }
+
+  void _updateOtp() => update([deliveryOtpUpdateId]);
+
+  // POSTs to an OTP endpoint and returns the decoded JSON body for ANY HTTP
+  // status. apiProvider.postRequest drops non-200 bodies (returns null), which
+  // would hide the server's reason - wrong code, expired, no attempts left.
+  // Returns null only when there's no usable JSON (network error, HTML page).
+  Future<Map<String, dynamic>?> _postOtpRequest(
+    String endpoint,
+    Map<String, dynamic> body,
+  ) async {
+    final response = await apiProvider.post(
+      endpoint,
+      jsonEncode(body),
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Accept': 'application/json',
+      },
+    );
+    debugPrint(
+      'OTP $endpoint -> ${response.statusCode}: ${response.bodyString}',
+    );
+    final raw = response.bodyString;
+    if (raw == null || raw.trim().isEmpty) return null;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map<String, dynamic>) return null;
+      // Some error bodies omit status_code; fall back to the HTTP status.
+      decoded['status_code'] ??= response.statusCode;
+      return decoded;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // Called when the OTP sheet opens (sends the first code) and from its
+  // "Resend OTP" link.
+  Future<void> sendDeliveryOtp() async {
+    if (isSendingOtp) return;
+    isSendingOtp = true;
+    otpError = null;
+    _updateOtp();
+    try {
+      final response = await _postOtpRequest(apiEndPoints.resendOtp, {
+        'awb_no': order.awbNo ?? "",
+      });
+      if (response == null) {
+        otpError = "Could not send the OTP. Check your connection and resend.";
+        return;
+      }
+      final result = BaseApiResponse.fromJson(response);
+      if (result.status_code == 200) {
+        final data = result.data;
+        if (data is Map<String, dynamic>) {
+          otpSentToMasked = data['customer_phone_masked']?.toString();
+          otpExpiresInMinutes = int.tryParse(
+            data['expires_in_minutes']?.toString() ?? "",
+          );
+        }
+        _startOtpResendCountdown();
+      } else {
+        otpError = (result.message ?? "").trim().isNotEmpty
+            ? result.message
+            : "Could not send the OTP. Try resending.";
+      }
+    } catch (e) {
+      debugPrint('Error sending delivery OTP: $e');
+      otpError = "Could not send the OTP. Try resending.";
+    } finally {
+      isSendingOtp = false;
+      _updateOtp();
+    }
+  }
+
+  void _startOtpResendCountdown() {
+    _otpResendTimer?.cancel();
+    otpResendSecondsLeft = _otpResendSeconds;
+    _otpResendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      otpResendSecondsLeft--;
+      if (otpResendSecondsLeft <= 0) {
+        otpResendSecondsLeft = 0;
+        timer.cancel();
+      }
+      _updateOtp();
+    });
+  }
+
+  // Clears a "wrong code" error as soon as the rider edits the code.
+  void clearOtpError() {
+    if (otpError == null) return;
+    otpError = null;
+    _updateOtp();
+  }
+
+  // Sheet closed (verified, cancelled or dragged away).
+  void onDeliveryOtpSheetClosed() {
+    _otpResendTimer?.cancel();
+    otpResendSecondsLeft = 0;
+    otpError = null;
+    isSendingOtp = false;
+    otpSentToMasked = null;
+    otpExpiresInMinutes = null;
+  }
+
+  // Checks the code with the server; on success closes the sheet and
+  // unlocks the step 4 photos and signature (delivery itself still goes
+  // through "Confirm delivery").
+  Future<void> verifyDeliveryOtp(String otp) async {
+    if (isVerifyingOtp || otp.length != deliveryOtpLength) return;
+    isVerifyingOtp = true;
+    otpError = null;
+    _updateOtp();
+    bool verified = false;
+    try {
+      final response = await _postOtpRequest(apiEndPoints.verifyOtp, {
+        'awb_no': order.awbNo ?? "",
+        'otp': otp,
+      });
+      if (response == null) {
+        otpError = "Could not reach the server. Check your connection and try again.";
+      } else {
+        final result = BaseApiResponse.fromJson(response);
+        final data = result.data;
+        // data.verified is the server's answer; a 200 without it counts.
+        final serverVerified =
+            data is Map<String, dynamic> ? data['verified'] != false : true;
+        if (result.status_code == 200 && result.success != false &&
+            serverVerified) {
+          verified = true;
+        } else {
+          otpError = (result.message ?? "").trim().isNotEmpty
+              ? result.message
+              : "Incorrect OTP. Check the code with the customer.";
+        }
+      }
+    } catch (e) {
+      debugPrint('Error verifying delivery OTP: $e');
+      otpError = "Could not verify the OTP. Check the code and try again.";
+    } finally {
+      isVerifyingOtp = false;
+      _updateOtp();
+    }
+    if (!verified) return;
+    isDeliveryOtpVerified = true;
+    order.isOtpVerified = true;
+    if (Get.isBottomSheetOpen ?? false) Get.back();
+    update();
+    utils.successSnackBar(
+      "OTP verified",
+      "Take the delivery photos and the customer's signature.",
+    );
   }
 
   // ---------------------------------------------------------------------
@@ -609,11 +886,20 @@ class ActiveDeliveryController extends GetxController {
   // must clear a priority order before touching anything else, so this
   // gates both which order is shown and whether switching is offered.
   OrdersData? _priorityOrderIn(List<OrdersData> orders) {
-    for (final o in orders) {
-      if (o.isPriorityOrder) return o;
+    for (final model in orders) {
+      if (model.isPriorityOrder) return model;
     }
     return null;
   }
+
+  // A value order whose pickup window is closed can't be collected yet, so
+  // it's never opened automatically - the rider can still switch to it.
+  bool _isWaitingForWindow(OrdersData o) =>
+      o.isOutsideValueWindow && isPickupStatus(o.status);
+
+  // First order the rider can work on right now, else simply the first.
+  OrdersData _firstReadyOrder(List<OrdersData> orders) =>
+      orders.firstWhereOrNull((o) => !_isWaitingForWindow(o)) ?? orders.first;
 
   // autoSelectFirst is true when this screen was opened without a specific
   // order - once the fetch resolves, `order` becomes the first one returned
@@ -631,6 +917,9 @@ class ActiveDeliveryController extends GetxController {
     );
     final result = BaseApiResponse.fromJson(response);
     if (result.status_code == 200 && result.data != null) {
+      // Value orders outside their pickup window stay in the list (the
+      // sheet's Value filter and payment/next-order lookups need them) -
+      // they're only skipped when an order is picked automatically.
       return (result.data as List)
           .map((json) => OrdersData.fromJson(json as Map<String, dynamic>))
           .toList();
@@ -647,7 +936,9 @@ class ActiveDeliveryController extends GetxController {
         if (autoSelectFirst) {
           final initial =
               priorityOrder ??
-              (_allAssignedOrders.isNotEmpty ? _allAssignedOrders.first : null);
+              (_allAssignedOrders.isNotEmpty
+                  ? _firstReadyOrder(_allAssignedOrders)
+                  : null);
           if (initial != null) {
             order = initial;
             if (order.status == REACHED && pickupBufferSeconds > 0) {
@@ -698,48 +989,60 @@ class ActiveDeliveryController extends GetxController {
     final others = _allAssignedOrders
         .where((o) => _orderKey(o) != currentKey)
         .toList();
+
     if (others.isEmpty) {
       pickupSuggestions = [];
       pickupSuggestionsAreNearby = false;
       return;
     }
 
-    final originLat = double.tryParse(order.pickupLatitude ?? '');
-    final originLng = double.tryParse(order.pickupLongitude ?? '');
-    final nearby = <MapEntry<OrdersData, double>>[];
-    if (originLat != null && originLng != null) {
-      for (final o in others) {
-        final lat = double.tryParse(o.pickupLatitude ?? '');
-        final lng = double.tryParse(o.pickupLongitude ?? '');
-        if (lat == null || lng == null) continue;
-        final distance = Geolocator.distanceBetween(
-          originLat,
-          originLng,
-          lat,
-          lng,
-        );
-        if (distance <= kMaxUpdateDistanceMeters) {
-          nearby.add(MapEntry(o, distance));
-        }
-      }
-    }
+    /** Code to check order on same location **/
 
-    if (nearby.isNotEmpty) {
-      nearby.sort((a, b) => a.value.compareTo(b.value));
-      pickupSuggestions = [order, ...nearby.map((e) => e.key)];
-      pickupSuggestionsAreNearby = true;
-    } else {
-      // Nothing within range - fall back to every other assigned order so
-      // the strip still helps instead of just disappearing.
-      pickupSuggestions = [order, ...others];
-      pickupSuggestionsAreNearby = false;
-    }
+    // final originLat = double.tryParse(order.pickupLatitude ?? '');
+    // final originLng = double.tryParse(order.pickupLongitude ?? '');
+    // final nearby = <MapEntry<OrdersData, double>>[];
+    // if (originLat != null && originLng != null) {
+    //   for (final o in others) {
+    //     final lat = double.tryParse(o.pickupLatitude ?? '');
+    //     final lng = double.tryParse(o.pickupLongitude ?? '');
+    //     if (lat == null || lng == null) continue;
+    //     final distance = Geolocator.distanceBetween(
+    //       originLat,
+    //       originLng,
+    //       lat,
+    //       lng,
+    //     );
+    //     if (distance <= kMaxUpdateDistanceMeters) {
+    //       nearby.add(MapEntry(o, distance));
+    //     }
+    //   }
+    // }
+    //
+    // if (nearby.isNotEmpty) {
+    //   nearby.sort((a, b) => a.value.compareTo(b.value));
+    //   pickupSuggestions = [order, ...nearby.map((e) => e.key)];
+    //   pickupSuggestionsAreNearby = true;
+    // } else {
+    //   // Nothing within range - fall back to every other assigned order so
+    //   // the strip still helps instead of just disappearing.
+    //   pickupSuggestions = [order, ...others];
+    //   pickupSuggestionsAreNearby = false;
+    // }
+     pickupSuggestions = [order, ...others];
+     pickupSuggestionsAreNearby = false;
   }
 
   // Label shown on each chip in the strip (not the current order, which
   // always just reads "Viewing").
+  bool isCurrentOrder(OrdersData o) => _orderKey(o) == _orderKey(order);
+
   String pickupSuggestionTag(OrdersData o) {
-    if (_orderKey(o) == _orderKey(order)) return "Viewing";
+    if (isCurrentOrder(o)) return "Viewing";
+    if (_isWaitingForWindow(o)) {
+      if (!ValueWindowStrip.hasNextWindow(o)) return "Closed today";
+      final phrase = ValueWindowStrip.opensPhrase(o);
+      return phrase[0].toUpperCase() + phrase.substring(1);
+    }
     if (pickupSuggestionsAreNearby) {
       final originLat = double.tryParse(order.pickupLatitude ?? '');
       final originLng = double.tryParse(order.pickupLongitude ?? '');
@@ -792,6 +1095,8 @@ class ActiveDeliveryController extends GetxController {
     isCheckingPayment = false;
     _awaitingPaymentReturn = false;
     bufferWaitActive = order.status == REACHED && pickupBufferSeconds > 0;
+    isDeliveryOtpVerified = false;
+    onDeliveryOtpSheetClosed();
   }
 
   // Called from the result dialog's "Continue" after an order is delivered,
@@ -834,7 +1139,9 @@ class ActiveDeliveryController extends GetxController {
       final completedIndex = previousKeys.indexOf(completedKey);
       if (completedIndex != -1) {
         for (final key in previousKeys.skip(completedIndex + 1)) {
-          final match = _allAssignedOrders.where((o) => _orderKey(o) == key);
+          final match = _allAssignedOrders.where(
+            (o) => _orderKey(o) == key && !_isWaitingForWindow(o),
+          );
           if (match.isNotEmpty) {
             next = match.first;
             break;
@@ -842,7 +1149,7 @@ class ActiveDeliveryController extends GetxController {
         }
       }
     }
-    order = next ?? _allAssignedOrders.first;
+    order = next ?? _firstReadyOrder(_allAssignedOrders);
     _resetPerOrderState();
     _recomputePickupSuggestions();
     update();
