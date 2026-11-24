@@ -13,6 +13,7 @@ import 'package:google_navigation_flutter/google_navigation_flutter.dart'
     hide Marker;
 import 'package:signature/signature.dart';
 import '../../global/app_bottom_nav.dart';
+import '../../global/consts.dart';
 import '../../global/global.dart';
 import '../../global/value_window_strip.dart';
 import '../../utils/colors.dart';
@@ -54,11 +55,16 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    controller.onOpenDeliveryOtpSheet = _showDeliveryOtpSheet;
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    controller.onOpenDeliveryOtpSheet = null;
+    // The map's platform view is gone; stop any map setup still in flight
+    // from touching it (the native plugin crashes on a dead view).
+    controller.mapViewController = null;
     _callDurationTimer?.cancel();
     super.dispose();
   }
@@ -509,9 +515,9 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
   }
 
   // Service type + priority tags - shown at the right end of the "Delivery
-  // progress" title row; renders nothing when neither applies.
-  Widget _orderTags() {
-    final order = controller.order;
+  // progress" title row and on each assigned-orders sheet card; renders
+  // nothing when neither applies.
+  Widget _orderTags(OrdersData order) {
     final hasType = (order.serviceType ?? "").isNotEmpty;
     // PRIORITY for priority orders; VALUE for any other WhatsApp order.
     final hasDeliveryTag = order.isPriorityOrder || order.isWhatsAppOrder;
@@ -893,13 +899,65 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
         children: [
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 14.w),
-            child: utils.tvCustom(
-              controller.pickupSuggestionsAreNearby
-                  ? "${suggestions.length} orders at this pickup"
-                  : "Nothing nearby · ${suggestions.length - 1} other assigned orders",
-              AppColors.greyColor4,
-              11.5,
-              textAlignment: TextAlign.left,
+            child: Row(
+              children: [
+                utils.tvCustom(
+                  "Assigned orders",
+                  AppColors.black,
+                  12.5,
+                  textAlignment: TextAlign.left,
+                ),
+                SizedBox(width: 8.w),
+                Container(
+                  constraints: BoxConstraints(minWidth: 22.r),
+                  height: 22.r,
+                  padding: EdgeInsets.symmetric(horizontal: 7.w),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryThemeColor,
+                    borderRadius: BorderRadius.circular(11.r),
+                  ),
+                  child: utils.tvCustom(
+                    "${suggestions.length}",
+                    Colors.white,
+                    11,
+                  ),
+                ),
+                const Spacer(),
+                OutlinedButton(
+                  onPressed: () => _openAssignedOrdersSheet(context),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: Size(0, 36.h),
+                    padding: EdgeInsets.symmetric(horizontal: 12.w),
+                    backgroundColor: AppColors.primaryThemeColor.withOpacity(
+                      Get.isDarkMode ? 0.28 : 0.10,
+                    ),
+                    side: const BorderSide(
+                      color: AppColors.primaryThemeColor,
+                      width: 1.4,
+                    ),
+                    shape: const StadiumBorder(),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      utils.tvCustom(
+                        "View all",
+                        AppColors.primaryThemeColor,
+                        11.5,
+                      ),
+                      SizedBox(width: 2.w),
+                      Icon(
+                        Icons.chevron_right,
+                        color: Get.isDarkMode
+                            ? AppColors.white
+                            : AppColors.primaryThemeColor,
+                        size: 16.sp,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
           SizedBox(height: 8.h),
@@ -924,7 +982,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
   }
 
   Widget _pickupSuggestionChip(OrdersData o) {
-    final isCurrent = controller.pickupSuggestionTag(o) == "Viewing";
+    final isCurrent = controller.isCurrentOrder(o);
     final borderColor = isCurrent
         ? AppColors.primaryThemeColor
         : (Get.isDarkMode
@@ -1010,6 +1068,563 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------
+  // Assigned orders sheet - "View all" on the strip above opens every
+  // assigned order with its full details, filterable, so the rider can
+  // compare them and switch without leaving this screen.
+  // ---------------------------------------------------------------------
+  static const Map<_AssignedFilter, String> _assignedFilterLabels = {
+    _AssignedFilter.all: "All",
+    _AssignedFilter.pickup: "To pick up",
+    _AssignedFilter.deliver: "To deliver",
+    _AssignedFilter.value: "Value orders",
+  };
+
+  bool _matchesAssignedFilter(OrdersData o, _AssignedFilter filter) =>
+      switch (filter) {
+        _AssignedFilter.all => true,
+        _AssignedFilter.pickup => controller.isPickupStatus(o.status),
+        _AssignedFilter.deliver => !controller.isPickupStatus(o.status),
+        _AssignedFilter.value => o.isValueOrder,
+      };
+
+  void _openAssignedOrdersSheet(BuildContext context) {
+    var filter = _AssignedFilter.all;
+    Get.bottomSheet(
+      Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.86,
+        ),
+        padding: EdgeInsets.fromLTRB(
+          (context.isPhone ? 18 : 32).w,
+          14.h,
+          (context.isPhone ? 18 : 32).w,
+          0,
+        ),
+        decoration: BoxDecoration(
+          color: Get.isDarkMode ? AppColors.greyColor10 : Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: StatefulBuilder(
+            builder: (sheetContext, setSheetState) =>
+                GetBuilder<ActiveDeliveryController>(
+                  builder: (_) {
+                    final orders = controller.pickupSuggestions;
+                    final shown = orders
+                        .where((o) => _matchesAssignedFilter(o, filter))
+                        .toList();
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(
+                          child: Container(
+                            width: 36.w,
+                            height: 4.h,
+                            margin: EdgeInsets.only(bottom: 12.h),
+                            decoration: BoxDecoration(
+                              color: AppColors.greyColor2,
+                              borderRadius: BorderRadius.circular(2.r),
+                            ),
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  utils.tvCustom(
+                                    "Assigned orders",
+                                    AppColors.black,
+                                    16,
+                                    textAlignment: TextAlign.left,
+                                  ),
+                                  SizedBox(height: 3.h),
+                                  utils.tvCustom(
+                                    "${orders.length} orders · switch to work on another one",
+                                    AppColors.greyColor5,
+                                    11,
+                                    textAlignment: TextAlign.left,
+                                    maxLines: 1,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: Get.back,
+                              tooltip: "Close",
+                              style: IconButton.styleFrom(
+                                backgroundColor: Get.isDarkMode
+                                    ? Colors.white.withOpacity(0.08)
+                                    : AppColors.greyColor1,
+                              ),
+                              icon: Icon(
+                                Icons.close,
+                                color: Get.isDarkMode
+                                    ? AppColors.white
+                                    : AppColors.black,
+                                size: 18.sp,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 12.h),
+                        Wrap(
+                          spacing: 8.w,
+                          runSpacing: 8.h,
+                          children: [
+                            for (final f in _AssignedFilter.values)
+                              _assignedFilterChip(
+                                label:
+                                    "${_assignedFilterLabels[f]} · ${orders.where((o) => _matchesAssignedFilter(o, f)).length}",
+                                selected: f == filter,
+                                onTap: () => setSheetState(() => filter = f),
+                              ),
+                          ],
+                        ),
+                        SizedBox(height: 14.h),
+                        Flexible(
+                          child: shown.isEmpty
+                              ? Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 32.h),
+                                  child: Center(
+                                    child: utils.tvCustom(
+                                      "No orders in this filter",
+                                      AppColors.greyColor5,
+                                      12,
+                                    ),
+                                  ),
+                                )
+                              : SingleChildScrollView(
+                                  padding: EdgeInsets.only(bottom: 20.h),
+                                  child: LayoutBuilder(
+                                    builder: (_, constraints) {
+                                      // One column on phones, two on tablets.
+                                      final columns =
+                                          sheetContext.isPhone ? 1 : 2;
+                                      final gap = 12.w;
+                                      final itemWidth =
+                                          (constraints.maxWidth -
+                                              gap * (columns - 1)) /
+                                          columns;
+                                      return Wrap(
+                                        spacing: gap,
+                                        runSpacing: 12.h,
+                                        children: [
+                                          for (final o in shown)
+                                            SizedBox(
+                                              width: itemWidth,
+                                              child: _assignedOrderCard(o),
+                                            ),
+                                        ],
+                                      );
+                                    },
+                                  ),
+                                ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+          ),
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
+
+  Widget _assignedFilterChip({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18.r),
+      // Row (not Container.alignment) so the pill hugs its label instead of
+      // stretching to the Wrap's full width.
+      child: Container(
+        height: 36.h,
+        padding: EdgeInsets.symmetric(horizontal: 14.w),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppColors.primaryThemeColor
+              : (Get.isDarkMode
+                    ? Colors.white.withOpacity(0.08)
+                    : AppColors.greyColor1),
+          borderRadius: BorderRadius.circular(18.r),
+          border: Border.all(
+            color: selected
+                ? AppColors.primaryThemeColor
+                : (Get.isDarkMode
+                      ? Colors.white.withOpacity(0.15)
+                      : AppColors.greyColor2.withOpacity(0.5)),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            utils.tvCustom(
+              label,
+              selected ? Colors.white : AppColors.black,
+              11.5,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _assignedOrderCard(OrdersData o) {
+    final isCurrent = controller.isCurrentOrder(o);
+    final pickupNext = controller.isPickupStatus(o.status);
+    final isCod = controller.isCodOrder(o);
+    final paidOnline = isCod && o.paymentCompleted == true;
+    final payColor = isCod && !paidOnline ? _amberOFD : AppColors.greenLight;
+    final String payLabel;
+    if (!isCod) {
+      payLabel = "Prepaid";
+    } else if (paidOnline) {
+      payLabel = "Paid via payment link";
+    } else {
+      payLabel = controller.isSplitPaymentOrder(o)
+          ? "Split · COD · collect from customer"
+          : "COD · collect from customer";
+    }
+    final distance = controller.stopDistanceFor(o);
+    final eta = controller.stopEtaFor(o);
+    final sla = o.sla_time_left ?? "";
+    final quantity = o.quantity ?? 0;
+    final packageText = [
+      if ((o.itemName ?? "").isNotEmpty) o.itemName!,
+      if (quantity > 0) "$quantity item${quantity > 1 ? 's' : ''}",
+      if ((o.weight ?? "").isNotEmpty) "${o.weight} kg",
+    ].join(" · ");
+    final borderColor = Get.isDarkMode
+        ? Colors.white.withOpacity(0.15)
+        : AppColors.greyColor2.withOpacity(0.5);
+
+    return Container(
+      padding: EdgeInsets.all(14.w),
+      decoration: BoxDecoration(
+        color: isCurrent
+            ? AppColors.primaryThemeColor.withOpacity(
+                Get.isDarkMode ? 0.16 : 0.06,
+              )
+            : (Get.isDarkMode ? Colors.white.withOpacity(0.06) : Colors.white),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(
+          color: isCurrent ? AppColors.primaryThemeColor : borderColor,
+          width: isCurrent ? 1.6 : 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Wrap(
+                  spacing: 6.w,
+                  runSpacing: 4.h,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    utils.tvCustom(
+                      o.awbNo ?? o.orderRefNumber ?? "-",
+                      AppColors.black,
+                      13,
+                      textAlignment: TextAlign.left,
+                    ),
+                    _orderTags(o),
+                  ],
+                ),
+              ),
+              SizedBox(width: 8.w),
+              _orderStatusPill(o.status),
+            ],
+          ),
+          // Value orders: pickup window (open / opens in … / picked).
+          if (o.hasValueWindow) ...[
+            SizedBox(height: 10.h),
+            ValueWindowStrip(
+              order: o,
+              action: "Pickup",
+              picked: !controller.isPickupStatus(o.status),
+              compact: true,
+              onWindowOpen: controller.refreshValueWindow,
+            ),
+          ],
+          SizedBox(height: 12.h),
+          _routeLeg(
+            isPickup: true,
+            isNext: pickupNext,
+            name: o.merchantName ?? "-",
+            address: o.pickupLocationName ?? o.pickupAddress ?? "-",
+          ),
+          _routeLeg(
+            isPickup: false,
+            isNext: !pickupNext,
+            name: o.consigneeName ?? "-",
+            address: o.consigneeAddress ?? "-",
+          ),
+          SizedBox(height: 12.h),
+          Wrap(
+            spacing: 6.w,
+            runSpacing: 6.h,
+            children: [
+              if (distance != "-")
+                _orderFactChip(
+                  Icons.location_on_outlined,
+                  eta == "-" ? distance : "$distance · $eta",
+                ),
+              if (sla.isNotEmpty) _orderFactChip(Icons.timer_outlined, sla),
+              if (packageText.isNotEmpty)
+                _orderFactChip(Icons.inventory_2_outlined, packageText),
+            ],
+          ),
+          SizedBox(height: 12.h),
+          Divider(height: 1, thickness: 1, color: borderColor),
+          SizedBox(height: 12.h),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    utils.tvCustom(
+                      payLabel,
+                      AppColors.greyColor5,
+                      10,
+                      textAlignment: TextAlign.left,
+                      maxLines: 1,
+                    ),
+                    SizedBox(height: 2.h),
+                    utils.tvCustom(
+                      isCod
+                          ? "QAR ${controller.codAmountFor(o)}"
+                          : "Paid online",
+                      payColor,
+                      15,
+                      textAlignment: TextAlign.left,
+                      maxLines: 1,
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 10.w),
+              if (isCurrent)
+                Container(
+                  height: 36.h,
+                  padding: EdgeInsets.symmetric(horizontal: 14.w),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryThemeColor,
+                    borderRadius: BorderRadius.circular(20.r),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.check_rounded,
+                        color: Colors.white,
+                        size: 14.sp,
+                      ),
+                      SizedBox(width: 4.w),
+                      utils.tvCustom("Viewing", Colors.white, 11.5),
+                    ],
+                  ),
+                )
+              else
+                OutlinedButton(
+                  onPressed: () {
+                    Get.back();
+                    controller.switchToOrder(o);
+                  },
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: Size(0, 40.h),
+                    padding: EdgeInsets.symmetric(horizontal: 14.w),
+                    side: const BorderSide(
+                      color: AppColors.primaryThemeColor,
+                      width: 1.4,
+                    ),
+                    shape: const StadiumBorder(),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      utils.tvCustom(
+                        "Switch to order",
+                        AppColors.primaryThemeColor,
+                        11.5,
+                      ),
+                      SizedBox(width: 2.w),
+                      Icon(
+                        Icons.chevron_right,
+                        color: Get.isDarkMode
+                            ? AppColors.white
+                            : AppColors.primaryThemeColor,
+                        size: 16.sp,
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _orderStatusPill(String? status) {
+    final (label, color) = switch (status) {
+      ASSIGNED || RE_ASSIGNED => ("Assigned", AppColors.blue),
+      REACHED => ("At pickup", _amberOFD),
+      PICKED => ("Picked up", AppColors.greenLight),
+      OFD => ("Out for delivery", AppColors.primaryThemeColor),
+      _ => (status ?? "-", AppColors.greyColor5),
+    };
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+      decoration: BoxDecoration(
+        color: color.withOpacity(Get.isDarkMode ? 0.4 : 0.12),
+        borderRadius: BorderRadius.circular(20.r),
+      ),
+      child: utils.tvCustom(label, color, 10),
+    );
+  }
+
+  // One leg of a sheet card's route - pickup (red ring, same as the map
+  // marker) joined by a line to drop-off (green dot). NEXT marks the leg the
+  // rider is heading to.
+  Widget _routeLeg({
+    required bool isPickup,
+    required bool isNext,
+    required String name,
+    required String address,
+  }) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: 12.w,
+            child: Column(
+              children: [
+                SizedBox(height: 3.h),
+                Container(
+                  width: 10.r,
+                  height: 10.r,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isPickup ? Colors.transparent : AppColors.greenLight,
+                    border: isPickup
+                        ? Border.all(color: AppColors.red, width: 2.5)
+                        : null,
+                  ),
+                ),
+                if (isPickup)
+                  Expanded(
+                    child: Container(
+                      width: 2,
+                      margin: EdgeInsets.symmetric(vertical: 3.h),
+                      color: Get.isDarkMode
+                          ? Colors.white.withOpacity(0.25)
+                          : AppColors.greyColor2,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: isPickup ? 10.h : 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      utils.tvCustom(
+                        isPickup ? "PICKUP" : "DROP-OFF",
+                        AppColors.greyColor5,
+                        9.5,
+                        textAlignment: TextAlign.left,
+                      ),
+                      if (isNext) ...[
+                        SizedBox(width: 6.w),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 6.w,
+                            vertical: 1.h,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryThemeColor,
+                            borderRadius: BorderRadius.circular(5.r),
+                          ),
+                          child: utils.tvCustom("NEXT", Colors.white, 8.5),
+                        ),
+                      ],
+                    ],
+                  ),
+                  SizedBox(height: 2.h),
+                  utils.tvCustom(
+                    name,
+                    AppColors.black,
+                    12.5,
+                    textAlignment: TextAlign.left,
+                    maxLines: 1,
+                  ),
+                  SizedBox(height: 2.h),
+                  utils.tvCustom(
+                    address,
+                    AppColors.greyColor5,
+                    11,
+                    textAlignment: TextAlign.left,
+                    maxLines: 2,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _orderFactChip(IconData icon, String text) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 5.h),
+      decoration: BoxDecoration(
+        color: Get.isDarkMode
+            ? Colors.white.withOpacity(0.08)
+            : AppColors.greyColor1,
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            color: Get.isDarkMode ? AppColors.white : AppColors.greyColor5,
+            size: 12.sp,
+          ),
+          SizedBox(width: 5.w),
+          Flexible(
+            child: utils.tvCustom(
+              text,
+              AppColors.black,
+              10.5,
+              textAlignment: TextAlign.left,
+              maxLines: 1,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1482,7 +2097,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
                   maxLines: 1,
                 ),
               ),
-              _orderTags(),
+              _orderTags(controller.order),
             ],
           ),
           SizedBox(height: 6.h),
@@ -1500,6 +2115,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
               ValueWindowStrip(
                 order: controller.order,
                 action: "Pickup",
+                compact: true,
                 onWindowOpen: controller.refreshValueWindow,
               ),
               SizedBox(height: 10.h),
@@ -1612,7 +2228,10 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
   // straight through, same as every earlier step).
   // ---------------------------------------------------------------------
   void _onPrimaryActionPressed() {
+    // Before the OTP is verified, step 4's button opens the OTP sheet (via
+    // the controller) - payment comes after OTP and evidence.
     if (controller.currentStep == 4 &&
+        controller.isOtpCleared &&
         controller.isCod &&
         !controller.isPaymentCompleted) {
       // Delivery proof (package photo, delivery photo, signature) comes
@@ -1628,6 +2247,15 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
       return;
     }
     controller.confirmPrimaryAction();
+  }
+
+  // Opened by the controller once "Confirm delivery" passes the distance and
+  // evidence checks; the sheet sends the OTP itself when it opens.
+  void _showDeliveryOtpSheet() {
+    Get.bottomSheet(
+      const _DeliveryOtpSheet(),
+      isScrollControlled: true,
+    ).then((_) => controller.onDeliveryOtpSheetClosed());
   }
 
   void _showCodPaymentSheet() {
@@ -2015,6 +2643,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
                                 ),
                               ),
                             ],
+
                           ),
                         ),
                         SizedBox(height: 10.h),
@@ -2261,6 +2890,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
   // Delivery evidence card
   // ---------------------------------------------------------------------
   Widget _evidenceCard(BuildContext context, Color cardBg) {
+    final locked = controller.isEvidenceLocked;
     return Container(
       padding: EdgeInsets.all(14.w),
       decoration: BoxDecoration(
@@ -2279,44 +2909,73 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          utils.tvCustom(
-            "Delivery evidence",
-            AppColors.black,
-            16,
-            textAlignment: TextAlign.left,
-          ),
-          SizedBox(height: 12.h),
           Row(
             children: [
               Expanded(
-                child: _evidenceTile(
-                  icon: Icons.camera_alt_outlined,
-                  label: "Package photo",
-                  file: controller.packagePhoto,
-                  onCapture: controller.capturePackagePhoto,
+                child: utils.tvCustom(
+                  "Delivery evidence",
+                  AppColors.black,
+                  16,
+                  textAlignment: TextAlign.left,
                 ),
               ),
-              SizedBox(width: (context.isPhone ? 10 : 16).w),
-              Expanded(
-                child: _evidenceTile(
-                  icon: Icons.camera_alt_outlined,
-                  label: "Delivery photo",
-                  file: controller.deliveryPhoto,
-                  onCapture: controller.captureDeliveryPhoto,
-                ),
-              ),
-              SizedBox(width: (context.isPhone ? 10 : 16).w),
-              Expanded(
-                child: _evidenceTile(
-                  icon: Icons.edit_outlined,
-                  label: "Customer signature",
-                  file: controller.signatureFile,
-                  onCapture: () => _openSignatureSheet(context),
-                ),
-              ),
+              if (controller.requiresDeliveryOtp) _evidenceOtpChip(locked),
             ],
           ),
-          if (controller.packagePhoto != null ||
+          SizedBox(height: 12.h),
+          // Locked until the delivery OTP is verified: dimmed, lock icons,
+          // and taps go nowhere (the bottom button opens the OTP sheet).
+          IgnorePointer(
+            ignoring: locked,
+            child: Opacity(
+              opacity: locked ? 0.45 : 1,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _evidenceTile(
+                      icon: locked
+                          ? Icons.lock_outline
+                          : Icons.camera_alt_outlined,
+                      label: "Package photo",
+                      file: controller.packagePhoto,
+                      onCapture: controller.capturePackagePhoto,
+                    ),
+                  ),
+                  SizedBox(width: (context.isPhone ? 10 : 16).w),
+                  Expanded(
+                    child: _evidenceTile(
+                      icon: locked
+                          ? Icons.lock_outline
+                          : Icons.camera_alt_outlined,
+                      label: "Delivery photo",
+                      file: controller.deliveryPhoto,
+                      onCapture: controller.captureDeliveryPhoto,
+                    ),
+                  ),
+                  SizedBox(width: (context.isPhone ? 10 : 16).w),
+                  Expanded(
+                    child: _evidenceTile(
+                      icon: locked ? Icons.lock_outline : Icons.edit_outlined,
+                      label: "Customer signature",
+                      file: controller.signatureFile,
+                      onCapture: () => _openSignatureSheet(context),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (locked) ...[
+            SizedBox(height: 10.h),
+            Center(
+              child: utils.tvCustom(
+                "Verify the customer's OTP to unlock photos and signature",
+                AppColors.greyColor5,
+                11,
+                maxLines: 2,
+              ),
+            ),
+          ] else if (controller.packagePhoto != null ||
               controller.deliveryPhoto != null ||
               controller.signatureFile != null) ...[
             SizedBox(height: 8.h),
@@ -2328,6 +2987,41 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  // "Locked" (grey) before the delivery OTP is verified, "OTP verified"
+  // (green) after.
+  Widget _evidenceOtpChip(bool locked) {
+    final iconColor = locked
+        ? AppColors.greyColor5
+        : (Get.isDarkMode ? AppColors.green : AppColors.greenLight);
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+      decoration: BoxDecoration(
+        color: locked
+            ? (Get.isDarkMode
+                ? Colors.white.withOpacity(0.08)
+                : AppColors.greyColor1)
+            : iconColor.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            locked ? Icons.lock_outline : Icons.verified_user_outlined,
+            color: iconColor,
+            size: 12.sp,
+          ),
+          SizedBox(width: 4.w),
+          utils.tvCustom(
+            locked ? "Locked" : "OTP verified",
+            locked ? AppColors.greyColor5 : AppColors.greenLight,
+            11,
+          ),
         ],
       ),
     );
@@ -2708,3 +3402,370 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen>
 }
 
 enum _StepState { done, current, pending, failed }
+
+enum _AssignedFilter { all, pickup, deliver, value }
+
+// Delivery OTP sheet (step 4) - the rider enters the code the customer
+// received. A single hidden TextField takes the input (so paste, backspace
+// and SMS autofill behave normally) and the boxes just render its digits.
+class _DeliveryOtpSheet extends StatefulWidget {
+  const _DeliveryOtpSheet();
+
+  @override
+  State<_DeliveryOtpSheet> createState() => _DeliveryOtpSheetState();
+}
+
+class _DeliveryOtpSheetState extends State<_DeliveryOtpSheet> {
+  final controller = Get.find<ActiveDeliveryController>();
+  final _otpController = TextEditingController();
+  final _focusNode = FocusNode();
+
+  static const int _length = ActiveDeliveryController.deliveryOtpLength;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(() => setState(() {}));
+    controller.sendDeliveryOtp();
+  }
+
+  @override
+  void dispose() {
+    _otpController.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _onChanged(String _) {
+    controller.clearOtpError();
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GetBuilder<ActiveDeliveryController>(
+      id: ActiveDeliveryController.deliveryOtpUpdateId,
+      builder: (_) {
+        final busy = controller.isVerifyingOtp;
+        return PopScope(
+          canPop: !busy,
+          // Get.bottomSheet already lifts the sheet above the keyboard, so no
+          // viewInsets padding here (adding it again overflowed the sheet).
+          // The scroll view keeps short screens / large fonts from overflowing.
+          child: Container(
+            decoration: BoxDecoration(
+              color: Get.isDarkMode ? AppColors.greyColor10 : Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+            ),
+            child: SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(18.w, 14.h, 18.w, 20.h),
+            child: Center(
+              heightFactor: 1,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: context.isPhone ? double.infinity : 360.r,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 36.w,
+                        height: 4.h,
+                        margin: EdgeInsets.only(bottom: 16.h),
+                        decoration: BoxDecoration(
+                          color: AppColors.greyColor2,
+                          borderRadius: BorderRadius.circular(2.r),
+                        ),
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.verified_user_outlined,
+                          color: Get.isDarkMode
+                              ? AppColors.green
+                              : AppColors.greenLight,
+                          size: 20.sp,
+                        ),
+                        SizedBox(width: 8.w),
+                        Expanded(
+                          child: utils.tvCustom(
+                            "Verify delivery OTP",
+                            AppColors.black,
+                            16,
+                            textAlignment: TextAlign.left,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 8.h),
+                    utils.tvCustom(
+                      _subtitle(),
+                      AppColors.greyColor5,
+                      13,
+                      textAlignment: TextAlign.left,
+                      maxLines: 3,
+                    ),
+                    SizedBox(height: 22.h),
+                    _otpInput(),
+                    if (controller.otpError != null) ...[
+                      SizedBox(height: 12.h),
+                      _errorRow(controller.otpError!),
+                    ],
+                    SizedBox(height: 16.h),
+                    _resendRow(),
+                    SizedBox(height: 20.h),
+                    _verifyButton(),
+                    SizedBox(height: 4.h),
+                    SizedBox(
+                      width: double.infinity,
+                      child: TextButton(
+                        onPressed: busy ? null : () => Get.back(),
+                        child: utils.tvCustom(
+                          "Cancel",
+                          AppColors.greyColor5,
+                          14,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String _subtitle() {
+    if (controller.isSendingOtp) {
+      return "Sending the code to the customer's WhatsApp...";
+    }
+    final phone = controller.maskedConsigneePhone;
+    final sentTo = phone.isEmpty
+        ? "Ask the customer for the $_length-digit code sent to their WhatsApp."
+        : "Ask the customer for the $_length-digit code sent to their WhatsApp ($phone).";
+    final expires = controller.otpExpiresInMinutes;
+    return expires != null && expires > 0
+        ? "$sentTo Valid for $expires min."
+        : sentTo;
+  }
+
+  Widget _otpInput() {
+    final otp = _otpController.text;
+    final hasError = controller.otpError != null && otp.isNotEmpty;
+    // Sized so all six boxes fit a 360-wide phone and the 360.r-wide tablet
+    // column with their margins.
+    final boxWidth = 44.r;
+    final boxHeight = context.isPhone ? 52.r : 50.r;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _focusNode.requestFocus(),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Off-screen-looking but real input; the boxes below mirror it.
+          Opacity(
+            opacity: 0,
+            child: SizedBox(
+              height: boxHeight,
+              child: TextField(
+                controller: _otpController,
+                focusNode: _focusNode,
+                autofocus: true,
+                enabled: !controller.isVerifyingOtp,
+                keyboardType: TextInputType.number,
+                maxLength: _length,
+                showCursor: false,
+                enableInteractiveSelection: false,
+                autofillHints: const [AutofillHints.oneTimeCode],
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                onChanged: _onChanged,
+                onSubmitted: (_) => _verify(),
+                decoration: const InputDecoration(
+                  counterText: "",
+                  border: InputBorder.none,
+                ),
+              ),
+            ),
+          ),
+          IgnorePointer(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(_length, (i) {
+                final digit = i < otp.length ? otp[i] : "";
+                final focused = _focusNode.hasFocus &&
+                    !controller.isVerifyingOtp &&
+                    (i == otp.length ||
+                        (otp.length == _length && i == _length - 1));
+                final borderColor = hasError
+                    ? AppColors.red
+                    : focused
+                        ? AppColors.primaryThemeColor
+                        : (Get.isDarkMode
+                            ? AppColors.greyColor5
+                            : AppColors.greyColor2);
+                return Container(
+                  width: boxWidth,
+                  height: boxHeight,
+                  margin: EdgeInsets.symmetric(
+                    horizontal: context.isPhone ? 4.w : 3.w,
+                  ),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Get.isDarkMode
+                        ? AppColors.backgroundColorMain
+                        : AppColors.white,
+                    borderRadius: BorderRadius.circular(12.r),
+                    border: Border.all(
+                      color: borderColor,
+                      width: hasError || focused ? 2 : 1.5,
+                    ),
+                    boxShadow: focused && !hasError
+                        ? [
+                            BoxShadow(
+                              color: AppColors.primaryThemeColor
+                                  .withOpacity(0.15),
+                              spreadRadius: 3,
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: utils.tvCustom(
+                    digit,
+                    hasError ? AppColors.red : AppColors.black,
+                    20,
+                  ),
+                );
+              }),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _errorRow(String message) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.error_outline, color: AppColors.red, size: 16.sp),
+        SizedBox(width: 6.w),
+        Flexible(
+          child: utils.tvCustom(
+            message,
+            AppColors.red,
+            12.5,
+            maxLines: 2,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _resendRow() {
+    final Widget trailing;
+    if (controller.isSendingOtp) {
+      trailing = SizedBox(
+        width: 14.sp,
+        height: 14.sp,
+        child: const CircularProgressIndicator(
+          strokeWidth: 2,
+          color: AppColors.primaryThemeColor,
+        ),
+      );
+    } else if (controller.otpResendSecondsLeft > 0) {
+      trailing = utils.tvCustom(
+        "Resend in ${controller.otpResendCountdown}",
+        AppColors.greyColor5,
+        13,
+      );
+    } else {
+      trailing = InkWell(
+        onTap: controller.canResendOtp
+            ? () {
+                _otpController.clear();
+                setState(() {});
+                controller.sendDeliveryOtp();
+              }
+            : null,
+        borderRadius: BorderRadius.circular(6.r),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 6.h),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.refresh,
+                color: AppColors.primaryThemeColor,
+                size: 16.sp,
+              ),
+              SizedBox(width: 4.w),
+              utils.tvCustom("Resend OTP", AppColors.primaryThemeColor, 13),
+            ],
+          ),
+        ),
+      );
+    }
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        utils.tvCustom("Didn't get the code?", AppColors.greyColor5, 13),
+        SizedBox(width: 6.w),
+        trailing,
+      ],
+    );
+  }
+
+  void _verify() {
+    if (_otpController.text.length != _length) return;
+    FocusScope.of(context).unfocus();
+    controller.verifyDeliveryOtp(_otpController.text);
+  }
+
+  Widget _verifyButton() {
+    final busy = controller.isVerifyingOtp;
+    final ready = _otpController.text.length == _length &&
+        !busy &&
+        !controller.isSendingOtp;
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: ready ? _verify : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.greenLight,
+          disabledBackgroundColor: busy
+              ? AppColors.greenLight
+              : (Get.isDarkMode ? AppColors.greyColor5 : AppColors.greyColor2),
+          padding: EdgeInsets.symmetric(vertical: 14.h),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28.r),
+          ),
+        ),
+        icon: busy
+            ? SizedBox(
+                width: 18.sp,
+                height: 18.sp,
+                child: const CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : Icon(
+                Icons.check_circle_outline,
+                color: Colors.white,
+                size: 18.sp,
+              ),
+        label: utils.tvCustom(
+          busy ? "Verifying..." : "Verify OTP",
+          Colors.white,
+          15,
+        ),
+      ),
+    );
+  }
+}

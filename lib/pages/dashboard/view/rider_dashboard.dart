@@ -5,6 +5,7 @@ import 'package:carson_zyppy/pages/my_orders/orders/models/orders_model.dart';
 import 'package:carson_zyppy/utils/colors.dart';
 import 'package:carson_zyppy/utils/utils.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:lottie/lottie.dart';
@@ -1486,9 +1487,19 @@ class _RiderDashboardState extends State<RiderDashboard>
                 }
               },
               itemBuilder: (context, index) {
-                return Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 2.w),
-                  child: _newRequestCard(orders[index]),
+                // Every page shares the current page's height, so a taller
+                // neighbour (e.g. a value order with its window strip) would
+                // be squeezed mid-swipe and throw a bottom overflow. Let each
+                // card keep its natural height instead - PageView clips any
+                // excess until the height animates to the new page.
+                return OverflowBox(
+                  alignment: Alignment.topCenter,
+                  minHeight: 0,
+                  maxHeight: double.infinity,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 2.w),
+                    child: _newRequestCard(orders[index]),
+                  ),
                 );
               },
             ),
@@ -1629,12 +1640,6 @@ class _RiderDashboardState extends State<RiderDashboard>
     return Obx(() {
       final orders = controller.upcomingOrders;
       final hasOrders = orders.isNotEmpty;
-      final cardBg = controller.isDarkMode.value
-          ? AppColors.backgroundColorLight
-          : Colors.white;
-      final dividerColor = controller.isDarkMode.value
-          ? Colors.white.withOpacity(0.07)
-          : const Color(0xFFF0F0F0);
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1649,7 +1654,12 @@ class _RiderDashboardState extends State<RiderDashboard>
                 textAlignment: TextAlign.left,
               ),
               InkWell(
-                onTap: () => Get.toNamed(Routes.orderListScreen),
+                // Upcoming orders are assigned ones - open that tab, not the
+                // order list's default (Available).
+                onTap: () => Get.toNamed(
+                  Routes.orderListScreen,
+                  arguments: {'initialStatusTab': 'assigned'},
+                ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -1673,38 +1683,14 @@ class _RiderDashboardState extends State<RiderDashboard>
           if (!hasOrders)
             _upcomingOrdersPlaceholder(context)
           else
-            Container(
-              decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(isTablet ? 20.r : 14.r),
-                border: controller.isDarkMode.value
-                    ? Border.all(color: Colors.white.withOpacity(0.06))
-                    : null,
-                boxShadow: controller.isDarkMode.value
-                    ? []
-                    : [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-              ),
-              child: Column(
-                children: [
-                  for (int i = 0; i < orders.length; i++) ...[
-                    _upcomingOrderRow(context, orders[i], isFirst: i == 0),
-                    if (i != orders.length - 1)
-                      Container(
-                        height: 1,
-                        margin: EdgeInsets.symmetric(
-                          horizontal: isTablet ? 20.w : 14.w,
-                        ),
-                        color: dividerColor,
-                      ),
-                  ],
+            // Each upcoming order is its own rounded card, spaced apart.
+            Column(
+              children: [
+                for (int i = 0; i < orders.length; i++) ...[
+                  if (i > 0) SizedBox(height: isTablet ? 14.h : 10.h),
+                  _upcomingOrderRow(context, orders[i], isFirst: i == 0),
                 ],
-              ),
+              ],
             ),
         ],
       );
@@ -1821,9 +1807,39 @@ class _RiderDashboardState extends State<RiderDashboard>
     final statusColor = _upcomingStatusColor(status);
     final iconColor = _upcomingStatusIconColor(status);
     final overdue =order.is_at_risk  ?? false;
+    final cardRadius = BorderRadius.circular(isTablet ? 20.r : 14.r);
 
-    return InkWell(
-      onTap: () => Get.toNamed(Routes.orderListScreen)?.then((_) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.backgroundColorLight : Colors.white,
+        borderRadius: cardRadius,
+        border: isDark
+            ? Border.all(color: Colors.white.withOpacity(0.06))
+            : null,
+        boxShadow: isDark
+            ? []
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+      ),
+      // UP NEXT card gets a light green tint over the card color.
+      child: Material(
+      color: isFirst
+          ? (isDark
+              ? AppColors.green.withOpacity(0.10)
+              : AppColors.greenLight.withOpacity(0.07))
+          : Colors.transparent,
+      borderRadius: cardRadius,
+      child: InkWell(
+      borderRadius: cardRadius,
+      onTap: () => Get.toNamed(
+        Routes.orderListScreen,
+        arguments: {'initialStatusTab': 'assigned'},
+      )?.then((_) {
         selectedNavIndex.value = 0;
         controller.getNextDelivery();
         controller.fetchAvailableOrders();
@@ -1854,12 +1870,15 @@ class _RiderDashboardState extends State<RiderDashboard>
               ValueWindowStrip(
                 order: order,
                 action: "Pickup",
+                compact: true,
                 onWindowOpen: controller.getNextDelivery,
               ),
             ],
             if (isFirst) _goToDeliveryFooter(order, isTablet, isDark),
           ],
         ),
+      ),
+      ),
       ),
     );
   }
@@ -2873,31 +2892,45 @@ class _PermissionRow extends StatelessWidget {
 // real rendered height after each layout - more reliable than an
 // intrinsic-height query, which can underestimate nested Row/Column
 // button layouts.
-class _MeasuredCarouselCard extends StatefulWidget {
-  final Widget child;
+// Reports its child's height after every layout pass in which it changed -
+// not just when the parent rebuilds - so a card that grows on its own (e.g.
+// a ValueWindowStrip countdown re-wrapping its text) re-sizes the carousel.
+class _MeasuredCarouselCard extends SingleChildRenderObjectWidget {
   final ValueChanged<double> onMeasured;
 
-  const _MeasuredCarouselCard({required this.child, required this.onMeasured});
+  const _MeasuredCarouselCard({
+    required Widget child,
+    required this.onMeasured,
+  }) : super(child: child);
 
   @override
-  State<_MeasuredCarouselCard> createState() => _MeasuredCarouselCardState();
+  _RenderMeasuredCarouselCard createRenderObject(BuildContext context) =>
+      _RenderMeasuredCarouselCard(onMeasured);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderMeasuredCarouselCard renderObject,
+  ) {
+    renderObject.onMeasured = onMeasured;
+  }
 }
 
-class _MeasuredCarouselCardState extends State<_MeasuredCarouselCard> {
-  final _key = GlobalKey();
+class _RenderMeasuredCarouselCard extends RenderProxyBox {
+  ValueChanged<double> onMeasured;
+  double? _lastHeight;
+
+  _RenderMeasuredCarouselCard(this.onMeasured);
 
   @override
-  Widget build(BuildContext context) {
+  void performLayout() {
+    super.performLayout();
+    final height = size.height;
+    if (!height.isFinite || height <= 0 || height == _lastHeight) return;
+    _lastHeight = height;
+    // Reporting updates Rx state, which can't happen mid-layout.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final box = _key.currentContext?.findRenderObject() as RenderBox?;
-      if (box != null && box.hasSize) {
-        final height = box.size.height;
-        if (height.isFinite && height > 0) {
-          widget.onMeasured(height);
-        }
-      }
+      if (attached) onMeasured(height);
     });
-    return KeyedSubtree(key: _key, child: widget.child);
   }
 }

@@ -317,19 +317,20 @@ class OrderListScreen extends GetView<OrderListController> {
       padding: EdgeInsets.symmetric(horizontal: (isTablet ? 32 : 16).w),
       labelPadding: EdgeInsets.only(right: (isTablet ? 10 : 8).w),
       splashBorderRadius: BorderRadius.circular(100.r),
+      // Same order as OrderListController.statuses.
       tabs: [
-        _statusPill(
-          context,
-          "Assigned",
-          "assigned",
-          controller.assignedOrders.length,
-          accent,
-        ),
         _statusPill(
           context,
           "Available",
           "available",
           controller.availableOrders.length,
+          accent,
+        ),
+        _statusPill(
+          context,
+          "Assigned",
+          "assigned",
+          controller.assignedOrders.length,
           accent,
         ),
         _statusPill(context, "Completed", "completed", null, accent),

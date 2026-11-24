@@ -7,7 +7,7 @@
   final String driverCurrentLocation = "driver/current-location";
   final String driverFetchOrderList = "driver/fetch-orders-list";
   final String driverOrdersByCategory = "driver/orders-by-category";
-final String upcomingOrders = "driver/upcoming-orders";
+  final String upcomingOrders = "driver/upcoming-orders";
   //final String dashBoardDetails = "driver/fetch-dashboard-details";
   final String dashBoardDetails = "driver/unified-dashboard";
   final String updateOrderStatus  = "driver/update-order-status";
@@ -25,5 +25,9 @@ final String upcomingOrders = "driver/upcoming-orders";
   final String driverCallLog = "driver/call-log";
   final String driverConfig = "driver/config";
   final String driverOrderDetails = "driver/order-details";
+  // Delivery OTP - sends (or re-sends) the code to the consignee, then
+  // checks the code the rider enters before the order is marked delivered.
+  final String resendOtp = "driver/whatsapp/regenerate-otp";
+  final String verifyOtp = "driver/whatsapp/verify-otp";
 
 }

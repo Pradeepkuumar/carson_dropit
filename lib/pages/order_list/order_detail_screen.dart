@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart' show Factory;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +11,7 @@ import '../../global/consts.dart';
 import '../../global/global.dart';
 import '../../global/value_window_strip.dart';
 import '../../utils/colors.dart';
+import '../my_orders/orders/models/orders_model.dart';
 import 'order_detail_controller.dart';
 
 const Color _amberOFD = Color(0xFFA67C00);
@@ -365,6 +367,12 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
                             : null,
                       ),
                       SizedBox(height: 12.h),
+
+                      if (order.status == DELIVERED ||
+                          order.status == UNDELIVERED) ...[
+                        _deliveryProofCard(order, cardBg, isTablet),
+                        SizedBox(height: 12.h),
+                      ],
 
                       _simpleCard(
                         icon: Icons.inventory_2_outlined,
@@ -800,6 +808,359 @@ class OrderDetailScreen extends GetView<OrderDetailController> {
           size: 14.sp,
         ),
       ),
+    );
+  }
+
+  // ---------------------------------------------------------------------
+  // Delivery proof - delivered orders show the POD photo and customer
+  // signature, undelivered ones the attempt photo and reason. Tapping an
+  // image opens it full screen.
+  // ---------------------------------------------------------------------
+  Widget _deliveryProofCard(OrdersData order, Color cardBg, bool isTablet) {
+    final delivered = order.status == DELIVERED;
+    final tone = delivered ? AppColors.greenLight : AppColors.red;
+    final tileHeight = (isTablet ? 220 : 130).h;
+    // The attempt photo is uploaded as failed_delivery_proof; fall back to
+    // pod_photo in case the API returns it there.
+    final attemptPhoto = (order.failed_delivery_proof ?? "").trim().isNotEmpty
+        ? order.failed_delivery_proof
+        : order.pod_photo;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all((isTablet ? 18 : 14).w),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(14.r),
+        border: Get.isDarkMode
+            ? Border.all(color: Colors.white.withOpacity(0.06))
+            : null,
+        boxShadow: Get.isDarkMode
+            ? []
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: (isTablet ? 46 : 36).w,
+                height: (isTablet ? 46 : 36).w,
+                decoration: BoxDecoration(
+                  color: tone.withOpacity(Get.isDarkMode ? 0.45 : 0.12),
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Icon(
+                  delivered
+                      ? Icons.verified_user_outlined
+                      : Icons.warning_amber_rounded,
+                  color: Get.isDarkMode ? AppColors.white : tone,
+                  size: 18.sp,
+                ),
+              ),
+              SizedBox(width: 10.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    utils.tvCustom(
+                      delivered ? "Delivery proof" : "Delivery attempt proof",
+                      AppColors.black,
+                      13,
+                      textAlignment: TextAlign.left,
+                    ),
+                    SizedBox(height: 2.h),
+                    utils.tvCustom(
+                      delivered
+                          ? "Tap to view full size"
+                          : "Tap the photo to view full size",
+                      AppColors.greyColor5,
+                      10.5,
+                      textAlignment: TextAlign.left,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12.h),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _proofImageTile(
+                  label: delivered ? "POD photo" : "Attempt photo",
+                  url: delivered ? order.pod_photo : attemptPhoto,
+                  height: tileHeight,
+                  missingIcon: Icons.photo_camera_outlined,
+                ),
+              ),
+              SizedBox(width: (isTablet ? 14 : 10).w),
+              Expanded(
+                child: delivered
+                    ? _proofImageTile(
+                        label: "Customer signature",
+                        url: order.customer_signature,
+                        height: tileHeight,
+                        missingIcon: Icons.draw_outlined,
+                        isSignature: true,
+                      )
+                    : _proofReasonTile(order.reason, tone, tileHeight),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // A signature always sits on white so the dark ink stays readable in
+  // dark mode; photos fill their tile.
+  Widget _proofImageTile({
+    required String label,
+    required String? url,
+    required double height,
+    required IconData missingIcon,
+    bool isSignature = false,
+  }) {
+    final imageUrl = (url ?? "").trim();
+    final hasImage = imageUrl.isNotEmpty;
+    final borderColor = Get.isDarkMode
+        ? Colors.white.withOpacity(0.15)
+        : AppColors.greyColor2.withOpacity(0.6);
+
+    final Widget tile;
+    if (hasImage) {
+      tile = InkWell(
+        onTap: () => _openProofViewer(label, imageUrl, isSignature),
+        borderRadius: BorderRadius.circular(12.r),
+        child: Container(
+          height: height,
+          width: double.infinity,
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: isSignature
+                ? Colors.white
+                : (Get.isDarkMode
+                      ? Colors.white.withOpacity(0.08)
+                      : AppColors.greyColor1),
+            borderRadius: BorderRadius.circular(12.r),
+            border: isSignature ? Border.all(color: borderColor) : null,
+          ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Padding(
+                padding: EdgeInsets.all(isSignature ? 8.w : 0),
+                child: CachedNetworkImage(
+                  imageUrl: imageUrl,
+                  fit: isSignature ? BoxFit.contain : BoxFit.cover,
+                  placeholder: (_, __) => Center(
+                    child: SizedBox(
+                      width: 18.r,
+                      height: 18.r,
+                      child: const CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.primaryThemeColor,
+                      ),
+                    ),
+                  ),
+                  errorWidget: (_, __, ___) => Icon(
+                    Icons.broken_image_outlined,
+                    color: AppColors.greyColor4,
+                    size: 22.sp,
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 6.r,
+                right: 6.r,
+                child: Container(
+                  width: 26.r,
+                  height: 26.r,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.45),
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    Icons.open_in_full,
+                    color: Colors.white,
+                    size: 13.sp,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } else {
+      tile = Container(
+        height: height,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Get.isDarkMode
+              ? Colors.white.withOpacity(0.08)
+              : AppColors.greyColor1,
+          borderRadius: BorderRadius.circular(12.r),
+          border: Border.all(color: borderColor, width: 1.5),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              missingIcon,
+              color: Get.isDarkMode ? AppColors.white : AppColors.greyColor4,
+              size: 20.sp,
+            ),
+            SizedBox(height: 6.h),
+            utils.tvCustom("Not uploaded", AppColors.greyColor5, 10.5),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        tile,
+        SizedBox(height: 6.h),
+        utils.tvCustom(
+          label,
+          AppColors.black,
+          11,
+          textAlignment: TextAlign.left,
+          maxLines: 1,
+        ),
+      ],
+    );
+  }
+
+  Widget _proofReasonTile(String? reason, Color tone, double height) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          height: height,
+          width: double.infinity,
+          padding: EdgeInsets.all(12.w),
+          decoration: BoxDecoration(
+            color: tone.withOpacity(Get.isDarkMode ? 0.3 : 0.08),
+            borderRadius: BorderRadius.circular(12.r),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              utils.tvCustom(
+                "REASON",
+                tone,
+                10,
+                textAlignment: TextAlign.left,
+              ),
+              SizedBox(height: 6.h),
+              Flexible(
+                child: utils.tvCustom(
+                  (reason ?? "").trim().isNotEmpty
+                      ? reason!.trim()
+                      : "No reason given",
+                  AppColors.black,
+                  12,
+                  textAlignment: TextAlign.left,
+                  maxLines: 5,
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 6.h),
+        utils.tvCustom(
+          "Not delivered",
+          AppColors.black,
+          11,
+          textAlignment: TextAlign.left,
+        ),
+      ],
+    );
+  }
+
+  // Full-screen, pinch-to-zoom view of a proof image.
+  void _openProofViewer(String title, String url, bool isSignature) {
+    Get.dialog(
+      Material(
+        color: Colors.black,
+        child: SafeArea(
+          child: Padding(
+            padding: EdgeInsets.all(16.w),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: utils.tvCustom(
+                        title,
+                        AppColors.white,
+                        15,
+                        textAlignment: TextAlign.left,
+                        maxLines: 1,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Get.back(),
+                      tooltip: "Close",
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white.withOpacity(0.12),
+                      ),
+                      icon: Icon(
+                        Icons.close,
+                        color: AppColors.white,
+                        size: 20.sp,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12.h),
+                Expanded(
+                  child: InteractiveViewer(
+                    maxScale: 5,
+                    child: Center(
+                      child: Container(
+                        color: isSignature ? Colors.white : Colors.transparent,
+                        padding: EdgeInsets.all(isSignature ? 12.w : 0),
+                        child: CachedNetworkImage(
+                          imageUrl: url,
+                          fit: BoxFit.contain,
+                          placeholder: (_, __) => const Center(
+                            child: CircularProgressIndicator(
+                              color: AppColors.primaryThemeColor,
+                            ),
+                          ),
+                          errorWidget: (_, __, ___) => Icon(
+                            Icons.broken_image_outlined,
+                            color: AppColors.greyColor4,
+                            size: 32.sp,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 12.h),
+                utils.tvCustom("Pinch to zoom", AppColors.greyColor2, 12),
+              ],
+            ),
+          ),
+        ),
+      ),
+      barrierColor: Colors.black,
+      useSafeArea: false,
     );
   }
 

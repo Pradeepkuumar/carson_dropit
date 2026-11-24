@@ -21,6 +21,9 @@ class ValueWindowStrip extends StatefulWidget {
   // Pass a method tear-off (e.g. controller.getNextDelivery) - several
   // strips reaching 0 together then trigger one refresh, not one each.
   final void Function()? onWindowOpen;
+  // One-line grey pill sized to its text, with only a status dot coloured -
+  // for the Active Delivery progress card, where the full strip is too loud.
+  final bool compact;
 
   const ValueWindowStrip({
     super.key,
@@ -28,6 +31,7 @@ class ValueWindowStrip extends StatefulWidget {
     required this.action,
     this.picked = false,
     this.onWindowOpen,
+    this.compact = false,
   });
 
   // Last refresh per callback, for the de-duplication above.
@@ -166,6 +170,48 @@ class _ValueWindowStripState extends State<ValueWindowStrip> {
         color = AppColors.amber;
         bg = AppColors.amber.withOpacity(isDark ? 0.55 : 0.14);
       }
+    }
+
+    if (widget.compact) {
+      final dotColor = widget.picked || open
+          ? AppColors.greenLight
+          : (soon ? AppColors.amber : AppColors.greyColor4);
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: (isTablet ? 12 : 10).w,
+            vertical: (isTablet ? 6 : 5).h,
+          ),
+          decoration: BoxDecoration(
+            color: isDark ? Colors.white.withOpacity(0.08) : AppColors.greyColor1,
+            borderRadius: BorderRadius.circular(20.r),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 7.r,
+                height: 7.r,
+                decoration: BoxDecoration(
+                  color: dotColor,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              SizedBox(width: 6.w),
+              Flexible(
+                child: utils.tvCustom(
+                  subtitle == null ? title : "$title · $subtitle",
+                  AppColors.greyColor5,
+                  10,
+                  textAlignment: TextAlign.left,
+                  maxLines: 2,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     return Container(

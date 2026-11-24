@@ -67,11 +67,17 @@ class OrdersData {
   // whether that payment has gone through (refreshed from the API).
   String? paymentLink;
   bool? paymentCompleted;
+  // Delivery OTP: whether this order needs the customer's WhatsApp OTP
+  // before delivery, and whether it has already been verified.
+  bool? requiresOtp;
+  bool? isOtpVerified;
   bool? is_at_risk;
   bool? is_within_window;
   String? next_window_start;
   String? next_window_minutes_left;
   String? next_window_label;
+  String? customer_signature;
+  String? pod_photo;
 
   // The API actually flags a priority order via delivery_type == "PRIORITY",
   // not is_active_priority (kept above as its own field/key regardless).
@@ -150,6 +156,8 @@ class OrdersData {
     this.deliveryType,
     this.paymentLink,
     this.paymentCompleted,
+    this.requiresOtp,
+    this.isOtpVerified,
     this.is_accepted_by_other,
     this.is_assigned_to_other,
     this.can_accept,
@@ -160,6 +168,8 @@ class OrdersData {
     this.next_window_start,
     this.next_window_minutes_left,
     this.next_window_label,
+    this.customer_signature,
+    this.pod_photo,
   });
 
   // payment_completed may arrive as a bool, 1/0 or "true"/"1".
@@ -237,6 +247,8 @@ class OrdersData {
     paymentLink = json['payment_link']?.toString();
     requires_return = json['requires_return']?.toString();
     paymentCompleted = _parseBool(json['payment_completed']);
+    requiresOtp = _parseBool(json['requires_otp']);
+    isOtpVerified = _parseBool(json['is_otp_verified']);
     is_accepted_by_other = _parseBool(json['is_accepted_by_other']);
     is_assigned_to_other = _parseBool(json['is_assigned_to_other']);
     can_accept = _parseBool(json['can_accept']);
@@ -246,6 +258,8 @@ class OrdersData {
     next_window_start = json['next_window_start']?.toString();
     next_window_minutes_left = json['next_window_minutes_left']?.toString();
     next_window_label = json['next_window_label']?.toString();
+    customer_signature = json['customer_signature']?.toString();
+    pod_photo = json['pod_photo']?.toString();
   }
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
@@ -307,6 +321,8 @@ class OrdersData {
     data['payment_link'] = paymentLink;
     data['requires_return'] = requires_return;
     data['payment_completed'] = paymentCompleted;
+    data['requires_otp'] = requiresOtp;
+    data['is_otp_verified'] = isOtpVerified;
     data['is_accepted_by_other'] = is_accepted_by_other;
     data['is_assigned_to_other'] = is_assigned_to_other;
     data['can_accept'] = can_accept;
@@ -316,6 +332,8 @@ class OrdersData {
     data['next_window_start'] = next_window_start;
     data['next_window_minutes_left'] = next_window_minutes_left;
     data['next_window_label'] = next_window_label;
+    data['customer_signature'] = customer_signature;
+    data['pod_photo'] = pod_photo;
     return data;
   }
 
