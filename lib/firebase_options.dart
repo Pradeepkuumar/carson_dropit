@@ -40,7 +40,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBn_M3fn4Tjk86vBSGzZlwHVPyUmdFgC1Y',
-    appId: '1:758204418570:android:70662c616526e2f1aaadf3',
+    appId: '1:758204418570:android:5c36f365ac78a085aaadf3',
     messagingSenderId: '758204418570',
     projectId: 'carson-delivery-app',
     storageBucket: 'carson-delivery-app.firebasestorage.app',

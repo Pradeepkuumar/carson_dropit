@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import '../apis/base_api_response.dart';
+import '../core/network/base_api_response.dart';
 import '../pages/my_orders/orders/models/orders_model.dart';
 import 'consts.dart';
 import 'global.dart';

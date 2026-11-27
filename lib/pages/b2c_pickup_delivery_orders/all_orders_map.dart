@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:carson_zyppy/global/global.dart';
 import 'package:carson_zyppy/pages/b2c_pickup_delivery_orders/controller/all_orders_map_controller.dart';
 import 'package:carson_zyppy/pages/my_orders/orders/models/orders_model.dart';
-import 'package:carson_zyppy/utils/colors.dart';
+import 'package:carson_zyppy/core/theme/app_colors.dart';
 import 'package:circular_countdown_timer/circular_countdown_timer.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';

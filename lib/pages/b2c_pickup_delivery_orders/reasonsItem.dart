@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../global/global.dart';
-import '../../utils/colors.dart';
+import '../../core/theme/app_colors.dart';
 
 Widget popUpWindowItem<T>(T item,String name,void Function(T) onClick) {
   return InkWell(

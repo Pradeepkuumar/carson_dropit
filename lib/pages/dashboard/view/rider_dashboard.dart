@@ -1,8 +1,10 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carson_zyppy/global/global.dart';
 import 'package:carson_zyppy/pages/dashboard/controller/rider_dashboard_controller.dart';
 import 'package:carson_zyppy/pages/my_orders/orders/models/orders_model.dart';
-import 'package:carson_zyppy/utils/colors.dart';
+import 'package:carson_zyppy/core/theme/app_colors.dart';
 import 'package:carson_zyppy/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -42,15 +44,30 @@ class _RiderDashboardState extends State<RiderDashboard>
   // page viewport can size to the actual card instead of a fixed height.
   final Map<int, double> _newRequestsCardHeights = {};
   final _newRequestsCarouselHeight = RxnDouble();
+  Timer? _availableOrdersRefreshTimer;
 
   @override
   void initState() {
     WidgetsBinding.instance.addObserver(this);
     super.initState();
+    _availableOrdersRefreshTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) {
+        if (!mounted ||
+            WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed ||
+            !controller.isAttendanceMarked.value ||
+            (controller.dashboardRouteName != null &&
+                Get.currentRoute != controller.dashboardRouteName)) {
+          return;
+        }
+        controller.fetchAvailableOrders(source: 'auto');
+      },
+    );
   }
 
   @override
   void dispose() {
+    _availableOrdersRefreshTimer?.cancel();
     _newRequestsPageController.dispose();
     super.dispose();
   }
@@ -624,8 +641,7 @@ class _RiderDashboardState extends State<RiderDashboard>
     );
   }
 
-  // Sign In card - shown in place of the rider animation when no lat/lng
-  // fix could be taken (GPS off / permission refused / timed out).
+
   Widget _locationNotFoundNotice(bool isTablet) {
     return Container(
       width: double.infinity,
@@ -697,8 +713,6 @@ class _RiderDashboardState extends State<RiderDashboard>
     );
   }
 
-  // Sign In card - "Finding your location..." while syncing, "Location
-  // synced" (with a re-sync button) once a fix is in hand.
   Widget _locationStatusRow(
     bool isTablet, {
     required bool synced,
@@ -747,8 +761,6 @@ class _RiderDashboardState extends State<RiderDashboard>
                 ),
                 SizedBox(height: 2.h),
                 Obx(() {
-                  // Read unconditionally so this Obx always has an
-                  // observable, even while syncing.
                   final latLng = controller.syncedLatLng.value;
                   return utils.tvCustom(
                     syncing ? "This can take up to 10 seconds" : latLng,
@@ -849,7 +861,7 @@ class _RiderDashboardState extends State<RiderDashboard>
   }
 
   // ---------------------------------------------------------------------
-  // Header: brand, on-duty toggle, profile avatar, greeting, wallet chip
+  /// Header: brand, on-duty toggle, profile avatar, greeting, wallet chip
   // ---------------------------------------------------------------------
   Widget _buildHeader(BuildContext context) {
     final isTablet = !context.isPhone;
@@ -944,15 +956,23 @@ class _RiderDashboardState extends State<RiderDashboard>
                     ),
                   ),
                   const SizedBox(width: 10),
-                  _buildAvatar(
-                    radius: isTablet ? 22 : 18,
-                    backgroundColor: Colors.white,
-                    fallback: utils.tvCustom(
-                      controller.riderName.value.isNotEmpty
-                          ? controller.riderName.value[0].toUpperCase()
-                          : "R",
-                      AppColors.primaryThemeColor,
-                      14,
+                  InkWell(
+                    borderRadius: BorderRadius.circular(isTablet ? 22 : 18),
+                    onTap: () {
+                      controller.getUserData();
+                      controller.fetchWalletAmount();
+                      Get.toNamed(Routes.accountScreen);
+                    },
+                    child: _buildAvatar(
+                      radius: isTablet ? 22 : 18,
+                      backgroundColor: Colors.white,
+                      fallback: utils.tvCustom(
+                        controller.riderName.value.isNotEmpty
+                            ? controller.riderName.value[0].toUpperCase()
+                            : "R",
+                        AppColors.primaryThemeColor,
+                        14,
+                      ),
                     ),
                   ),
                 ],

@@ -11,7 +11,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:signature/signature.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../apis/base_api_response.dart';
+import '../../core/network/base_api_response.dart';
 import '../../app_pages/app_pages.dart';
 import '../../firebase_notifications/firebase_notifiction_controller.dart';
 import '../../global/cancelled_orders.dart';
@@ -20,7 +20,7 @@ import '../../global/global.dart';
 import '../../global/order_delivered_dialog.dart';
 import '../../global/value_window_strip.dart';
 import '../../local_db/entity/UserData.dart';
-import '../../utils/colors.dart';
+import '../../core/theme/app_colors.dart';
 import '../dashboard/controller/rider_dashboard_controller.dart';
 import '../my_orders/orders/models/orders_model.dart';
 import '../my_orders/orders/models/reason_data.dart';
@@ -35,6 +35,8 @@ class ActiveDeliveryController extends GetxController {
   var user = UserData();
   GoogleMapViewController? mapViewController;
   StreamSubscription<Position>? _riderSubscription;
+  Future<void>? _mapSetupInFlight;
+  int _mapSetupGeneration = 0;
 
   // All of the rider's other currently-assigned orders (same statuses the
   // dashboard/order-list already fetch), as returned by the API - kept in
@@ -448,10 +450,36 @@ class ActiveDeliveryController extends GetxController {
   bool _isMapAlive(GoogleMapViewController controller) =>
       !isClosed && identical(mapViewController, controller);
 
-  Future<void> onMapViewCreated(GoogleMapViewController controller) async {
+  bool _isMapSetupCurrent(
+    GoogleMapViewController controller,
+    int generation,
+  ) =>
+      _isMapAlive(controller) && generation == _mapSetupGeneration;
+
+  Future<void> onMapViewCreated(GoogleMapViewController controller) {
+    // The platform view can report creation again during a rebuild. Reuse the
+    // in-flight setup rather than issuing concurrent mutations to its renderer.
+    if (_isMapAlive(controller) && _mapSetupInFlight != null) {
+      return _mapSetupInFlight!;
+    }
+
     mapViewController = controller;
+    final generation = ++_mapSetupGeneration;
+    late final Future<void> setup;
+    setup = _setupMapView(controller, generation).whenComplete(() {
+      if (identical(_mapSetupInFlight, setup)) _mapSetupInFlight = null;
+    });
+    _mapSetupInFlight = setup;
+    return setup;
+  }
+
+  Future<void> _setupMapView(
+    GoogleMapViewController controller,
+    int generation,
+  ) async {
     final pickup = pickupLatLng;
     final dropoff = dropoffLatLng;
+    StreamSubscription<Position>? riderSubscription;
 
     try {
       final markerOptions = <MarkerOptions>[
@@ -466,19 +494,20 @@ class ActiveDeliveryController extends GetxController {
             icon: await utils.mapDotMarker(AppColors.greenLight),
           ),
       ];
+      if (!_isMapSetupCurrent(controller, generation)) return;
       if (markerOptions.isNotEmpty) {
-        if (!_isMapAlive(controller)) return;
         await controller.addMarkers(markerOptions);
       }
 
+      if (!_isMapSetupCurrent(controller, generation)) return;
       if (pickup != null && dropoff != null) {
-        if (!_isMapAlive(controller)) return;
         await utils.drawMapRoute(controller, pickup, dropoff);
       }
 
+      if (!_isMapSetupCurrent(controller, generation)) return;
       // Rider's live position as the bike marker (replaces the blue dot).
       await _riderSubscription?.cancel();
-      if (!_isMapAlive(controller)) return;
+      if (!_isMapSetupCurrent(controller, generation)) return;
       final rider = await utils.showRiderBikeOnMap(controller);
       _riderSubscription = rider.subscription;
 

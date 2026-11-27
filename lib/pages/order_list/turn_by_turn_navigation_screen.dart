@@ -6,7 +6,7 @@ import 'package:get/get.dart';
 import 'package:google_navigation_flutter/google_navigation_flutter.dart'
     hide Marker;
 import '../../global/global.dart';
-import '../../utils/colors.dart';
+import '../../core/theme/app_colors.dart';
 import 'turn_by_turn_navigation_controller.dart';
 
 // Full-screen embedded turn-by-turn guidance. Google's Navigation SDK draws

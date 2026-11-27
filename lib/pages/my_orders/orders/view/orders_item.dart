@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../global/global.dart';
 import '../../../../utils/calculate_sla.dart';
-import '../../../../utils/colors.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../utils/utils.dart';
 import '../../nearby_orders/view/item_nearby_oredrs/neaby_orders_item.dart';
 import '../models/orders_model.dart';

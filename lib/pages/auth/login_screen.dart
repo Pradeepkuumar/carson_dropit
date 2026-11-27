@@ -1,9 +1,10 @@
 import 'package:carson_zyppy/global/consts.dart';
 import 'package:carson_zyppy/global/global.dart';
 import 'package:carson_zyppy/pages/auth/auth_controller.dart';
-import 'package:carson_zyppy/utils/colors.dart';
+import 'package:carson_zyppy/core/theme/app_colors.dart';
 import 'package:carson_zyppy/utils/utils.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -21,20 +22,18 @@ class _LoginScreenState extends State<LoginScreen> {
   bool obscurePassword = true;
 
   Future<void> _onLoginTap() async {
-    if (controller.feCode.value.text.isNotEmpty &&
-        controller.password.value.text.isNotEmpty) {
-      if (controller.isTokenLoaded.value) {
-        bool isLoggedIn = await controller.login();
-        if (isLoggedIn) {
-          Get.offAllNamed(Routes.riderDashBord);
-        } else {
-          Get.snackbar('Login Failed', 'Invalid credentials');
-        }
-      } else {
-        controller.getFireBaseToken();
-      }
-    } else {
+    if (controller.feCode.text.trim().isEmpty ||
+        controller.password.text.isEmpty) {
       utils.errorDialog("Please Enter Credentials");
+      return;
+    }
+
+    final isLoggedIn = await controller.login();
+    if (isLoggedIn) {
+      if (kDebugMode) {
+        debugPrint('[FCM_LIFECYCLE] Login succeeded; navigating to Rider Dashboard');
+      }
+      Get.offAllNamed(Routes.riderDashBord);
     }
   }
 

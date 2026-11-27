@@ -2,7 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../pages/dashboard/controller/rider_dashboard_controller.dart';
-import '../utils/colors.dart';
+import '../core/theme/app_colors.dart';
 
 // Shared avatar rendering (locally-picked file > remote URL > fallback
 // initial) - used in the dashboard header, the Account screen and the

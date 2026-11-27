@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'dart:math';
-import 'package:carson_zyppy/apis/api_keys.dart';
+import 'package:carson_zyppy/core/network/api_keys.dart';
 import 'package:carson_zyppy/firebase_notifications/firebase_notifiction_controller.dart';
 import 'package:carson_zyppy/local_db/entity/UserData.dart';
 import 'package:carson_zyppy/pages/dashboard/models/dashboard_data.dart';
@@ -14,7 +14,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:in_app_update/in_app_update.dart';
 import 'package:location/location.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../../../apis/base_api_response.dart';
+import '../../../core/network/base_api_response.dart';
 import '../../../app_pages/app_pages.dart';
 import '../../../global/consts.dart';
 import '../../../global/cancelled_orders.dart';
@@ -42,6 +42,7 @@ class RiderDashboardController extends GetxController {
   var isLocationSynced = false.obs;
   var isSyncingLocation = false.obs;
   var syncedLatLng = "".obs;
+  Future<void>? _locationSyncFuture;
   var workingHours = "".obs;
   var walletAmount = "".obs;
   var isInternetOn = false.obs;
@@ -69,11 +70,15 @@ class RiderDashboardController extends GetxController {
   // initial load is done, instead of the notification tap being dropped.
   static String? pendingFocusOrderRef;
   bool _initialLoadDone = false;
+  bool _dashboardIdentityLoaded = false;
   var checkBoxValue = false.obs;
   RxBool isConsentGiven = RxBool(false);
   late FirebaseMessagingController firebaseMessagingController;
   Worker? _notificationWorker;
   Worker? _cancelWorker;
+  int _handledNotificationRevision = 0;
+  int _pendingNotificationRevision = 0;
+  bool _notificationRefreshInProgress = false;
   // Name of the route RiderDashboard sits on, set by the view - it isn't
   // always Routes.riderDashBord (see AppBottomNav), and it's compared with
   // Get.currentRoute to tell whether the dashboard is the screen on top.
@@ -112,8 +117,19 @@ class RiderDashboardController extends GetxController {
     });
   }
 
+  void _locationLog(String source, String message) {
+    if (kDebugMode) {
+      final tag = source == 'auto' ? 'AUTO_LOCATION' : 'MANUAL_LOCATION';
+      debugPrint('[$tag] $message');
+    }
+  }
+
   @override
   void onInit() {
+    _locationLog(
+      'auto',
+      'Controller onInit instance=${identityHashCode(this)}; auth token available=${(box.read(apiKeys.apiToken) ?? '').toString().isNotEmpty}',
+    );
     getUser();
     loadUserDetails();
     super.onInit();
@@ -122,33 +138,74 @@ class RiderDashboardController extends GetxController {
   @override
   void onReady() {
     isConsentGiven.value = box.read("isConsentGiven") ?? false;
-    if (isConsentGiven.value) {
-      updateLocation();
-      requestBackgroundPermission();
-      getUserData();
-     // driverCheckAttendance();
-    }
+    _locationLog(
+      'auto',
+      'Controller onReady instance=${identityHashCode(this)}; consent=${isConsentGiven.value}; auth token available=${(box.read(apiKeys.apiToken) ?? '').toString().isNotEmpty}',
+    );
+    // Authenticated profile and location calls start after getUser() loads
+    // the persisted login identity and attendance state.
     firebaseMessagingController = Get.find<FirebaseMessagingController>();
-    _notificationWorker = ever(firebaseMessagingController.onNewNotification, (bool isNew) {
-      if (isNew) {
-       // getC2CCDashBoardData();
-        // driverCheckAttendance();
-        getDashBoardData();
-       // getWhatsAppDashBoardData();
-        getNextDelivery();
-        fetchAvailableOrders();
-        getCurrentLocation();
-
-        firebaseMessagingController.onNewNotification.value = false;
-      }
-    });
+    _notificationWorker = ever(
+      firebaseMessagingController.notificationRevision,
+          (int revision) => _queueNotificationRefresh(revision),
+    );
+    if (firebaseMessagingController.notificationRevision.value >
+        _handledNotificationRevision) {
+      _queueNotificationRefresh(
+        firebaseMessagingController.notificationRevision.value,
+      );
+    }
     _cancelWorker = ever(firebaseMessagingController.onOrderCancelled, (
-      Map<String, dynamic>? data,
-    ) {
+        Map<String, dynamic>? data,
+        ) {
       if (data != null) _onOrderCancelledPush(data);
     });
     checkForUpdate();
     super.onReady();
+  }
+
+  void _queueNotificationRefresh(int revision) {
+    if (revision > _pendingNotificationRevision) {
+      _pendingNotificationRevision = revision;
+    }
+    if (!_dashboardIdentityLoaded || !_initialLoadDone) return;
+    if (_notificationRefreshInProgress) return;
+    _notificationRefreshInProgress = true;
+    _drainNotificationRefreshes();
+  }
+
+  Future<void> _drainNotificationRefreshes() async {
+    try {
+      while (_handledNotificationRevision < _pendingNotificationRevision) {
+        final revision = _pendingNotificationRevision;
+        _locationLog(
+          'auto',
+          'Refreshing available orders for notification revision=$revision',
+        );
+        await Future.wait([
+          getDashBoardData(),
+          getNextDelivery(),
+          fetchAvailableOrders(source: 'auto'),
+        ]);
+        _handledNotificationRevision = revision;
+        final latestRevision =
+            firebaseMessagingController.notificationRevision.value;
+        if (latestRevision > _pendingNotificationRevision) {
+          _pendingNotificationRevision = latestRevision;
+        }
+      }
+    } catch (e, stackTrace) {
+      _locationLog('auto', 'Notification order refresh failed: $e\n$stackTrace');
+      // Do not spin on a persistent network failure; app resume or the next
+      // notification will initiate the next refresh attempt.
+      _handledNotificationRevision = _pendingNotificationRevision;
+    } finally {
+      _notificationRefreshInProgress = false;
+      firebaseMessagingController.onNewNotification.value = false;
+      if (_handledNotificationRevision < _pendingNotificationRevision) {
+        _queueNotificationRefresh(_pendingNotificationRevision);
+      }
+    }
   }
 
   // Load user details into controllers
@@ -304,7 +361,7 @@ class RiderDashboardController extends GetxController {
     // One-shot fix only (needed for the check-in lat/lng) - the continuous
     // background stream starts once attendance is marked, see
     // startLocationTracking().
-    await syncLocation();
+    await syncLocation(source: 'auto');
     if (isAttendanceMarked.value) {
       await startLocationTracking();
     }
@@ -322,14 +379,13 @@ class RiderDashboardController extends GetxController {
 
   void checkAttendance(AttendanceModel attendance) {
     print(attendance.markAttendance);
-    if (attendance.markAttendance ??false) {
-      isAttendanceMarked.value =  true;
-      startLocationTracking();
-     } else {
-       isAttendanceMarked.value = false;
-       stopLocationTracking();
+    if (attendance.markAttendance ?? false) {
+      isAttendanceMarked.value = true;
+    } else {
+      isAttendanceMarked.value = false;
+      stopLocationTracking();
     }
-     isAttendanceLoaded.value = true;
+    isAttendanceLoaded.value = true;
   }
 
   Future<void> requestBackgroundPermission() async {
@@ -356,26 +412,57 @@ class RiderDashboardController extends GetxController {
       var value = await userRepository.getUser();
       if (value != null) {
         userData = value;
+        _dashboardIdentityLoaded = true;
         riderName.value = userData.name ?? "";
         loadUserDetails(); // Reload details when user data changes
+        _locationLog(
+          'auto',
+          'Stored user loaded: id=${userData.id}; fe_code available=${(userData.code ?? '').isNotEmpty}',
+        );
         WidgetsBinding.instance.addPostFrameCallback((_) async {
-          // await getC2CCDashBoardData();
-          // await getWhatsAppDashBoardData();
           try {
+            _locationLog('auto', 'Initial attendance request started');
+            final attendanceLoaded = await driverCheckAttendance();
+            _locationLog(
+              'auto',
+              'Initial attendance request completed: success=$attendanceLoaded; onDuty=${isAttendanceMarked.value}',
+            );
+
+            // Use the exact one-shot flow used by the dashboard button, now
+            // that user identity and attendance state are ready.
+            await syncLocation(source: 'auto');
+
+            if (isConsentGiven.value) {
+              await getUserData();
+              await requestBackgroundPermission();
+              if (isAttendanceMarked.value) {
+                await startLocationTracking();
+              }
+            }
+
             await Future.wait([
-              driverCheckAttendance(),
               fetchWalletAmount(),
               getDashBoardData(),
               getNextDelivery(),
               fetchAvailableOrders(),
             ]);
+          } catch (e, stackTrace) {
+            _locationLog('auto', 'Dashboard initialization error: $e\n$stackTrace');
           } finally {
             _initialLoadDone = true;
+            final pendingRevision =
+                firebaseMessagingController.notificationRevision.value;
+            if (pendingRevision > _handledNotificationRevision) {
+              _queueNotificationRefresh(pendingRevision);
+            }
             consumePendingNotificationOrder();
           }
         });
+      } else {
+        _locationLog('auto', 'No persisted login user found; skipping automatic location sync');
       }
     } catch (e) {
+      _locationLog('auto', 'Stored user lookup failed: $e');
       // utils.errorSnackBar("Exception", e.toString());
     }
   }
@@ -457,6 +544,10 @@ class RiderDashboardController extends GetxController {
 
   Future<bool> driverCheckAttendance() async {
     try {
+      _locationLog(
+        'auto',
+        'Attendance API request started: userId=${userData.id}; fe_code available=${(userData.code ?? '').isNotEmpty}; auth token available=${(box.read(apiKeys.apiToken) ?? '').toString().isNotEmpty}',
+      );
       Map<String, dynamic> model = {apiKeys.feCode: userData.code};
       var response = await apiProvider.getRequestWithQueryParams(
         apiEndPoints.driverCheckAttendance,
@@ -464,9 +555,17 @@ class RiderDashboardController extends GetxController {
       );
       var result = BaseApiResponse.fromJson(response);
       utils.closeLoadingDialog();
+      _locationLog(
+        'auto',
+        'Attendance API response status=${result.status_code}',
+      );
       if (result.status_code == 200) {
         final attendance = AttendanceModel.fromJson(result.data);
         checkAttendance(attendance);
+        _locationLog(
+          'auto',
+          'Attendance state updated: onDuty=${isAttendanceMarked.value}',
+        );
         update();
         return true;
       } else {
@@ -706,10 +805,10 @@ class RiderDashboardController extends GetxController {
     final dLon = _toRadians(lon2 - lon1);
     final a =
         sin(dLat / 2) * sin(dLat / 2) +
-        cos(_toRadians(lat1)) *
-            cos(_toRadians(lat2)) *
-            sin(dLon / 2) *
-            sin(dLon / 2);
+            cos(_toRadians(lat1)) *
+                cos(_toRadians(lat2)) *
+                sin(dLon / 2) *
+                sin(dLon / 2);
     final c = 2 * atan2(sqrt(a), sqrt(1 - a));
     return R * c;
   }
@@ -718,65 +817,135 @@ class RiderDashboardController extends GetxController {
     return degree * pi / 180;
   }
 
-  Future<bool> sendDriverLocation(LocationData locationData) async {
+  Future<bool> sendDriverLocation(
+      LocationData locationData, {
+        String source = 'manual',
+      }) async {
     try {
-      Map<String, dynamic> model = {
+      final model = <String, dynamic>{
         apiKeys.userID: userData.id,
         apiKeys.latitude: locationData.latitude,
         apiKeys.longitude: locationData.longitude,
       };
-      var response = await apiProvider.postRequest(
+      _locationLog(
+        source,
+        'Location API request started: endpoint=${apiEndPoints.driverCurrentLocation}; payload=$model; auth token available=${(box.read(apiKeys.apiToken) ?? '').toString().isNotEmpty}',
+      );
+      final response = await apiProvider.postRequest(
         apiEndPoints.driverCurrentLocation,
         model,
       );
-      var result = BaseApiResponse.fromJson(response);
+      final result = BaseApiResponse.fromJson(response);
+      _locationLog(
+        source,
+        'Location API response: status=${result.status_code}; success=${result.status_code == 200}',
+      );
       if (result.status_code == 200) {
+        _locationLog(source, 'Location API succeeded');
         //driverData.value = DriverData.fromJson(result.data);
         Future.delayed(const Duration(seconds: 2));
         //attendancesList.value = driverData.value.attendances!.reversed.toList();
-      //  await getDashBoardData();
+        //  await getDashBoardData();
         update();
         return true;
       } else {
+        _locationLog(source, 'Location API rejected location');
         utils.closeLoadingDialog();
         update();
         return false;
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      _locationLog(source, 'Location API error: $e\n$stackTrace');
       return false;
     }
   }
 
   // One-shot fix that drives the Sign In card's "Finding your location..."
   // / "Location synced" / "Location not found" states.
-  Future<void> syncLocation() async {
-    if (isSyncingLocation.value) return;
+  Future<void> syncLocation({String source = 'manual'}) {
+    final inFlight = _locationSyncFuture;
+    if (inFlight != null) {
+      _locationLog(source, 'Sync joined existing request');
+      return inFlight;
+    }
+
+    _locationLog(
+      source,
+      'Sync started; controller instance=${identityHashCode(this)}; location service instance=${identityHashCode(locationUtils)}',
+    );
     isSyncingLocation.value = true;
-    try {
-      await getCurrentLocation();
-    } finally {
+    isLocationSynced.value = false;
+    syncedLatLng.value = "";
+    _locationLog(source, 'State changed: syncing=true, synced=false');
+    final sync = _syncLocationOnce(source);
+    _locationSyncFuture = sync;
+    return sync.whenComplete(() {
       isSyncingLocation.value = false;
+      _locationSyncFuture = null;
+      _locationLog(
+        source,
+        'State changed: syncing=false, synced=${isLocationSynced.value}',
+      );
+    });
+  }
+
+  Future<void> _syncLocationOnce(String source) async {
+    try {
+      await getCurrentLocation(source: source)
+          .timeout(const Duration(seconds: 35));
+    } catch (e, stackTrace) {
+      _locationLog(source, 'Sync failed/timeout: $e\n$stackTrace');
+      isLocationSynced.value = false;
     }
   }
 
-  getCurrentLocation() async {
-    final location = await locationUtils.getCurrentLocation();
+  Future<void> getCurrentLocation({String source = 'manual'}) async {
+    _locationLog(source, 'Current position request started');
+    final location = await locationUtils.getCurrentLocation(source: source);
     if (location == null ||
         location.latitude == null ||
         location.longitude == null) {
+      _locationLog(
+        source,
+        'Current position unavailable (service/permission/GPS failure); provider synced=false',
+      );
+      isLocationSynced.value = false;
+      syncedLatLng.value = "";
       return;
     }
+    _locationLog(
+      source,
+      'Current position received: lat=${location.latitude}, lng=${location.longitude}',
+    );
+
     startLocation = location;
     currentLocation = location;
+
+    // Only report the rider's position to the server while on duty. In that
+    // case, don't show "synced" until the existing API confirms acceptance.
+    if (isAttendanceMarked.value) {
+      if (!await sendDriverLocation(location, source: source)) {
+        isLocationSynced.value = false;
+        syncedLatLng.value = "";
+        _locationLog(
+          source,
+          'Provider state updated: synced=false because location API failed',
+        );
+        return;
+      }
+    } else {
+      _locationLog(
+        source,
+        'Location API skipped because rider is not on duty (existing behavior)',
+      );
+    }
+
     isLocationSynced.value = true;
     syncedLatLng.value =
-        "${location.latitude!.toStringAsFixed(4)}, ${location.longitude!.toStringAsFixed(4)}";
-    // Only report the rider's position to the server while on duty.
-    if (isAttendanceMarked.value) {
-      await sendDriverLocation(location);
-    }
-    print(
-      'Current Location: ${location.latitude}, ${location.longitude}',
+    "${location.latitude!.toStringAsFixed(4)}, ${location.longitude!.toStringAsFixed(4)}";
+    _locationLog(
+      source,
+      'Provider state updated: synced=true; syncedLatLng=${syncedLatLng.value}; onDuty=${isAttendanceMarked.value}',
     );
   }
 
@@ -816,7 +985,8 @@ class RiderDashboardController extends GetxController {
   // OrderListController.fetchAvailable() makes, kept separate so the
   // dashboard doesn't depend on that controller being registered.
   // ---------------------------------------------------------------------
-  Future<void> fetchAvailableOrders() async {
+  Future<void> fetchAvailableOrders({String source = 'manual'}) async {
+    _locationLog(source, 'Available orders fetch started');
     try {
       final location =
           currentLocation ?? await locationUtils.getCurrentLocation();
@@ -847,12 +1017,24 @@ class RiderDashboardController extends GetxController {
       if (result.status_code == 200 && result.data != null) {
         availableOrders.value = (result.data as List)
             .map((json) => OrdersData.fromJson(json as Map<String, dynamic>))
+            .where((order) =>
+        order.is_assigned_to_other != true &&
+            order.is_accepted_by_other != true)
             .toList();
+        _locationLog(
+          source,
+          'Available orders API succeeded: status=${result.status_code}; visibleOrders=${availableOrders.length}',
+        );
       } else {
         availableOrders.value = [];
+        _locationLog(
+          source,
+          'Available orders API failed: status=${result.status_code}; visibleOrders=0',
+        );
       }
-    } catch (_) {
+    } catch (e, stackTrace) {
       availableOrders.value = [];
+      _locationLog(source, 'Available orders fetch error: $e\n$stackTrace');
     }
   }
 
@@ -879,6 +1061,7 @@ class RiderDashboardController extends GetxController {
       utils.closeLoadingDialog();
       if (result.status_code == 200) {
         availableOrders.removeWhere((o) => o.awbNo == awbNo);
+        await fetchAvailableOrders();
         if (type == acceptOrder) {
           utils.successSnackBar(
             "Order Accepted",
@@ -894,6 +1077,9 @@ class RiderDashboardController extends GetxController {
         }
         return true;
       } else {
+        if (type == acceptOrder) {
+          await fetchAvailableOrders();
+        }
         utils.errorSnackBar("Error", result.message.toString());
         return false;
       }
@@ -965,7 +1151,7 @@ class RiderDashboardController extends GetxController {
     final current = nextDelivery.value;
     final match =
         upcomingOrders.firstWhereOrNull((o) => o.awbNo == ref) ??
-        (current?.awbNo == ref ? current : null);
+            (current?.awbNo == ref ? current : null);
     upcomingOrders.removeWhere((o) => o.awbNo == ref);
     _assignedOrders = _assignedOrders.where((o) => o.awbNo != ref).toList();
     if (!_isOnTop) return;
@@ -986,6 +1172,7 @@ class RiderDashboardController extends GetxController {
   // that disappeared because it was cancelled.
   Future<void> onAppResumed() async {
     getDashBoardData();
+    await fetchAvailableOrders(source: 'auto');
     final before = _assignedOrders;
     if (!await getNextDelivery()) return;
     final nowKeys = _assignedOrders.map((o) => o.awbNo).toSet();

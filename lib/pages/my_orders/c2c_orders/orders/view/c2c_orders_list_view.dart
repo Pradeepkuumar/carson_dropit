@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../../app_pages/app_pages.dart';
 import '../../../../../global/qr_scanner.dart';
-import '../../../../../utils/colors.dart';
+import '../../../../../core/theme/app_colors.dart';
 import '../../../../../utils/utils.dart';
 import '../c2c_orders_screens/c2c_controller.dart';
 import 'c2cOrders_item.dart';

@@ -6,7 +6,7 @@ import 'package:signature/signature.dart';
 import '../../../../app_pages/app_pages.dart';
 import '../../../../global/consts.dart';
 import '../../../../global/global.dart';
-import '../../../../utils/colors.dart';
+import '../../../../core/theme/app_colors.dart';
 
 class ImageSignatureView extends GetView<OrdersController> {
   const ImageSignatureView({super.key});

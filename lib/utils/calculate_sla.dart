@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
-import 'colors.dart';
+import '../core/theme/app_colors.dart';
 
 DateTime parseUtcTime(String utcTime) {
   return DateTime.parse(utcTime).toLocal();

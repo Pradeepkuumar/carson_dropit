@@ -1,4 +1,4 @@
-  class ApiEndPoints {
+class ApiUrls {
 
   final String login = "login";
   final String logout = "logout";

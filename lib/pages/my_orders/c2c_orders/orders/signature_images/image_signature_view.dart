@@ -7,7 +7,7 @@ import 'package:syncfusion_flutter_signaturepad/signaturepad.dart';
 
 import '../../../../../global/consts.dart';
 import '../../../../../global/global.dart';
-import '../../../../../utils/colors.dart';
+import '../../../../../core/theme/app_colors.dart';
 
 class C2cImageSignatureView extends GetView<C2COrdersController> {
    var orderType = "".obs;

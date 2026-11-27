@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import '../pages/my_orders/orders/models/orders_model.dart';
-import '../utils/colors.dart';
+import '../core/theme/app_colors.dart';
 import 'global.dart';
 
 // Confetti-only colors, not app UI tokens - the burst is meant to look
