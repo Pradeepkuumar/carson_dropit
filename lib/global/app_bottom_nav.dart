@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import '../app_pages/app_pages.dart';
 import '../pages/dashboard/controller/rider_dashboard_controller.dart';
 import '../pages/order_list/order_list_controller.dart';
-import '../utils/colors.dart';
+import '../core/theme/app_colors.dart';
 import 'global.dart';
 
 // Same Home/Order/Active Order/Account bar RiderDashboard shows, reused on

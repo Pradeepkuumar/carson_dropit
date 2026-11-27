@@ -4,7 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:tab_container/tab_container.dart';
 
-import '../../../../utils/colors.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../controller/orders_controller.dart';
 import 'orders_list_view.dart';
 

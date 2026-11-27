@@ -30,14 +30,12 @@ class BaseApiResponse {
     message = json["message"];
   }
 
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = <String, dynamic>{};
-    data["success"] = success;
-    data["status_code"] = status_code;
-    data["method"] = method;
-    data["status"] = status;
-    data["data"] = data;
-    data["message"] = message;
-    return data;
-  }
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    "success": success,
+    "status_code": status_code,
+    "method": method,
+    "status": status,
+    "data": data,
+    "message": message,
+  };
 }

@@ -5,7 +5,7 @@ import 'package:carson_zyppy/firebase_notifications/notification_model/notificat
 import 'package:carson_zyppy/local_db/entity/UserData.dart';
 import 'package:carson_zyppy/pages/my_orders/c2c_orders/model/c2cOrdersModel.dart';
 import 'package:carson_zyppy/pages/my_orders/orders/models/reason_data.dart';
-import 'package:carson_zyppy/utils/colors.dart';
+import 'package:carson_zyppy/core/theme/app_colors.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -16,7 +16,7 @@ import 'package:location/location.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:syncfusion_flutter_signaturepad/signaturepad.dart';
 
-import '../../../../../apis/base_api_response.dart';
+import '../../../../../core/network/base_api_response.dart';
 import '../../../../../global/consts.dart';
 import '../../../../../global/global.dart';
 import '../../../../dashboard/controller/rider_dashboard_controller.dart';

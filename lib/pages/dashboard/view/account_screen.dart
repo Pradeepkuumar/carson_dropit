@@ -7,7 +7,7 @@ import '../../../global/app_bottom_nav.dart';
 import '../../../global/global.dart';
 import '../../../global/rider_avatar.dart';
 import '../../../global/update_profile_dialog.dart';
-import '../../../utils/colors.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../utils/text_style_util.dart';
 import '../controller/rider_dashboard_controller.dart';
 

@@ -8,11 +8,11 @@ import 'package:google_navigation_flutter/google_navigation_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:signature/signature.dart';
-import '../../apis/base_api_response.dart';
+import '../../core/network/base_api_response.dart';
 import '../../global/consts.dart';
 import '../../global/global.dart';
 import '../../local_db/entity/UserData.dart';
-import '../../utils/colors.dart';
+import '../../core/theme/app_colors.dart';
 import '../dashboard/controller/rider_dashboard_controller.dart';
 import '../my_orders/orders/models/orders_model.dart';
 

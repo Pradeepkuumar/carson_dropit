@@ -9,9 +9,9 @@ import 'package:get/get.dart';
 import 'package:google_navigation_flutter/google_navigation_flutter.dart';
 import 'package:location/location.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
-import '../../../../apis/base_api_response.dart';
+import '../../../../core/network/base_api_response.dart';
 import '../../../../global/global.dart';
-import '../../../../utils/colors.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../b2c_pickup_delivery_orders/marker_generator/dynamic_marker_generator.dart';
 import '../../orders/models/orders_model.dart';
 
@@ -186,10 +186,8 @@ class PlacedOrdersController extends GetxController {
     for (var order in ordersList) {
       if (order.pickupLocationName.toString() == selectedLocationId.value &&
           !selectedMerchantOrdersList.any((existingOrder) =>
-          existingOrder.awbNo == order.awbNo)) {
+              existingOrder.awbNo == order.awbNo)) {
         selectedMerchantOrdersList.add(order);
-      }else{
-         selectedMerchantOrdersList.add(order);
       }
     }
     update();
@@ -240,10 +238,13 @@ class PlacedOrdersController extends GetxController {
       if (result.data != null) {
         ordersList.clear();
         for (var json in result.data) {
-          ordersList.add(OrdersData.fromJson(json));
-          update();
-          await Future.delayed(const Duration(milliseconds: 100));
+          final order = OrdersData.fromJson(json);
+          if (order.is_assigned_to_other != true &&
+              order.is_accepted_by_other != true) {
+            ordersList.add(order);
+          }
         }
+        update();
         // Future.delayed(Duration(seconds: 1),(){
         //    setMarkers();
         // });
@@ -290,7 +291,7 @@ class PlacedOrdersController extends GetxController {
               "This order no longer belongs to you");
         }
         utils.closeLoadingDialog();
-        fetchOrders();
+        await fetchOrders();
         return true;
       } else {
         utils.errorSnackBar("Exception", result.message.toString());

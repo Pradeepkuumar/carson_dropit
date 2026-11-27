@@ -5,7 +5,7 @@ import 'package:get/get.dart';
 import 'consts.dart';
 import 'global.dart';
 import '../pages/my_orders/orders/models/orders_model.dart';
-import '../utils/colors.dart';
+import '../core/theme/app_colors.dart';
 
 // Accept/pickup time-window strip for value orders, driven by the API's
 // is_within_window / next_window_* keys. Shared by OrderCardWidget, the

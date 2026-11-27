@@ -5,7 +5,7 @@ import 'consts.dart';
 import 'global.dart';
 import 'value_window_strip.dart';
 import '../pages/my_orders/orders/models/orders_model.dart';
-import '../utils/colors.dart';
+import '../core/theme/app_colors.dart';
 
 // Shared by OrderListScreen's "available" tab and RiderDashboard's
 // "New Requests" section, so the two can never visually drift apart - same

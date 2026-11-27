@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import '../pages/dashboard/controller/rider_dashboard_controller.dart';
-import '../utils/colors.dart';
+import '../core/theme/app_colors.dart';
 import 'global.dart';
 import 'rider_avatar.dart';
 

@@ -4,7 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'dart:async';
 import 'package:carson_zyppy/global/global.dart';
-import 'package:carson_zyppy/utils/colors.dart';
+import 'package:carson_zyppy/core/theme/app_colors.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:google_navigation_flutter/google_navigation_flutter.dart';

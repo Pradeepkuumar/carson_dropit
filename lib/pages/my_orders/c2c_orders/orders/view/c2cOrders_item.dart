@@ -2,7 +2,7 @@ import 'package:carson_zyppy/global/consts.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../../global/global.dart';
-import '../../../../../utils/colors.dart';
+import '../../../../../core/theme/app_colors.dart';
 import '../../../../../utils/utils.dart';
 import '../../../../b2c_pickup_delivery_orders/orderItem/clickedOrderItem.dart';
 import '../../model/c2cOrdersModel.dart';

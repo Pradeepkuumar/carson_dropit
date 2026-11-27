@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/widgets.dart';
@@ -13,10 +14,12 @@ class FirebaseMessagingController extends GetxController {
       FlutterLocalNotificationsPlugin();
   String? fcm_token;
   bool isInitialized = false;
+  StreamSubscription<RemoteMessage>? _foregroundMessageSubscription;
+  StreamSubscription<RemoteMessage>? _openedMessageSubscription;
+  StreamSubscription<String>? _tokenRefreshSubscription;
   var onNewNotification = false.obs;
+  var notificationRevision = 0.obs;
   var onNewAssignedOrder = 0.obs;
-  // Data of the latest foreground OrderCancelled push - the active delivery
-  // screen watches it to tell the rider when the order they're on is gone.
   var onOrderCancelled = Rxn<Map<String, dynamic>>();
 
   @override
@@ -24,9 +27,13 @@ class FirebaseMessagingController extends GetxController {
     super.onInit();
     if (!isInitialized) {
       isInitialized = true;
-      // Tap handlers first, before the (awaited) permission prompt, so a tap
-      // that launched/resumed the app is never missed.
+      fcm_token = box.read(apiKeys.fcmToken);
+      debugPrint('[FCM_LIFECYCLE] Controller initialized once');
+      // Attach message/token observers before any permission prompt can pause
+      // startup. This controller is permanent for the whole app session.
       _registerTapHandlers();
+      _registerForegroundMessageListener();
+      listenForTokenRefresh();
       _initializeFirebaseMessaging();
       initializeLocalNotifications();
     }
@@ -34,7 +41,12 @@ class FirebaseMessagingController extends GetxController {
 
   void _registerTapHandlers() {
     // Background -> tapped (app was alive, not on screen).
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+    _openedMessageSubscription ??=
+        FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      debugPrint(
+        '[FCM_LIFECYCLE] Notification opened from background: id=${message.messageId}; type=${message.data['type']}',
+      );
+      _markNotificationEvent(source: 'opened-from-background');
       print('App opened from notification: ${message.messageId}');
       // Fires the instant Android resumes the activity, sometimes before
       // Flutter's engine has reattached its surface - navigating right away
@@ -53,67 +65,101 @@ class FirebaseMessagingController extends GetxController {
       RemoteMessage? message,
     ) {
       if (message != null) {
-        print('Initial message received: ${message.messageId}');
+        debugPrint(
+          '[FCM_LIFECYCLE] Initial notification opened: id=${message.messageId}; type=${message.data['type']}',
+        );
+        _markNotificationEvent(source: 'initial-message');
         _navigateFromNotificationData(message.data);
       }
     });
   }
 
+  void _registerForegroundMessageListener() {
+    if (_foregroundMessageSubscription != null) return;
+    _foregroundMessageSubscription = FirebaseMessaging.onMessage.listen(
+      (RemoteMessage message) {
+        debugPrint(
+          '[FCM_LIFECYCLE] Foreground message received: id=${message.messageId}; type=${message.data['type']}',
+        );
+        _handleIncomingMessage(message, source: 'foreground');
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        debugPrint('[FCM_LIFECYCLE] Foreground listener error: $error');
+      },
+    );
+    debugPrint('[FCM_LIFECYCLE] Foreground listener registered');
+  }
+
+  void _handleIncomingMessage(
+    RemoteMessage message, {
+    required String source,
+  }) {
+    final data = message.data;
+    final title =
+        message.notification?.title ?? data['title'] ?? 'Notification';
+    final body = message.notification?.body ?? data['body'] ?? '';
+    final type = data['type'] ?? '';
+    debugPrint(
+      '[FCM_LIFECYCLE] Message details: source=$source; notificationPayload=${message.notification != null}; dataKeys=${data.keys.toList()}; titlePresent=${title.isNotEmpty}; bodyPresent=${body.isNotEmpty}',
+    );
+
+    _markNotificationEvent(source: source, type: type);
+    // A cancellation isn't a new assigned order - only refresh.
+    if (type != 'NearByOrders' && type != 'OrderCancelled') {
+      onNewAssignedOrder.value++;
+    }
+    if (type == 'OrderCancelled') {
+      onOrderCancelled.value = Map<String, dynamic>.from(data);
+    }
+
+    final String sound;
+    final String channelId;
+    switch (type) {
+      case 'NearByOrders':
+        sound = data['sound'] ?? 'nearby_order';
+        channelId = 'nearby_orders_channel';
+        break;
+      case 'OrderCancelled':
+        sound = data['sound'] ?? 'order_cancelled';
+        channelId = 'order_cancellation_channel';
+        break;
+      default:
+        sound = data['sound'] ?? 'new_order';
+        channelId = 'assigned_new_order_channel';
+    }
+
+    _showNotification(
+      title: title,
+      body: body,
+      soundName: sound,
+      channelId: channelId,
+      payload: jsonEncode(data),
+    );
+  }
+
+  void _markNotificationEvent({
+    required String source,
+    String? type,
+  }) {
+    notificationRevision.value++;
+    onNewNotification.value = true;
+    debugPrint(
+      '[FCM_LIFECYCLE] Notification event raised: source=$source; type=${type ?? 'unknown'}; revision=${notificationRevision.value}',
+    );
+  }
+
   Future<void> _initializeFirebaseMessaging() async {
     try {
-      NotificationSettings settings = await _firebaseMessaging
-          .requestPermission(
-            alert: true,
-            badge: true,
-            sound: true,
-            provisional: false,
-            criticalAlert: true,
-          );
-
-      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        print('🔔 Foreground FCM: ${message.data}');
-        print(message.toString());
-
-        final title =
-            message.notification?.title ??
-            message.data['title'] ??
-            'Notification';
-        final body = message.notification?.body ?? message.data['body'] ?? '';
-        final type = message.data['type'] ?? '';
-
-        onNewNotification.value = true;
-        // A cancellation isn't a new assigned order - only refresh.
-        if (type != 'NearByOrders' && type != 'OrderCancelled') {
-          onNewAssignedOrder.value++;
-        }
-        if (type == 'OrderCancelled') {
-          onOrderCancelled.value = Map<String, dynamic>.from(message.data);
-        }
-
-        final String sound;
-        final String channelId;
-        switch (type) {
-          case 'NearByOrders':
-            sound = message.data['sound'] ?? 'nearby_order';
-            channelId = 'nearby_orders_channel';
-            break;
-          case 'OrderCancelled':
-            sound = message.data['sound'] ?? 'order_cancelled';
-            channelId = 'order_cancellation_channel';
-            break;
-          default:
-            sound = message.data['sound'] ?? 'new_order';
-            channelId = 'assigned_new_order_channel';
-        }
-
-        _showNotification(
-          title: title,
-          body: body,
-          soundName: sound,
-          channelId: channelId,
-          payload: jsonEncode(message.data),
-        );
-      });
+      final settings = await _firebaseMessaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+        provisional: false,
+        criticalAlert: true,
+      );
+      debugPrint(
+        '[FCM_LIFECYCLE] Permission result: authorizationStatus=${settings.authorizationStatus}',
+      );
 
       // Foreground messages are shown by _showNotification (custom sounds) -
       // letting iOS also present the FCM banner showed every message twice.
@@ -130,33 +176,40 @@ class FirebaseMessagingController extends GetxController {
   }
 
   Future<void> getFCMTokenWithRetry() async {
-    try {
-      if (Platform.isIOS) {
-        String? apnsToken = await _firebaseMessaging.getAPNSToken();
+    // Keep startup/login responsive when Firebase or APNS is unavailable.
+    for (var attempt = 0; attempt < 3; attempt++) {
+      try {
+        if (Platform.isIOS) {
+          final apnsToken = await _firebaseMessaging
+              .getAPNSToken()
+              .timeout(const Duration(seconds: 5));
+          if (apnsToken == null) {
+            await Future.delayed(const Duration(seconds: 1));
+            continue;
+          }
+        }
 
-        if (apnsToken == null) {
-          print('APNS token not available yet, waiting...');
-          await Future.delayed(Duration(seconds: 2));
-          await getFCMTokenWithRetry();
+        final token = await _firebaseMessaging
+            .getToken()
+            .timeout(const Duration(seconds: 5));
+        if (token != null && token.isNotEmpty) {
+          fcm_token = token;
+          box.write(apiKeys.fcmToken, token);
+          debugPrint(
+            '[FCM_LIFECYCLE] Token retrieved: fingerprint=${token.hashCode}; local login token marker matches=${box.read('fcm_registered_token') == token}',
+          );
           return;
         }
-        print('APNS token available: $apnsToken');
+      } catch (e) {
+        print('Error getting FCM token (attempt ${attempt + 1}): $e');
       }
 
-      fcm_token = await _firebaseMessaging.getToken();
-      if (fcm_token != null) {
-        box.write(apiKeys.fcmToken, fcm_token);
-        print('FCM Token: $fcm_token');
-      } else {
-        print('FCM token is null, retrying in 3 seconds...');
-        await Future.delayed(Duration(seconds: 3));
-        await getFCMTokenWithRetry();
+      if (attempt < 2) {
+        await Future.delayed(const Duration(seconds: 1));
       }
-    } catch (e) {
-      print('Error getting FCM token: $e');
-      await Future.delayed(Duration(seconds: 3));
-      await getFCMTokenWithRetry();
     }
+
+    fcm_token = null;
   }
 
   void initializeLocalNotifications() async {
@@ -401,10 +454,26 @@ class FirebaseMessagingController extends GetxController {
   }
 
   void listenForTokenRefresh() {
-    _firebaseMessaging.onTokenRefresh.listen((String newToken) {
-      fcm_token = newToken;
-      box.write("fcm_token", newToken);
-      print('FCM Token refreshed: $newToken');
-    });
+    if (_tokenRefreshSubscription != null) return;
+    _tokenRefreshSubscription = _firebaseMessaging.onTokenRefresh.listen(
+      (String newToken) {
+        fcm_token = newToken;
+        box.write(apiKeys.fcmToken, newToken);
+        final registeredToken = box.read('fcm_registered_token');
+        final registrationRequired = registeredToken != newToken;
+        if (registrationRequired) {
+          box.remove('fcm_registered_token');
+        }
+        debugPrint(
+          '[FCM_LIFECYCLE] Token refreshed: fingerprint=${newToken.hashCode}; authenticated=${(box.read(apiKeys.apiToken) ?? '').toString().isNotEmpty}; backend registration required=$registrationRequired',
+        );
+        // This client currently has no authenticated token-update endpoint.
+        // Do not call login again or persist the driver's password here.
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        debugPrint('[FCM_LIFECYCLE] Token refresh listener error: $error');
+      },
+    );
+    debugPrint('[FCM_LIFECYCLE] Token refresh listener registered');
   }
 }

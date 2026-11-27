@@ -13,7 +13,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:location/location.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
-import '../../../../apis/base_api_response.dart';
+import '../../../core/network/base_api_response.dart';
 import '../../../../global/consts.dart';
 import '../../../../global/global.dart';
 import 'package:signature/signature.dart';

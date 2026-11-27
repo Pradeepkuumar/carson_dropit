@@ -8,7 +8,7 @@ import '../../global/app_bottom_nav.dart';
 import '../../global/order_card_widget.dart';
 import '../../global/consts.dart';
 import '../../global/global.dart';
-import '../../utils/colors.dart';
+import '../../core/theme/app_colors.dart';
 import '../../utils/text_style_util.dart';
 import '../my_orders/orders/models/orders_model.dart';
 import 'order_list_controller.dart';

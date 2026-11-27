@@ -10,7 +10,7 @@ import 'package:signature/signature.dart';
 import '../../global/consts.dart';
 import '../../global/global.dart';
 import '../../global/value_window_strip.dart';
-import '../../utils/colors.dart';
+import '../../core/theme/app_colors.dart';
 import '../my_orders/orders/models/orders_model.dart';
 import 'order_detail_controller.dart';
 

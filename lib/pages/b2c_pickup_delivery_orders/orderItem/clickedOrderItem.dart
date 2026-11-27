@@ -1,10 +1,9 @@
-import 'package:carson_zyppy/apis/base_api_provider.dart';
 import 'package:carson_zyppy/global/consts.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../../global/global.dart';
 import '../../../../../utils/calculate_sla.dart';
-import '../../../../../utils/colors.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../../../utils/utils.dart';
 import '../../my_orders/orders/models/orders_model.dart';
 import '../controller/all_orders_map_controller.dart';

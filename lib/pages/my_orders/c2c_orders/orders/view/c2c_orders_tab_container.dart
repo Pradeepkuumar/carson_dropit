@@ -5,7 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:tab_container/tab_container.dart';
 import '../../../../../global/app_bar.dart';
-import '../../../../../utils/colors.dart';
+import '../../../../../core/theme/app_colors.dart';
 import 'c2c_orders_list_view.dart';
 
 

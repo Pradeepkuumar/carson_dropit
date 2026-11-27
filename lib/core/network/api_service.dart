@@ -1,41 +1,42 @@
 import 'dart:async';
 import 'dart:convert';
-
 import 'dart:io';
 import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart' hide FormData, MultipartFile;
+import 'package:get_storage/get_storage.dart';
 import 'package:get/get_connect/http/src/request/request.dart';
-
-import '../global/global.dart';
 import 'package:http/http.dart' as http;
- import 'package:dio/dio.dart' show FormData, Dio, DioException, Options, MultipartFile, InterceptorsWrapper;
+import 'package:dio/dio.dart' show FormData, Dio, DioException, Options, MultipartFile, InterceptorsWrapper;
 
 import 'api_exceptions.dart';
+import 'api_keys.dart';
 
-class ApiProvider extends GetConnect {
+class ApiServices extends GetConnect {
+  final GetStorage _storage = GetStorage();
+  final ApiKeys _apiKeys = ApiKeys();
   final String acceptEncoding = 'gzip, deflate';
   final String accept = '*/*';
   final String noCache = 'no-cache';
   File? file;
   final String devBaseUrl = "https://dev.zyppy.qa/api/v1/";
- // final String liveBaseUrl = "https://dev.zyppy.qa/api/v1/";
+  // final String liveBaseUrl = "https://dev.zyppy.qa/api/v1/";
   //final String liveBaseUrl = "https://zyppy.qa/api/v1/";
-  
 
-  ApiProvider() {
+
+  ApiServices() {
     timeout = const Duration(seconds: 120);
     maxAuthRetries = 3;
 
     if (kDebugMode) {
-     baseUrl = devBaseUrl;
+      baseUrl = devBaseUrl;
     } else if (kReleaseMode) {
       //baseUrl = devBaseUrl;
       baseUrl = devBaseUrl;
     }
 
     httpClient.addAuthenticator((Request<dynamic> request) async {
-    final dynamic token = "Bearer "+box.read(apiKeys.apiToken);
+      final token = "Bearer ${_storage.read(_apiKeys.apiToken) ?? ''}";
       request.headers['Authorization'] = "$token";
       return request;
     });
@@ -75,7 +76,7 @@ class ApiProvider extends GetConnect {
 
       responseJson = returnResponse(response);
     } on SocketException {
-     // throw FetchDataException("internal server error");
+      // throw FetchDataException("internal server error");
     }
     return responseJson;
   }
@@ -92,7 +93,7 @@ class ApiProvider extends GetConnect {
       );
       responseJson = returnResponse(response);
     } on SocketException {
-     // throw FetchDataException("internal server error");
+      // throw FetchDataException("internal server error");
     }
     return responseJson;
   }
@@ -112,7 +113,7 @@ class ApiProvider extends GetConnect {
     } on TimeoutException {
       //throw FetchDataException('Request timed out');
     } on SocketException {
-     // throw FetchDataException('no internet connection');
+      // throw FetchDataException('no internet connection');
     }catch(e){
       if (kDebugMode) {
         print(e.toString());
@@ -132,7 +133,7 @@ class ApiProvider extends GetConnect {
       );
       responseJson = returnResponse(response);
     } on TimeoutException {
-     // throw FetchDataException('Request timed out');
+      // throw FetchDataException('Request timed out');
     } on SocketException {
       //throw FetchDataException('no internet connection');
     }
@@ -176,177 +177,177 @@ class ApiProvider extends GetConnect {
 
 
 
-Future<dynamic> postRequestWithImages(
-  String endpoint,
-  Map<String, dynamic> data, 
-  List<Map<String, dynamic>>? images,
-) async {
-  try {
+  Future<dynamic> postRequestWithImages(
+      String endpoint,
+      Map<String, dynamic> data,
+      List<Map<String, dynamic>>? images,
+      ) async {
+    try {
 
-    var request = http.MultipartRequest('POST', Uri.parse("$baseUrl$endpoint"));
+      var request = http.MultipartRequest('POST', Uri.parse("$baseUrl$endpoint"));
       dynamic responseJson;
 
-    data.forEach((key, value) {
-      request.fields[key] = value.toString();
-    });
+      data.forEach((key, value) {
+        request.fields[key] = value.toString();
+      });
 
-    if (images != null && images.isNotEmpty) {
-      for (final imageMap in images) {
-        final String key = imageMap['key'];
-        final File image = imageMap['file'];
-        
-        if (await image.exists()) {
-          request.files.add(await http.MultipartFile.fromPath(
-            key,
-            image.path,
-            filename: image.path.split('/').last,
-          ));
-        }
-      }
-    }
+      if (images != null && images.isNotEmpty) {
+        for (final imageMap in images) {
+          final String key = imageMap['key'];
+          final File image = imageMap['file'];
 
-
-    // Send request
-   // Send request
-    final streamedResponse = await request.send().timeout(const Duration(seconds: 30));
-    
-    // Convert streamed response to regular response
-    final response = await http.Response.fromStream(streamedResponse);
-    
-
-    
-    responseJson = returnHttpResponse(response);
-    return responseJson;
-
-  } on TimeoutException catch (e) {
-
-    throw Exception('Request timed out');
-  } catch (e) {
-
-    throw Exception('Request failed: $e');
-  }
-}
-
-dynamic returnHttpResponse(http.Response response) {
-
-  
-  switch (response.statusCode) {
-    case 200:
-    case 201:
-      try {
-        var responseJson = json.decode(response.body);
-
-        return responseJson;
-      } catch (e) {
-
-        return {'success': true, 'message': 'Request successful', 'data': response.body};
-      }
-    case 400:
-      throw Exception('Bad Request: ${response.body}');
-    case 401:
-      throw Exception('Unauthorized: ${response.body}');
-    case 403:
-      throw Exception('Forbidden: ${response.body}');
-    case 404:
-      throw Exception('Not Found: ${response.body}');
-    case 500:
-      throw Exception('Internal Server Error: ${response.body}');
-    default:
-      throw Exception('Error occurred with status code: ${response.statusCode}');
-  }
-}
-
-   
-
-Future<dynamic> postRequestWithImagesDio(
-  String endpoint,
-  Map<String, dynamic> data, 
-  List<Map<String, dynamic>>? images,
-) async {
-  try {
-    final form = FormData.fromMap(data);
-    final token = "Bearer ${box.read(apiKeys.apiToken)}";
-
-    if (images != null && images.isNotEmpty) {
-      for (final imageMap in images) {
-        final String key = imageMap['key'];
-        final File image = imageMap['file'];
-        
-        if (await image.exists()) {
-          form.files.add(MapEntry(
-            key, 
-            await MultipartFile.fromFile(
+          if (await image.exists()) {
+            request.files.add(await http.MultipartFile.fromPath(
+              key,
               image.path,
               filename: image.path.split('/').last,
-            ),
-          ));
+            ));
+          }
         }
       }
+
+
+      // Send request
+      // Send request
+      final streamedResponse = await request.send().timeout(const Duration(seconds: 30));
+
+      // Convert streamed response to regular response
+      final response = await http.Response.fromStream(streamedResponse);
+
+
+
+      responseJson = returnHttpResponse(response);
+      return responseJson;
+
+    } on TimeoutException catch (e) {
+
+      throw Exception('Request timed out');
+    } catch (e) {
+
+      throw Exception('Request failed: $e');
     }
-    
-    final dio = Dio();
-    if (kDebugMode) {
-      baseUrl = devBaseUrl;
-    } else if (kReleaseMode) {
-      baseUrl = devBaseUrl;
-    }
-
-    (dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
-      final HttpClient client = HttpClient();
-      client.badCertificateCallback = 
-          (X509Certificate cert, String host, int port) => true;
-      return client;
-    };
-    dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) async {
-          print("➡️ REQUEST");
-          print("URL: ${options.uri}");
-          print("METHOD: ${options.method}");
-          print("HEADERS: ${options.headers}");
-          print("QUERY: ${options.queryParameters}");
-          print("BODY: ${options.data}");
-          // Device ID (optional
-          return handler.next(options);
-        },
-        onResponse: (response, handler) {
-          print("✅ RESPONSE");
-          print("URL: ${response.requestOptions.uri}");
-          print("STATUS: ${response.statusCode}");
-          print("DATA: ${response.data}");
-          return handler.next(response);
-        },
-        onError: (DioException e, handler) {
-
-          return handler.next(e);
-        },
-      ),
-    );
-    final response = await dio.post(
-      baseUrl!+endpoint,
-      data: form,
-      options: Options(
-        headers: {
-          "Authorization": token,
-          "Accept": "application/json",
-          "Accept-Encoding": "gzip, deflate, br",
-        },
-        receiveTimeout: const Duration(seconds: 30),
-        sendTimeout: const Duration(seconds: 30),
-      ),
-    );
-
-    return response.data;
-
-  } on DioException catch (e) {
-
-    throw Exception('Something went wrong please try again');
-  } catch (e) {
-    throw Exception('Something went wrong please try again');
   }
-}
 
- 
+  dynamic returnHttpResponse(http.Response response) {
+
+
+    switch (response.statusCode) {
+      case 200:
+      case 201:
+        try {
+          var responseJson = json.decode(response.body);
+
+          return responseJson;
+        } catch (e) {
+
+          return {'success': true, 'message': 'Request successful', 'data': response.body};
+        }
+      case 400:
+        throw Exception('Bad Request: ${response.body}');
+      case 401:
+        throw Exception('Unauthorized: ${response.body}');
+      case 403:
+        throw Exception('Forbidden: ${response.body}');
+      case 404:
+        throw Exception('Not Found: ${response.body}');
+      case 500:
+        throw Exception('Internal Server Error: ${response.body}');
+      default:
+        throw Exception('Error occurred with status code: ${response.statusCode}');
+    }
+  }
+
+
+
+  Future<dynamic> postRequestWithImagesDio(
+      String endpoint,
+      Map<String, dynamic> data,
+      List<Map<String, dynamic>>? images,
+      ) async {
+    try {
+      final form = FormData.fromMap(data);
+      final token = "Bearer ${_storage.read(_apiKeys.apiToken) ?? ''}";
+
+      if (images != null && images.isNotEmpty) {
+        for (final imageMap in images) {
+          final String key = imageMap['key'];
+          final File image = imageMap['file'];
+
+          if (await image.exists()) {
+            form.files.add(MapEntry(
+              key,
+              await MultipartFile.fromFile(
+                image.path,
+                filename: image.path.split('/').last,
+              ),
+            ));
+          }
+        }
+      }
+
+      final dio = Dio();
+      if (kDebugMode) {
+        baseUrl = devBaseUrl;
+      } else if (kReleaseMode) {
+        baseUrl = devBaseUrl;
+      }
+
+      (dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
+        final HttpClient client = HttpClient();
+        client.badCertificateCallback =
+            (X509Certificate cert, String host, int port) => true;
+        return client;
+      };
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) async {
+            print("➡️ REQUEST");
+            print("URL: ${options.uri}");
+            print("METHOD: ${options.method}");
+            print("HEADERS: ${options.headers}");
+            print("QUERY: ${options.queryParameters}");
+            print("BODY: ${options.data}");
+            // Device ID (optional
+            return handler.next(options);
+          },
+          onResponse: (response, handler) {
+            print("✅ RESPONSE");
+            print("URL: ${response.requestOptions.uri}");
+            print("STATUS: ${response.statusCode}");
+            print("DATA: ${response.data}");
+            return handler.next(response);
+          },
+          onError: (DioException e, handler) {
+
+            return handler.next(e);
+          },
+        ),
+      );
+      final response = await dio.post(
+        baseUrl!+endpoint,
+        data: form,
+        options: Options(
+          headers: {
+            "Authorization": token,
+            "Accept": "application/json",
+            "Accept-Encoding": "gzip, deflate, br",
+          },
+          receiveTimeout: const Duration(seconds: 30),
+          sendTimeout: const Duration(seconds: 30),
+        ),
+      );
+
+      return response.data;
+
+    } on DioException catch (e) {
+
+      throw Exception('Something went wrong please try again');
+    } catch (e) {
+      throw Exception('Something went wrong please try again');
+    }
+  }
+
+
 
   // Future<dynamic> uploadImage(String endpoint, File? file) async {
   //   final form = FormData({

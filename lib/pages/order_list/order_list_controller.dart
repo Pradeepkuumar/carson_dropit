@@ -8,7 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:signature/signature.dart';
 import '../../app_pages/app_pages.dart';
-import '../../apis/base_api_response.dart';
+import '../../core/network/base_api_response.dart';
 import '../../firebase_notifications/firebase_notifiction_controller.dart';
 import '../../global/cancelled_orders.dart';
 import '../../global/consts.dart';
@@ -113,7 +113,7 @@ class OrderListController extends GetxController
     if (Get.isRegistered<FirebaseMessagingController>()) {
       _cancelWorker = ever(
         Get.find<FirebaseMessagingController>().onOrderCancelled,
-        (Map<String, dynamic>? data) {
+            (Map<String, dynamic>? data) {
           if (data != null) _onOrderCancelledPush(data);
         },
       );
@@ -467,7 +467,7 @@ class OrderListController extends GetxController
   // The dashboard's continuously-updated position first (instant), then a
   // fresh fix, then the phone's last known position.
   Future<({double latitude, double longitude})?>
-      _availableFetchLocation() async {
+  _availableFetchLocation() async {
     if (Get.isRegistered<RiderDashboardController>()) {
       final cached = Get.find<RiderDashboardController>().currentLocation;
       if (cached?.latitude != null && cached?.longitude != null) {
@@ -660,18 +660,18 @@ class OrderListController extends GetxController
 
   bool isAtRisk(OrdersData order, String status) =>
       status != "completed" &&
-      status != "undelivered" &&
-      (order.is_at_risk ?? false);
+          status != "undelivered" &&
+          (order.is_at_risk ?? false);
 
-  // int remainingSecondsFor(OrdersData order) {
-  //   final slaHours = int.tryParse(order.sla_in_hours ?? "") ?? 0;
-  //   final createdAt = order.createdAt;
-  //   if (createdAt == null || createdAt.isEmpty) return slaHours * 3600;
-  //   try {
-  //     final elapsed = getSecondsDifference(parseUtcTime(createdAt));
-  //     return (slaHours * 3600) - elapsed;
-  //   } catch (_) {
-  //     return slaHours * 3600;
-  //   }
-  // }
+// int remainingSecondsFor(OrdersData order) {
+//   final slaHours = int.tryParse(order.sla_in_hours ?? "") ?? 0;
+//   final createdAt = order.createdAt;
+//   if (createdAt == null || createdAt.isEmpty) return slaHours * 3600;
+//   try {
+//     final elapsed = getSecondsDifference(parseUtcTime(createdAt));
+//     return (slaHours * 3600) - elapsed;
+//   } catch (_) {
+//     return slaHours * 3600;
+//   }
+// }
 }
